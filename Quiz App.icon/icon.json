@@ -1,0 +1,25 @@
+{
+  "fill": "none",
+  "groups": [
+    {
+      "name": "Artwork",
+      "layers": [
+        {
+          "name": "Quiz App",
+          "image-name": "Quiz App.png",
+          "glass": false,
+          "fill": "none"
+        }
+      ],
+      "shadow": {
+        "kind": "none",
+        "opacity": 0
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": [
+      "macOS"
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "id": "general-knowledge-sample",
+  "title": "General Knowledge Sample",
+  "description": "A short demo quiz covering all three question types.",
+  "author": "QuizApp",
+  "tags": ["sample", "demo"],
+  "questions": [
+    {
+      "id": "q1",
+      "type": "true_false",
+      "prompt": "The Pacific is the largest ocean on Earth.",
+      "answer": true,
+      "explanation": "The Pacific Ocean covers more area than all of Earth's landmass combined."
+    },
+    {
+      "id": "q2",
+      "type": "multiple_choice",
+      "prompt": "Which planet is known as the Red Planet?",
+      "choices": [
+        { "id": "a", "text": "Venus" },
+        { "id": "b", "text": "Mars" },
+        { "id": "c", "text": "Jupiter" },
+        { "id": "d", "text": "Mercury" }
+      ],
+      "answer": "b",
+      "explanation": "Mars appears red because of iron oxide (rust) on its surface."
+    },
+    {
+      "id": "q3",
+      "type": "multi_answer",
+      "prompt": "Which of the following are prime numbers?",
+      "choices": [
+        { "id": "a", "text": "2" },
+        { "id": "b", "text": "4" },
+        { "id": "c", "text": "7" },
+        { "id": "d", "text": "9" },
+        { "id": "e", "text": "11" }
+      ],
+      "answers": ["a", "c", "e"],
+      "explanation": "2, 7, and 11 are prime. 4 = 2 x 2 and 9 = 3 x 3."
+    },
+    {
+      "id": "q4",
+      "type": "multiple_choice",
+      "prompt": "What is the capital of Australia?",
+      "choices": [
+        { "id": "a", "text": "Sydney" },
+        { "id": "b", "text": "Melbourne" },
+        { "id": "c", "text": "Canberra" },
+        { "id": "d", "text": "Perth" }
+      ],
+      "answer": "c",
+      "explanation": "Canberra was purpose-built as the capital in a compromise between Sydney and Melbourne."
+    },
+    {
+      "id": "q5",
+      "type": "true_false",
+      "prompt": "Sound travels faster in water than in air.",
+      "answer": true,
+      "explanation": "Sound travels about 4x faster in water (~1480 m/s) than in air (~343 m/s)."
+    }
+  ]
+}
