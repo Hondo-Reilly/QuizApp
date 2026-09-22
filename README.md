@@ -1,6 +1,8 @@
 # QuizApp
 
-An Electron + React + Tailwind desktop app for importing and taking JSON-based quizzes.
+An Electron + React + Tailwind desktop app for importing and taking JSON-based quizzes. This is mostly a vibecoded app so I can avoid paying for another subscription so expect some bugs.
+
+QuizApp is Mac only for now. Download the latest build from the [releases page](https://github.com/Hondo-Reilly/QuizApp/releases).
 
 ## Features
 

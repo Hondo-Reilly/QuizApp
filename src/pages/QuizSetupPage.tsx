@@ -8,6 +8,10 @@ import { RadioGroup } from "@/components/ui/RadioGroup";
 import { NumberField } from "@/components/ui/NumberField";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useQuizSession } from "@/hooks/useQuizSession";
+import {
+  readQuizSetupPreferences,
+  writeQuizSetupPreferences,
+} from "@/lib/quizPreferences";
 import type { Quiz, RevealMode } from "@shared/types";
 
 const REVEAL_OPTIONS: ReadonlyArray<{
@@ -33,9 +37,12 @@ export function QuizSetupPage() {
   const start = useQuizSession((s) => s.start);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
-  const [shuffleQuestions, setShuffleQuestions] = useState(false);
-  const [shuffleChoices, setShuffleChoices] = useState(true);
-  const [revealMode, setRevealMode] = useState<RevealMode>("at_end");
+  const saved = readQuizSetupPreferences();
+  const [shuffleQuestions, setShuffleQuestions] = useState(
+    saved.shuffleQuestions,
+  );
+  const [shuffleChoices, setShuffleChoices] = useState(saved.shuffleChoices);
+  const [revealMode, setRevealMode] = useState<RevealMode>(saved.revealMode);
   const [questionCount, setQuestionCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,6 +66,14 @@ export function QuizSetupPage() {
       active = false;
     };
   }, [id]);
+
+  useEffect(() => {
+    writeQuizSetupPreferences({
+      shuffleQuestions,
+      shuffleChoices,
+      revealMode,
+    });
+  }, [shuffleQuestions, shuffleChoices, revealMode]);
 
   const handleStart = () => {
     if (!quiz) return;
@@ -101,12 +116,6 @@ export function QuizSetupPage() {
       />
 
       <Card className="flex flex-col gap-6">
-        <div>
-          <div className="text-sm text-slate-500 dark:text-neutral-400">
-            {total} {total === 1 ? "question" : "questions"} in this quiz
-          </div>
-        </div>
-
         <div>
           <h2 className="mb-1 text-sm font-semibold text-slate-700 dark:text-neutral-300">
             Number of questions
