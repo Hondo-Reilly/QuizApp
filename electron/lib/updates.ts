@@ -93,6 +93,14 @@ export async function checkForUpdate(): Promise<UpdateCheck> {
   }
 }
 
+async function openInstaller(dest: string): Promise<void> {
+  const error = await shell.openPath(dest);
+  if (error) throw new Error(error);
+  setImmediate(() => {
+    app.quit();
+  });
+}
+
 export async function downloadLatestUpdate(): Promise<void> {
   const check = await checkForUpdate();
   if (!check.updateAvailable || !check.downloadUrl) {
@@ -111,8 +119,7 @@ export async function downloadLatestUpdate(): Promise<void> {
         "Simulated update. Build a DMG with npm run build:mac to open an installer.",
       );
     }
-    const error = await shell.openPath(dest);
-    if (error) throw new Error(error);
+    await openInstaller(dest);
     return;
   }
   const response = await net.fetch(check.downloadUrl, {
@@ -123,6 +130,5 @@ export async function downloadLatestUpdate(): Promise<void> {
     new URL(check.downloadUrl).pathname.split("/").pop() || "QuizApp-update.dmg";
   const dest = path.join(app.getPath("temp"), filename);
   await fs.writeFile(dest, Buffer.from(await response.arrayBuffer()));
-  const error = await shell.openPath(dest);
-  if (error) throw new Error(error);
+  await openInstaller(dest);
 }
