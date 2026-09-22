@@ -12,6 +12,9 @@ export const IpcChannels = {
   listAttempts: "attempt:list",
   getAttempt: "attempt:get",
   deleteAttempts: "attempt:delete",
+  checkForUpdate: "updates:check",
+  downloadUpdate: "updates:download",
+  saveQuizPdf: "quiz:save-pdf",
 } as const;
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels];

@@ -70,6 +70,13 @@ export interface LibrarySnapshot {
   quizzes: QuizMetadata[];
 }
 
+export interface UpdateCheck {
+  updateAvailable: boolean;
+  currentVersion: string;
+  latestVersion: string | null;
+  downloadUrl: string | null;
+}
+
 export type UserAnswer = boolean | string | string[] | null;
 
 export interface QuizAttempt {

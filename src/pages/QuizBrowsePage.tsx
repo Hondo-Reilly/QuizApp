@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { quizApi } from "@/api/quizApi";
 import { Button } from "@/components/ui/Button";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { QuestionAnswerList } from "@/components/quiz/QuestionAnswerList";
+import { PrintQuizDialog } from "@/components/quiz/PrintQuizDialog";
 import { AttemptList } from "@/components/library/AttemptList";
 import type { Quiz, QuizAttempt } from "@shared/types";
 
@@ -18,6 +18,7 @@ export function QuizBrowsePage() {
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [printOpen, setPrintOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -70,22 +71,27 @@ export function QuizBrowsePage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader
-        title={quiz.title}
-        subtitle={
-          quiz.description ??
-          `${total} ${total === 1 ? "question" : "questions"}`
-        }
-        actions={
-          <>
-            <Button variant="secondary" onClick={back}>
-              Back to library
-            </Button>
-            <Button onClick={() => navigate(`/quiz/${id}/setup`)}>
-              Start quiz
-            </Button>
-          </>
-        }
+      <header className="mb-8">
+        <button
+          type="button"
+          onClick={back}
+          className="mb-3 text-sm text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-neutral-100"
+        >
+          ← Library
+        </button>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-neutral-100">
+          {quiz.title}
+        </h1>
+        <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
+          {quiz.description ??
+            `${total} ${total === 1 ? "question" : "questions"}`}
+        </p>
+      </header>
+
+      <PrintQuizDialog
+        open={printOpen}
+        quiz={quiz}
+        onClose={() => setPrintOpen(false)}
       />
 
       <section className="mb-8">
@@ -111,9 +117,19 @@ export function QuizBrowsePage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
-          Questions
-        </h2>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
+            Questions
+          </h2>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setPrintOpen(true)}>
+              Save to PDF
+            </Button>
+            <Button size="sm" onClick={() => navigate(`/quiz/${id}/setup`)}>
+              Start quiz
+            </Button>
+          </div>
+        </div>
         <QuestionAnswerList questions={quiz.questions} />
       </section>
     </div>

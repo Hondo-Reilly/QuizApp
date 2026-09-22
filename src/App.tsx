@@ -1,6 +1,7 @@
 import { Link, Outlet, useMatch } from "react-router-dom";
 import { DownloadExampleButton } from "@/components/library/DownloadExampleButton";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { UpdateButton } from "@/components/ui/UpdateButton";
 import { Breadcrumb } from "@/components/library/Breadcrumb";
 import { useLibrary, type UseLibrary } from "@/hooks/useLibrary";
 
@@ -28,6 +29,7 @@ export function App() {
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <DownloadExampleButton />
+            <UpdateButton />
             <ThemeToggle />
           </div>
         </div>

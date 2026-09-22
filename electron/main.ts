@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeImage } from "electron";
+import { app, BrowserWindow, Menu, MenuItem, nativeImage } from "electron";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { registerIpcHandlers } from "./ipc/handlers";
@@ -23,6 +23,33 @@ function applyDockIcon(): void {
 
 const isDev = !!process.env.VITE_DEV_SERVER_URL;
 
+function enableDevTools(win: BrowserWindow): void {
+  win.webContents.on("before-input-event", (_event, input) => {
+    if (
+      input.type === "keyDown" &&
+      input.meta &&
+      input.alt &&
+      input.key.toLowerCase() === "i"
+    ) {
+      win.webContents.toggleDevTools();
+    }
+  });
+
+  const menu = Menu.getApplicationMenu();
+  const view = menu?.items.find((item) => item.role === "viewMenu");
+  if (!view?.submenu) return;
+  if (view.submenu.items.some((item) => item.role === "toggleDevTools")) return;
+  view.submenu.append(new MenuItem({ type: "separator" }));
+  view.submenu.append(new MenuItem({ role: "reload" }));
+  view.submenu.append(
+    new MenuItem({
+      label: "Toggle Developer Tools",
+      accelerator: "Alt+Command+I",
+      click: () => win.webContents.toggleDevTools(),
+    }),
+  );
+}
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1100,
@@ -36,10 +63,12 @@ function createWindow(): void {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      devTools: isDev,
     },
   });
 
   if (isDev) {
+    enableDevTools(win);
     win.loadURL(process.env.VITE_DEV_SERVER_URL!);
   } else {
     win.loadFile(path.join(__dirname, "../dist/index.html"));

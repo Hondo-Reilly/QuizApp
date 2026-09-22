@@ -7,6 +7,7 @@ import type {
   QuizAttempt,
   QuizMetadata,
   SaveAttemptInput,
+  UpdateCheck,
 } from "../shared/types";
 import type { ImportResult } from "./ipc/quizLibrary";
 
@@ -49,6 +50,12 @@ const quizApi = {
     ipcRenderer.invoke(IpcChannels.getAttempt, id),
   deleteAttempts: (ids: string[]): Promise<void> =>
     ipcRenderer.invoke(IpcChannels.deleteAttempts, ids),
+  checkForUpdate: (): Promise<UpdateCheck> =>
+    ipcRenderer.invoke(IpcChannels.checkForUpdate),
+  downloadUpdate: (): Promise<void> =>
+    ipcRenderer.invoke(IpcChannels.downloadUpdate),
+  saveQuizPdf: (html: string, filename: string): Promise<boolean> =>
+    ipcRenderer.invoke(IpcChannels.saveQuizPdf, { html, filename }),
 };
 
 export type QuizApi = typeof quizApi;
