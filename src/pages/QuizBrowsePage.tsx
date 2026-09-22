@@ -1,24 +1,35 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useOutletContext,
+  useParams,
+} from "react-router-dom";
 import { quizApi } from "@/api/quizApi";
 import { Button } from "@/components/ui/Button";
 import { QuestionAnswerList } from "@/components/quiz/QuestionAnswerList";
 import { PrintQuizDialog } from "@/components/quiz/PrintQuizDialog";
 import { AttemptList } from "@/components/library/AttemptList";
-import type { Quiz, QuizAttempt } from "@shared/types";
+import { MoveQuizDialog } from "@/components/library/MoveQuizDialog";
+import type { UseLibrary } from "@/hooks/useLibrary";
+import type { Quiz, QuizAttempt, QuizMetadata } from "@shared/types";
 
 export function QuizBrowsePage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const folderId =
+  const library = useOutletContext<UseLibrary>();
+  const storedFolderId =
     (location.state as { folderId?: string | null } | null)?.folderId ?? null;
+  const metadata = library.quizzes.find((item) => item.id === id) ?? null;
+  const folderId = metadata?.folderId ?? storedFolderId;
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -68,6 +79,26 @@ export function QuizBrowsePage() {
   }
 
   const total = quiz.questions.length;
+  const moveTarget: QuizMetadata = metadata ?? {
+    id: quiz.id,
+    title: quiz.title,
+    description: quiz.description,
+    author: quiz.author,
+    tags: quiz.tags,
+    questionCount: total,
+    importedAt: new Date(0).toISOString(),
+    folderId,
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(`Delete "${quiz.title}"?`)) return;
+    try {
+      await library.deleteQuiz(quiz.id);
+      back();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -121,9 +152,15 @@ export function QuizBrowsePage() {
           <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
             Questions
           </h2>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <Button variant="secondary" size="sm" onClick={() => setPrintOpen(true)}>
               Save to PDF
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setMoveOpen(true)}>
+              Move
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => void handleDelete()}>
+              Delete
             </Button>
             <Button size="sm" onClick={() => navigate(`/quiz/${id}/setup`)}>
               Start quiz
@@ -132,6 +169,14 @@ export function QuizBrowsePage() {
         </div>
         <QuestionAnswerList questions={quiz.questions} />
       </section>
+
+      <MoveQuizDialog
+        open={moveOpen}
+        quiz={moveTarget}
+        folders={library.folders}
+        onClose={() => setMoveOpen(false)}
+        onMove={(nextFolderId) => library.moveQuiz(quiz.id, nextFolderId)}
+      />
     </div>
   );
 }
