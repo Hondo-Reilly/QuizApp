@@ -2,7 +2,19 @@
 
 An Electron + React + Tailwind desktop app for importing and taking JSON-based quizzes. This is mostly a vibecoded app so I can avoid paying for another subscription so expect some bugs.
 
-QuizApp is Mac only for now. Download the latest build from the [releases page](https://github.com/Hondo-Reilly/QuizApp/releases).
+## Install
+
+QuizApp is Mac only for now (Apple Silicon). Download the latest build from the [releases page](https://github.com/Hondo-Reilly/QuizApp/releases), open the disk image, and drag QuizApp into Applications.
+
+macOS will then say the app is damaged and can't be opened. The app is fine but is unsigned because I don't want to pay for an Apple Developer account. macOS blocks unsigned apps that were downloaded in a browser.
+
+After QuizApp is in Applications, open Terminal and run:
+
+```bash
+xattr -cr /Applications/QuizApp.app
+```
+
+That clears the download mark on QuizApp only. Then open the app from Applications. Use the same command again after you install a newer release.
 
 ## Features
 

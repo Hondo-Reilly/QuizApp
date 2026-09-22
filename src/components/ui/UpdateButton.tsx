@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { quizApi } from "@/api/quizApi";
+import { UpdateDialog } from "@/components/ui/UpdateDialog";
+import type { UpdateCheck } from "@shared/types";
 
 function DownloadIcon() {
   return (
@@ -24,6 +26,7 @@ function DownloadIcon() {
 export function UpdateButton() {
   const [available, setAvailable] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [update, setUpdate] = useState<UpdateCheck | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -49,11 +52,7 @@ export function UpdateButton() {
         alert(`You're up to date (version ${result.currentVersion}).`);
         return;
       }
-      const ok = confirm(
-        `Version ${result.latestVersion} is available. You have ${result.currentVersion}. Download and open the installer?`,
-      );
-      if (!ok) return;
-      await quizApi.downloadUpdate();
+      setUpdate(result);
     } catch (err) {
       alert(err instanceof Error ? err.message : String(err));
     } finally {
@@ -67,15 +66,18 @@ export function UpdateButton() {
     "border-brand-600 bg-brand-500 text-white hover:bg-brand-600";
 
   return (
-    <button
-      type="button"
-      onClick={() => void onClick()}
-      disabled={busy}
-      aria-label={available ? "Download latest version" : "Check for updates"}
-      title={available ? "Download latest version" : "Check for updates"}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:cursor-wait dark:focus-visible:ring-offset-neutral-950 ${available ? ready : idle}`}
-    >
-      <DownloadIcon />
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => void onClick()}
+        disabled={busy}
+        aria-label={available ? "Download latest version" : "Check for updates"}
+        title={available ? "Download latest version" : "Check for updates"}
+        className={`inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:cursor-wait dark:focus-visible:ring-offset-neutral-950 ${available ? ready : idle}`}
+      >
+        <DownloadIcon />
+      </button>
+      <UpdateDialog check={update} onClose={() => setUpdate(null)} />
+    </>
   );
 }

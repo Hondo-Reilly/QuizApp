@@ -5,7 +5,7 @@
   "description": "Electron + React + Tailwind quiz app that imports JSON quizzes.",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.mjs",
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "build:mac": "npm run build && electron-builder --mac --arm64",
     "preview": "vite preview",
@@ -35,6 +35,22 @@
       ],
       "category": "public.app-category.education",
       "identity": null
+    },
+    "dmg": {
+      "background": "build/background.png",
+      "iconSize": 80,
+      "contents": [
+        {
+          "x": 160,
+          "y": 278
+        },
+        {
+          "x": 480,
+          "y": 278,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
     }
   },
   "dependencies": {

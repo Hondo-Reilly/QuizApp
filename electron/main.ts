@@ -2,6 +2,7 @@ import { app, BrowserWindow, Menu, MenuItem, nativeImage } from "electron";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { registerIpcHandlers } from "./ipc/handlers";
+import { simulatedUpdateEnabled } from "./lib/updates";
 
 const DOCK_ICON = path.join(
   "Quiz App.icon",
@@ -76,6 +77,11 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  if (simulatedUpdateEnabled()) {
+    console.log(
+      "Simulating an available update. The download button opens the local DMG.",
+    );
+  }
   applyDockIcon();
   registerIpcHandlers();
   createWindow();

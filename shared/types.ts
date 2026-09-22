@@ -75,6 +75,7 @@ export interface UpdateCheck {
   currentVersion: string;
   latestVersion: string | null;
   downloadUrl: string | null;
+  releaseNotes: string | null;
 }
 
 export type UserAnswer = boolean | string | string[] | null;
