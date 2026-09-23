@@ -184,7 +184,7 @@ export function QuizSetupPage() {
 
         <div>
           <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-neutral-300">
-            Mobile
+            Mobile mode
           </h2>
           <Toggle
             checked={enableMobile}
