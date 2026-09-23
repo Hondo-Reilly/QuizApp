@@ -8,7 +8,7 @@
     "dev": "node scripts/dev.mjs",
     "build": "tsc -p tsconfig.json --noEmit && vite build && node scripts/check-desktop-assets.mjs",
     "build:web": "tsc -p tsconfig.json --noEmit && QUIZAPP_WEB=1 vite build",
-    "build:mac": "npm run build && electron-builder --mac --arm64 && node scripts/check-packaged-app.mjs",
+    "build:mac": "npm run build && electron-builder --mac --arm64 --publish never && node scripts/check-packaged-app.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
