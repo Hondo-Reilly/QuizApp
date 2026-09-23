@@ -1,6 +1,7 @@
 import { Link, Outlet, useMatch } from "react-router-dom";
 import { DownloadAiQuizButton } from "@/components/library/DownloadAiQuizButton";
 import { DownloadExampleButton } from "@/components/library/DownloadExampleButton";
+import { MobileModeButton } from "@/components/ui/MobileModeButton";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UpdateButton } from "@/components/ui/UpdateButton";
 import { Breadcrumb } from "@/components/library/Breadcrumb";
@@ -10,6 +11,7 @@ export function App() {
   const library = useLibrary();
 
   const folderMatch = useMatch("/folder/:folderId");
+  const takingQuiz = useMatch("/quiz/:id/take");
   const folderId = folderMatch?.params.folderId ?? null;
   const breadcrumbPath = folderId ? library.pathTo(folderId) : [];
 
@@ -29,8 +31,14 @@ export function App() {
             )}
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            <DownloadExampleButton />
-            <DownloadAiQuizButton />
+            {takingQuiz ? (
+              <MobileModeButton />
+            ) : (
+              <>
+                <DownloadExampleButton />
+                <DownloadAiQuizButton />
+              </>
+            )}
             <UpdateButton />
             <ThemeToggle />
           </div>

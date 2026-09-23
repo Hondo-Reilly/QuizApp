@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QuizApp</title>
+    <script>
+      (function () {
+        var theme = new URLSearchParams(location.search).get("theme");
+        if (theme === "dark") document.documentElement.classList.add("dark");
+      })();
+    </script>
+  </head>
+  <body class="bg-slate-50 text-slate-900 antialiased dark:bg-neutral-950 dark:text-neutral-100">
+    <div id="root"></div>
+    <script type="module" src="/src/mobile/main.tsx"></script>
+  </body>
+</html>

@@ -6,12 +6,14 @@ export interface QuizSetupPreferences {
   shuffleQuestions: boolean;
   shuffleChoices: boolean;
   revealMode: RevealMode;
+  enableMobile: boolean;
 }
 
 const DEFAULTS: QuizSetupPreferences = {
   shuffleQuestions: false,
   shuffleChoices: true,
   revealMode: "at_end",
+  enableMobile: false,
 };
 
 function isRevealMode(value: unknown): value is RevealMode {
@@ -36,6 +38,10 @@ export function readQuizSetupPreferences(): QuizSetupPreferences {
       revealMode: isRevealMode(parsed.revealMode)
         ? parsed.revealMode
         : DEFAULTS.revealMode,
+      enableMobile:
+        typeof parsed.enableMobile === "boolean"
+          ? parsed.enableMobile
+          : DEFAULTS.enableMobile,
     };
   } catch {
     return DEFAULTS;

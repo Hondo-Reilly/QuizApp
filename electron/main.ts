@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { registerIpcHandlers } from "./ipc/handlers";
 import { installAppDataMenu } from "./lib/appDataMenu";
+import { stopMobileServer } from "./lib/mobileServer";
 import { simulatedUpdateEnabled } from "./lib/updates";
 
 const DOCK_ICON = path.join(
@@ -81,4 +82,8 @@ app.whenReady().then(() => {
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
+});
+
+app.on("before-quit", () => {
+  void stopMobileServer();
 });

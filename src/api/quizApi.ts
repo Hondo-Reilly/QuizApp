@@ -1,3 +1,4 @@
+import type { MobilePatch, MobileSession, MobileSessionSeed } from "@shared/mobile";
 import type {
   Folder,
   LibrarySnapshot,
@@ -41,4 +42,13 @@ export const quizApi = {
   downloadUpdate: (): Promise<void> => window.quizApi.downloadUpdate(),
   saveQuizPdf: (html: string, filename: string): Promise<boolean> =>
     window.quizApi.saveQuizPdf(html, filename),
+  startMobile: (seed: MobileSessionSeed): Promise<string> =>
+    window.quizApi.startMobile(seed),
+  stopMobile: (): Promise<void> => window.quizApi.stopMobile(),
+  patchMobile: (patch: MobilePatch): Promise<MobileSession | null> =>
+    window.quizApi.patchMobile(patch),
+  onMobileSnapshot: (listener: (session: MobileSession) => void) =>
+    window.quizApi.onMobileSnapshot(listener),
+  onMobileConnected: (listener: () => void) =>
+    window.quizApi.onMobileConnected(listener),
 };

@@ -15,6 +15,11 @@ export const IpcChannels = {
   checkForUpdate: "updates:check",
   downloadUpdate: "updates:download",
   saveQuizPdf: "quiz:save-pdf",
+  mobileStart: "mobile:start",
+  mobileStop: "mobile:stop",
+  mobilePatch: "mobile:patch",
+  mobileSnapshot: "mobile:snapshot",
+  mobileConnected: "mobile:connected",
 } as const;
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels];

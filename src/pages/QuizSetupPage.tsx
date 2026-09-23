@@ -8,6 +8,7 @@ import { RadioGroup } from "@/components/ui/RadioGroup";
 import { NumberField } from "@/components/ui/NumberField";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useQuizSession } from "@/hooks/useQuizSession";
+import { startMobileSession } from "@/lib/mobileSync";
 import {
   readQuizSetupPreferences,
   writeQuizSetupPreferences,
@@ -43,6 +44,7 @@ export function QuizSetupPage() {
   );
   const [shuffleChoices, setShuffleChoices] = useState(saved.shuffleChoices);
   const [revealMode, setRevealMode] = useState<RevealMode>(saved.revealMode);
+  const [enableMobile, setEnableMobile] = useState(saved.enableMobile);
   const [questionCount, setQuestionCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,8 +74,9 @@ export function QuizSetupPage() {
       shuffleQuestions,
       shuffleChoices,
       revealMode,
+      enableMobile,
     });
-  }, [shuffleQuestions, shuffleChoices, revealMode]);
+  }, [shuffleQuestions, shuffleChoices, revealMode, enableMobile]);
 
   const handleStart = () => {
     if (!quiz) return;
@@ -84,6 +87,9 @@ export function QuizSetupPage() {
       questionCount,
     });
     navigate(`/quiz/${id}/take`);
+    if (enableMobile) {
+      void startMobileSession().catch(() => undefined);
+    }
   };
 
   if (loading)
@@ -173,6 +179,18 @@ export function QuizSetupPage() {
             value={revealMode}
             options={REVEAL_OPTIONS}
             onChange={setRevealMode}
+          />
+        </div>
+
+        <div>
+          <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-neutral-300">
+            Mobile
+          </h2>
+          <Toggle
+            checked={enableMobile}
+            onChange={setEnableMobile}
+            label="Enable mobile mode"
+            description="A phone on the same Wi-Fi can take this quiz with you. The QR code appears after the quiz starts."
           />
         </div>
 

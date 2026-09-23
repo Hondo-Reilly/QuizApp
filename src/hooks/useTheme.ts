@@ -1,23 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
+import { sendMobilePatch } from "@/lib/mobileSync";
+import { applyTheme, readInitialTheme, rememberTheme, withTheme, type Theme } from "@/lib/theme";
+import { useMobileStore } from "@/state/mobileStore";
 
-export type Theme = "light" | "dark";
-
-const STORAGE_KEY = "quizapp:theme";
-
-function readInitialTheme(): Theme {
-  if (typeof window === "undefined") return "light";
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored === "dark" || stored === "light") return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
-
-function applyTheme(theme: Theme): void {
-  const root = document.documentElement;
-  if (theme === "dark") root.classList.add("dark");
-  else root.classList.remove("dark");
-}
+export type { Theme };
 
 export interface UseTheme {
   theme: Theme;
@@ -31,11 +17,14 @@ export function useTheme(): UseTheme {
 
   useEffect(() => {
     applyTheme(theme);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, theme);
-    } catch {
-      // ignore quota / privacy errors
+    rememberTheme(theme);
+    const mobile = useMobileStore.getState();
+    if (!mobile.active) return;
+    if (mobile.url) {
+      const next = withTheme(mobile.url, theme);
+      if (next !== mobile.url) useMobileStore.getState().setUrl(next);
     }
+    void sendMobilePatch({ type: "theme", theme }).catch(() => undefined);
   }, [theme]);
 
   const setTheme = useCallback((next: Theme) => setThemeState(next), []);

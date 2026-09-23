@@ -1,5 +1,6 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import { IpcChannels } from "../shared/ipcChannels";
+import type { MobilePatch, MobileSession, MobileSessionSeed } from "../shared/mobile";
 import type {
   Folder,
   LibrarySnapshot,
@@ -56,6 +57,26 @@ const quizApi = {
     ipcRenderer.invoke(IpcChannels.downloadUpdate),
   saveQuizPdf: (html: string, filename: string): Promise<boolean> =>
     ipcRenderer.invoke(IpcChannels.saveQuizPdf, { html, filename }),
+  startMobile: (seed: MobileSessionSeed): Promise<string> =>
+    ipcRenderer.invoke(IpcChannels.mobileStart, seed),
+  stopMobile: (): Promise<void> => ipcRenderer.invoke(IpcChannels.mobileStop),
+  patchMobile: (patch: MobilePatch): Promise<MobileSession | null> =>
+    ipcRenderer.invoke(IpcChannels.mobilePatch, patch),
+  onMobileSnapshot: (listener: (session: MobileSession) => void) => {
+    const wrapped = (_event: IpcRendererEvent, next: MobileSession) =>
+      listener(next);
+    ipcRenderer.on(IpcChannels.mobileSnapshot, wrapped);
+    return () => {
+      ipcRenderer.removeListener(IpcChannels.mobileSnapshot, wrapped);
+    };
+  },
+  onMobileConnected: (listener: () => void) => {
+    const wrapped = () => listener();
+    ipcRenderer.on(IpcChannels.mobileConnected, wrapped);
+    return () => {
+      ipcRenderer.removeListener(IpcChannels.mobileConnected, wrapped);
+    };
+  },
 };
 
 export type QuizApi = typeof quizApi;

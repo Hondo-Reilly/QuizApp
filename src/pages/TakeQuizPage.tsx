@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { quizApi } from "@/api/quizApi";
+import { useMobileSync } from "@/hooks/useMobileSync";
+import { applyMobileSession, sendMobilePatch } from "@/lib/mobileSync";
 import { useQuizSession } from "@/hooks/useQuizSession";
+import { useMobileStore } from "@/state/mobileStore";
 import { useQuizKeyboard } from "@/hooks/useQuizKeyboard";
 import { QuestionCard } from "@/components/quiz/QuestionCard";
 import { AnswerFeedback } from "@/components/quiz/AnswerFeedback";
@@ -19,6 +22,43 @@ export function TakeQuizPage() {
   const navigate = useNavigate();
   const session = useQuizSession();
   const savedAttempt = useRef(false);
+  const finishRef = useRef<(fromRemote: boolean) => void>(() => {});
+
+  useMobileSync(() => finishRef.current(true));
+
+  finishRef.current = (fromRemote: boolean) => {
+    if (savedAttempt.current) return;
+    savedAttempt.current = true;
+    const persist = async () => {
+      if (!fromRemote && useMobileStore.getState().active) {
+        try {
+          const next = await sendMobilePatch({ type: "finish" });
+          if (next) applyMobileSession(next);
+        } catch {
+          // Leaving the quiz still stops the server.
+        }
+      }
+      const { quiz, order, answers } = useQuizSession.getState();
+      if (!quiz) return;
+      const ordered = order
+        .map((questionId) => quiz.questions.find((q) => q.id === questionId))
+        .filter((q): q is NonNullable<typeof q> => !!q);
+      const grade = gradeQuiz(ordered, answers);
+      try {
+        await quizApi.saveAttempt({
+          quizId: quiz.id,
+          correct: grade.correct,
+          total: grade.total,
+          percent: grade.percent,
+          questionIds: ordered.map((q) => q.id),
+          answers,
+        });
+      } catch {
+        savedAttempt.current = false;
+      }
+    };
+    void persist().finally(() => navigate(`/quiz/${id}/review`));
+  };
 
   useEffect(() => {
     if (!session.quiz || session.quiz.id !== id) {
@@ -49,29 +89,8 @@ export function TakeQuizPage() {
     [session],
   );
   const handleFinish = useCallback(() => {
-    const quiz = session.quiz;
-    const persist = async () => {
-      if (!quiz || savedAttempt.current) return;
-      savedAttempt.current = true;
-      const ordered = session.order
-        .map((questionId) => quiz.questions.find((q) => q.id === questionId))
-        .filter((q): q is NonNullable<typeof q> => !!q);
-      const grade = gradeQuiz(ordered, session.answers);
-      try {
-        await quizApi.saveAttempt({
-          quizId: quiz.id,
-          correct: grade.correct,
-          total: grade.total,
-          percent: grade.percent,
-          questionIds: ordered.map((q) => q.id),
-          answers: session.answers,
-        });
-      } catch {
-        savedAttempt.current = false;
-      }
-    };
-    void persist().finally(() => navigate(`/quiz/${id}/review`));
-  }, [navigate, id, session]);
+    finishRef.current(false);
+  }, []);
 
   const handleSetAnswer = useCallback(
     (v: UserAnswer) => {

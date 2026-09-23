@@ -24,6 +24,11 @@ interface SessionState {
   submitted: Record<string, boolean>;
 
   start: (quiz: Quiz, config: SessionConfig) => void;
+  applyRemote: (patch: {
+    currentIndex: number;
+    answers: Record<string, UserAnswer>;
+    submitted: Record<string, boolean>;
+  }) => void;
   setAnswer: (questionId: string, answer: UserAnswer) => void;
   submitCurrent: () => void;
   next: () => void;
@@ -98,6 +103,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       submitted: {},
     });
   },
+
+  applyRemote: ({ currentIndex, answers, submitted }) =>
+    set({ currentIndex, answers, submitted }),
 
   setAnswer: (questionId, answer) =>
     set((s) => ({ answers: { ...s.answers, [questionId]: answer } })),
