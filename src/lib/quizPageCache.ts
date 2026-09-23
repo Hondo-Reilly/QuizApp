@@ -26,10 +26,20 @@ export function rememberAttempt(attempt: QuizAttempt): void {
   const list = attemptsByQuiz.get(attempt.quizId);
   if (!list) return;
   const index = list.findIndex((item) => item.id === attempt.id);
-  if (index === -1) return;
+  if (index === -1) {
+    attemptsByQuiz.set(attempt.quizId, [attempt, ...list]);
+    return;
+  }
   const next = list.slice();
   next[index] = attempt;
   attemptsByQuiz.set(attempt.quizId, next);
+}
+
+export function forgetQuiz(id: string): void {
+  quizzes.delete(id);
+  const list = attemptsByQuiz.get(id) ?? [];
+  attemptsByQuiz.delete(id);
+  for (const attempt of list) attempts.delete(attempt.id);
 }
 
 export function rememberedAttempt(

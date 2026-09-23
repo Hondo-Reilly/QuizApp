@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { quizApi } from "@/api/quizApi";
+import { forgetQuiz } from "@/lib/quizPageCache";
+import { collectDescendantFolderIds } from "@shared/library";
+import type { CreateFolderPayload, UpdateFolderPayload } from "@shared/quizApi";
 import type { Folder, QuizMetadata } from "@shared/types";
-import type {
-  CreateFolderPayload,
-  UpdateFolderPayload,
-} from "../../electron/preload";
 
 export interface UseLibrary {
   folders: Folder[];
@@ -120,6 +119,7 @@ export function useLibrary(): UseLibrary {
     async (id: string) => {
       setError(null);
       await quizApi.deleteQuiz(id);
+      forgetQuiz(id);
       await refresh();
     },
     [refresh],
@@ -157,10 +157,15 @@ export function useLibrary(): UseLibrary {
   const deleteFolder = useCallback(
     async (id: string, recursive = true) => {
       setError(null);
+      const folderIds = collectDescendantFolderIds(folders, id);
+      const quizIds = quizzes
+        .filter((quiz) => quiz.folderId && folderIds.has(quiz.folderId))
+        .map((quiz) => quiz.id);
       await quizApi.deleteFolder(id, recursive);
+      for (const quizId of quizIds) forgetQuiz(quizId);
       await refresh();
     },
-    [refresh],
+    [folders, quizzes, refresh],
   );
 
   return {

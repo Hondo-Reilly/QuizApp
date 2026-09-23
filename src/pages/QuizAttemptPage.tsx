@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { quizApi } from "@/api/quizApi";
 import { Button } from "@/components/ui/Button";
 import { DetailPageLayout } from "@/components/ui/DetailPageLayout";
 import { LoadingMessage, PageErrorState } from "@/components/ui/PageState";
@@ -12,13 +11,8 @@ import {
   downloadJson,
 } from "@/lib/exportAttempt";
 import { formatTimeTaken } from "@/lib/formatDuration";
-import {
-  rememberAttempt,
-  rememberQuiz,
-  rememberedAttempt,
-  rememberedQuiz,
-} from "@/lib/quizPageCache";
-import type { Question, Quiz, QuizAttempt } from "@shared/types";
+import { useSavedAttempt } from "@/hooks/useSavedAttempt";
+import type { Question, QuizAttempt } from "@shared/types";
 
 function attemptSubtitle(attempt: QuizAttempt): string {
   const taken = attempt.startedAt
@@ -54,55 +48,7 @@ export function QuizAttemptPage() {
   const folderId =
     (location.state as { folderId?: string | null } | null)?.folderId ?? null;
 
-  const [quiz, setQuiz] = useState<Quiz | null>(() => rememberedQuiz(id));
-  const [attempt, setAttempt] = useState<QuizAttempt | null>(() =>
-    rememberedAttempt(attemptId, id),
-  );
-  const [loading, setLoading] = useState(
-    () => rememberedQuiz(id) == null || rememberedAttempt(attemptId, id) == null,
-  );
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    const knownQuiz = rememberedQuiz(id);
-    const knownAttempt = rememberedAttempt(attemptId, id);
-    if (knownQuiz && knownAttempt) {
-      setQuiz(knownQuiz);
-      setAttempt(knownAttempt);
-      setError(null);
-      setLoading(false);
-    } else {
-      setLoading(true);
-      setError(null);
-    }
-    Promise.all([quizApi.getQuiz(id), quizApi.getAttempt(attemptId)])
-      .then(([loadedQuiz, loadedAttempt]) => {
-        if (!active) return;
-        if (!loadedQuiz) {
-          setError("Quiz not found.");
-          return;
-        }
-        if (!loadedAttempt || loadedAttempt.quizId !== id) {
-          setError("Attempt not found.");
-          return;
-        }
-        rememberQuiz(loadedQuiz);
-        rememberAttempt(loadedAttempt);
-        setQuiz(loadedQuiz);
-        setAttempt(loadedAttempt);
-      })
-      .catch((err: unknown) => {
-        if (!active) return;
-        setError(err instanceof Error ? err.message : String(err));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [id, attemptId]);
+  const { quiz, attempt, loading, error } = useSavedAttempt(id, attemptId);
 
   const questions = useMemo(() => {
     if (!quiz || !attempt) return [] as Question[];

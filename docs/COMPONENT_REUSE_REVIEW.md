@@ -113,7 +113,7 @@ Counts below are **consumer files / JSX sites**.
 | [`BackLink`](../src/components/ui/BackLink.tsx) | 1 / 1 | Used through DetailPageLayout on four views |
 | [`Button`](../src/components/ui/Button.tsx) | **19 / 43** | Most reused primitive |
 | [`Card`](../src/components/ui/Card.tsx) | **6 / 6** | Shared surface styling |
-| [`Checkbox`](../src/components/ui/Checkbox.tsx) | **0 / 0** | Exported but unused |
+| `Checkbox` | **Removed** | It had no callers, so the component file was deleted. |
 | [`DetailPageLayout`](../src/components/ui/DetailPageLayout.tsx) | **4 / 4** | Browse, setup, attempt, and review frames |
 | [`DialogActions`](../src/components/ui/DialogActions.tsx) | 2 / 2 | New and rename folder dialog footers |
 | [`ErrorNotice`](../src/components/ui/PageState.tsx) | 2 / 2 | Library and PageErrorState |
@@ -140,7 +140,7 @@ Counts below are **consumer files / JSX sites**.
 - The quiz-taking page and phone share `QuestionCard`, `QuizProgressHeader`, `AnswerFeedback`, `AfterEachNav`, and `AtEndNav`. `QuizProgressHeader` composes `ProgressBar` and `QuizTimer` for both. They keep their own page frame and transport.
 - `FolderCard`, `QuizCard`, and `ReviewItem` are meaningful components even with one source consumer: each is rendered repeatedly from a list and owns a recognizable visual unit.
 - Keep `AfterEachNav` and `AtEndNav` separate because they present different reveal-mode controls. `ReviewItem` and `QuestionAnswerList` can remain separate view components that compose the same `QuestionResultCard` layout.
-- [`Checkbox`](../src/components/ui/Checkbox.tsx) is unused. Remove it if there is no planned use; adding it to a screen merely to raise its reuse count would not improve consistency.
+- `Checkbox` had no callers and has been removed.
 
 ## Supporting logic to share
 

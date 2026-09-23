@@ -9,7 +9,7 @@ A change to a screen, quiz flow, or stored record must keep both working. Do not
 
 ## Shared UI
 
-Library, folders, quiz detail, setup, taking a quiz, grading, and review live in `src/`. Those screens should stay one implementation. Reach the platform through `src/api/quizApi.ts`, which calls `window.quizApi` inside Electron and `src/lib/browserStore.ts` in the browser.
+Library, folders, quiz detail, setup, taking a quiz, grading, and review live in `src/`. Those screens should stay one implementation. Reach the platform through `src/api/quizApi.ts`, which calls `window.quizApi` inside Electron and `src/lib/browserQuizApi.ts` in the browser.
 
 `isElectronApp()` in `src/lib/runtime.ts` is how UI tells the two apart. Use it to hide a control, not to fork a page.
 
@@ -17,7 +17,7 @@ Library, folders, quiz detail, setup, taking a quiz, grading, and review live in
 
 | Data | Electron | Web |
 | --- | --- | --- |
-| Quizzes, folders, attempts | Files in `userData` | IndexedDB (`src/lib/browserStore.ts`) |
+| Quizzes, folders, attempts | Files in `userData` | IndexedDB (`src/lib/browserQuizApi.ts`) |
 | Theme and setup choices | `localStorage` | `localStorage` (same keys) |
 
 A new library or attempt field needs a matching read and write in both stores. Theme and setup preferences stay in `localStorage` only. Do not copy them into IndexedDB.

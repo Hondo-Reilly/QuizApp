@@ -8,7 +8,7 @@ alwaysApply: true
 QuizApp is one React UI with two builds. Follow `AGENTS.md`.
 
 - Electron: `npm run dev`, `npm run build:mac`. Data goes through `window.quizApi`.
-- Web: `npm run dev -- --web`, `npm run build:web`. Data goes through `src/lib/browserStore.ts` (IndexedDB). Theme and setup choices stay in `localStorage` on both.
+- Web: `npm run dev -- --web`, `npm run build:web`. Data goes through `src/lib/browserQuizApi.ts` (IndexedDB). Theme and setup choices stay in `localStorage` on both.
 - `src/api/quizApi.ts` picks the store. Screens in `src/` stay shared. Gate desktop-only UI with `isElectronApp()`.
 - A new quiz, folder, or attempt field must be saved and read in both stores.
 - Desktop only: mobile mode, updates, Mac window chrome, the app-menu data wipe, and Electron print-to-PDF. The web print path still uses `src/lib/printQuiz.ts`.

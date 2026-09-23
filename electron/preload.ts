@@ -2,6 +2,12 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import { IpcChannels } from "../shared/ipcChannels";
 import type { MobilePatch, MobileSession, MobileSessionSeed } from "../shared/mobile";
 import type {
+  CreateFolderPayload,
+  ImportResult,
+  QuizApi,
+  UpdateFolderPayload,
+} from "../shared/quizApi";
+import type {
   Folder,
   LibrarySnapshot,
   Quiz,
@@ -11,21 +17,8 @@ import type {
   UpdateCheck,
   UpdateProgress,
 } from "../shared/types";
-import type { ImportResult } from "./ipc/quizLibrary";
 
-export interface CreateFolderPayload {
-  name: string;
-  description?: string;
-  parentId?: string | null;
-}
-
-export interface UpdateFolderPayload {
-  id: string;
-  name?: string;
-  description?: string;
-}
-
-const quizApi = {
+const quizApi: QuizApi = {
   importQuiz: (folderId: string | null = null): Promise<ImportResult> =>
     ipcRenderer.invoke(IpcChannels.importQuiz, folderId),
   listQuizzes: (): Promise<QuizMetadata[]> =>
@@ -90,7 +83,5 @@ const quizApi = {
     ipcRenderer.send(IpcChannels.setTheme, theme);
   },
 };
-
-export type QuizApi = typeof quizApi;
 
 contextBridge.exposeInMainWorld("quizApi", quizApi);

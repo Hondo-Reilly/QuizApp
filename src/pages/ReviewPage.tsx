@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuizSession } from "@/hooks/useQuizSession";
+import { useSessionStore } from "@/state/sessionStore";
 import { gradeQuiz } from "@shared/grading";
 import { formatTimeTaken } from "@/lib/formatDuration";
 import { DetailPageLayout } from "@/components/ui/DetailPageLayout";
@@ -11,12 +11,12 @@ import { ReviewItem } from "@/components/review/ReviewItem";
 export function ReviewPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const quiz = useQuizSession((s) => s.quiz);
-  const answers = useQuizSession((s) => s.answers);
-  const order = useQuizSession((s) => s.order);
-  const startedAt = useQuizSession((s) => s.startedAt);
-  const endedAt = useQuizSession((s) => s.endedAt);
-  const reset = useQuizSession((s) => s.reset);
+  const quiz = useSessionStore((s) => s.quiz);
+  const answers = useSessionStore((s) => s.answers);
+  const order = useSessionStore((s) => s.order);
+  const startedAt = useSessionStore((s) => s.startedAt);
+  const endedAt = useSessionStore((s) => s.endedAt);
+  const reset = useSessionStore((s) => s.reset);
 
   useEffect(() => {
     if (!quiz || quiz.id !== id) {

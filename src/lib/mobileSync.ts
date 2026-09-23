@@ -14,25 +14,19 @@ let applying = false;
 let arming = false;
 let gate: Promise<void> = Promise.resolve();
 let chain: Promise<void> = Promise.resolve();
-let onRemoteFinish = () => {};
-
 interface SessionSlice {
   currentIndex: number;
   answers: Record<string, UserAnswer>;
   submitted: Record<string, boolean>;
 }
 
-export function setRemoteFinishHandler(handler: () => void): void {
-  onRemoteFinish = handler;
-}
-
-export function installMobileSync(): () => void {
+export function installMobileSync(onRemoteFinish: () => void): () => void {
   const unsubscribeStore = useSessionStore.subscribe((state, prev) => {
     if (applying) return;
     publish(diff(prev, state));
   });
   const unsubscribeIpc = quizApi.onMobileSnapshot((snapshot) => {
-    applySnapshot(snapshot);
+    applySnapshot(snapshot, onRemoteFinish);
   });
   return () => {
     unsubscribeStore();
@@ -90,7 +84,7 @@ function publish(patches: MobilePatch[]): void {
   for (const patch of patches) void sendMobilePatch(patch).catch(() => undefined);
 }
 
-function applySnapshot(snapshot: MobileSession): void {
+function applySnapshot(snapshot: MobileSession, onRemoteFinish: () => void): void {
   const quiz = useSessionStore.getState().quiz;
   if (!quiz || quiz.id !== snapshot.quiz.id) return;
   applyMobileSession(snapshot);

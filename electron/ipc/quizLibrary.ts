@@ -1,6 +1,7 @@
 import { BrowserWindow, dialog, ipcMain } from "electron";
 import path from "node:path";
 import { importBatchMessage, type ImportFailure } from "../../shared/importBatch";
+import type { ImportResult } from "../../shared/quizApi";
 import { IpcChannels } from "../../shared/ipcChannels";
 import {
   createFolder,
@@ -15,14 +16,6 @@ import {
   type CreateFolderInput,
   type UpdateFolderInput,
 } from "../lib/fileStore";
-
-export interface ImportResult {
-  ok: boolean;
-  cancelled?: boolean;
-  error?: string;
-  imported?: Awaited<ReturnType<typeof importQuizFromFile>>[];
-  failures?: ImportFailure[];
-}
 
 async function handleImport(
   event: Electron.IpcMainInvokeEvent,

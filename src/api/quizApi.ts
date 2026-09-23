@@ -1,15 +1,33 @@
-import type { QuizApi } from "../../electron/preload";
-import { browserQuizApi } from "@/lib/browserStore";
+import { browserQuizApi } from "@/lib/browserQuizApi";
+import type { QuizApi } from "@shared/quizApi";
 
-function desktop(): QuizApi | null {
-  if (typeof window === "undefined") return null;
-  return window.quizApi ?? null;
+function activeQuizApi(): QuizApi {
+  if (typeof window !== "undefined" && window.quizApi) return window.quizApi;
+  return browserQuizApi;
 }
 
-export const quizApi: QuizApi = new Proxy(browserQuizApi, {
-  get(target, prop, receiver) {
-    const source = desktop() ?? target;
-    const value = Reflect.get(source, prop, receiver);
-    return typeof value === "function" ? value.bind(source) : value;
-  },
-});
+export const quizApi: QuizApi = {
+  importQuiz: (folderId) => activeQuizApi().importQuiz(folderId),
+  listQuizzes: () => activeQuizApi().listQuizzes(),
+  getQuiz: (id) => activeQuizApi().getQuiz(id),
+  deleteQuiz: (id) => activeQuizApi().deleteQuiz(id),
+  moveQuiz: (id, folderId) => activeQuizApi().moveQuiz(id, folderId),
+  librarySnapshot: () => activeQuizApi().librarySnapshot(),
+  createFolder: (payload) => activeQuizApi().createFolder(payload),
+  updateFolder: (payload) => activeQuizApi().updateFolder(payload),
+  deleteFolder: (id, recursive) => activeQuizApi().deleteFolder(id, recursive),
+  saveAttempt: (input) => activeQuizApi().saveAttempt(input),
+  listAttempts: (quizId) => activeQuizApi().listAttempts(quizId),
+  getAttempt: (id) => activeQuizApi().getAttempt(id),
+  deleteAttempts: (ids) => activeQuizApi().deleteAttempts(ids),
+  checkForUpdate: () => activeQuizApi().checkForUpdate(),
+  downloadUpdate: () => activeQuizApi().downloadUpdate(),
+  onUpdateProgress: (listener) => activeQuizApi().onUpdateProgress(listener),
+  saveQuizPdf: (html, filename) => activeQuizApi().saveQuizPdf(html, filename),
+  startMobile: (seed) => activeQuizApi().startMobile(seed),
+  stopMobile: () => activeQuizApi().stopMobile(),
+  patchMobile: (patch) => activeQuizApi().patchMobile(patch),
+  onMobileSnapshot: (listener) => activeQuizApi().onMobileSnapshot(listener),
+  onMobileConnected: (listener) => activeQuizApi().onMobileConnected(listener),
+  setNativeTheme: (theme) => activeQuizApi().setNativeTheme(theme),
+};

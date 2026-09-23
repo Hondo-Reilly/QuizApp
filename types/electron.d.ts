@@ -1,4 +1,4 @@
-import type { QuizApi } from "../electron/preload";
+import type { QuizApi } from "../shared/quizApi";
 
 declare global {
   interface Window {

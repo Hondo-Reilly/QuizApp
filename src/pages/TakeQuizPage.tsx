@@ -1,10 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { quizApi } from "@/api/quizApi";
 import { useMobileSync } from "@/hooks/useMobileSync";
-import { applyMobileSession, sendMobilePatch } from "@/lib/mobileSync";
-import { useQuizSession } from "@/hooks/useQuizSession";
-import { useMobileStore } from "@/state/mobileStore";
+import { useQuizFinish } from "@/hooks/useQuizFinish";
+import { useSessionStore } from "@/state/sessionStore";
 import { useQuizKeyboard } from "@/hooks/useQuizKeyboard";
 import { QuestionCard } from "@/components/quiz/QuestionCard";
 import { AnswerFeedback } from "@/components/quiz/AnswerFeedback";
@@ -15,65 +13,19 @@ import { QuestionSidebar } from "@/components/quiz/QuestionSidebar";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ErrorNotice } from "@/components/ui/PageState";
 import { Button } from "@/components/ui/Button";
-import { gradeQuestion, gradeQuiz } from "@shared/grading";
+import { gradeQuestion } from "@shared/grading";
 import { countAnswered, hasAnswer } from "@shared/answers";
 import type { UserAnswer } from "@shared/types";
 
 export function TakeQuizPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const session = useQuizSession();
-  const savedAttempt = useRef(false);
-  const saving = useRef(false);
-  const finishRef = useRef<(fromRemote: boolean) => void>(() => {});
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const session = useSessionStore();
+  const { saveError, finish } = useQuizFinish(id);
+  const finishRef = useRef(finish);
+  finishRef.current = finish;
 
   useMobileSync(() => finishRef.current(true));
-
-  finishRef.current = (fromRemote: boolean) => {
-    if (savedAttempt.current || saving.current) return;
-    saving.current = true;
-    setSaveError(null);
-    const endedAt = useQuizSession.getState().markEnded();
-    void (async () => {
-      try {
-        if (!fromRemote && useMobileStore.getState().active) {
-          try {
-            const next = await sendMobilePatch({ type: "finish" });
-            if (next) applyMobileSession(next);
-          } catch {
-            // Leaving the quiz still stops the server.
-          }
-        }
-        const { quiz, order, answers } = useQuizSession.getState();
-        if (!quiz) throw new Error("This quiz is no longer open.");
-        const ordered = order
-          .map((questionId) => quiz.questions.find((q) => q.id === questionId))
-          .filter((q): q is NonNullable<typeof q> => !!q);
-        const grade = gradeQuiz(ordered, answers);
-        await quizApi.saveAttempt({
-          quizId: quiz.id,
-          startedAt: useQuizSession.getState().startedAt ?? endedAt,
-          correct: grade.correct,
-          total: grade.total,
-          percent: grade.percent,
-          questionIds: ordered.map((q) => q.id),
-          answers,
-        });
-        savedAttempt.current = true;
-        navigate(`/quiz/${id}/review`);
-      } catch (err) {
-        const detail = err instanceof Error ? err.message.trim() : "";
-        setSaveError(
-          detail
-            ? `Could not save this attempt. Your answers are still on this page. ${detail}`
-            : "Could not save this attempt. Your answers are still on this page.",
-        );
-      } finally {
-        saving.current = false;
-      }
-    })();
-  };
 
   useEffect(() => {
     if (!session.quiz || session.quiz.id !== id) {

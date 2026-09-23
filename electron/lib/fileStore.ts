@@ -2,7 +2,8 @@ import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { nanoid } from "nanoid";
 import { parseQuiz } from "../../shared/schema";
-import { allocateStorageId } from "../../shared/storageId";
+import { collectDescendantFolderIds, toMetadata } from "../../shared/library";
+import { allocateStorageId, slugifyTitle } from "../../shared/storageId";
 import { DamagedStoreError, readJsonIfPresent, writeJsonAtomic } from "./durableJson";
 import type {
   Folder,
@@ -69,33 +70,6 @@ async function readIndex(): Promise<IndexFile> {
 
 async function writeIndex(index: IndexFile): Promise<void> {
   await writeJsonAtomic(indexFile(), index);
-}
-
-function slugify(input: string): string {
-  return (
-    input
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 48) || "quiz"
-  );
-}
-
-function toMetadata(
-  quiz: Quiz,
-  importedAt: string,
-  folderId: string | null,
-): QuizMetadata {
-  return {
-    id: quiz.id,
-    title: quiz.title,
-    description: quiz.description,
-    author: quiz.author,
-    tags: quiz.tags,
-    questionCount: quiz.questions.length,
-    importedAt,
-    folderId,
-  };
 }
 
 export async function librarySnapshot(): Promise<LibrarySnapshot> {
@@ -211,7 +185,7 @@ async function addFolder(input: CreateFolderInput): Promise<Folder> {
     throw new Error("Parent folder not found");
   }
 
-  const baseSlug = slugify(trimmed);
+  const baseSlug = slugifyTitle(trimmed);
   const existingIds = new Set(index.folders.map((f) => f.id));
   const id = existingIds.has(baseSlug) ? `${baseSlug}-${nanoid(6)}` : baseSlug;
 
@@ -254,29 +228,6 @@ async function editFolder(input: UpdateFolderInput): Promise<Folder> {
     folders: index.folders.map((f) => (f.id === input.id ? next : f)),
   });
   return next;
-}
-
-function collectDescendantFolderIds(
-  folders: Folder[],
-  rootId: string,
-): Set<string> {
-  const childrenByParent = new Map<string, Folder[]>();
-  for (const f of folders) {
-    if (!f.parentId) continue;
-    const list = childrenByParent.get(f.parentId);
-    if (list) list.push(f);
-    else childrenByParent.set(f.parentId, [f]);
-  }
-  const ids = new Set<string>();
-  const stack: string[] = [rootId];
-  while (stack.length > 0) {
-    const id = stack.pop()!;
-    if (ids.has(id)) continue;
-    ids.add(id);
-    const children = childrenByParent.get(id) ?? [];
-    for (const c of children) stack.push(c.id);
-  }
-  return ids;
 }
 
 export function deleteFolder(
