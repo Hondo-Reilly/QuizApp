@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const simulate = process.argv.includes("--simulate-update");
+const web = process.argv.includes("--web");
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const viteBin = path.join(root, "node_modules/vite/bin/vite.js");
 
@@ -10,6 +11,7 @@ const child = spawn(process.execPath, [viteBin], {
   stdio: "inherit",
   env: {
     ...process.env,
+    QUIZAPP_WEB: web ? "1" : "",
     QUIZAPP_SIMULATE_UPDATE: simulate ? "1" : "",
   },
 });

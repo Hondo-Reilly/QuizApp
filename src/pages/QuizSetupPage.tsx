@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import type { UseLibrary } from "@/hooks/useLibrary";
 import { useQuizSession } from "@/hooks/useQuizSession";
 import { startMobileSession } from "@/lib/mobileSync";
+import { isElectronApp } from "@/lib/runtime";
 import {
   readQuizSetupPreferences,
   writeQuizSetupPreferences,
@@ -93,7 +94,7 @@ export function QuizSetupPage() {
       questionCount,
     });
     navigate(`/quiz/${id}/take`);
-    if (enableMobile) {
+    if (enableMobile && isElectronApp()) {
       void startMobileSession().catch(() => undefined);
     }
   };
@@ -195,17 +196,19 @@ export function QuizSetupPage() {
           />
         </div>
 
-        <div>
-          <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-neutral-300">
-            Mobile mode
-          </h2>
-          <Toggle
-            checked={enableMobile}
-            onChange={setEnableMobile}
-            label="Enable mobile mode"
-            description="A phone on the same Wi-Fi can take this quiz with you. The QR code appears after the quiz starts."
-          />
-        </div>
+        {isElectronApp() && (
+          <div>
+            <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-neutral-300">
+              Mobile mode
+            </h2>
+            <Toggle
+              checked={enableMobile}
+              onChange={setEnableMobile}
+              label="Enable mobile mode"
+              description="A phone on the same Wi-Fi can take this quiz with you. The QR code appears after the quiz starts."
+            />
+          </div>
+        )}
 
         <div className="flex items-center justify-end gap-2">
           <Button variant="secondary" onClick={back}>

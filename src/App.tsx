@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UpdateButton } from "@/components/ui/UpdateButton";
 import { Breadcrumb } from "@/components/library/Breadcrumb";
 import { useLibrary, type UseLibrary } from "@/hooks/useLibrary";
+import { isElectronApp } from "@/lib/runtime";
 
 export function App() {
   const library = useLibrary();
@@ -14,11 +15,16 @@ export function App() {
   const takingQuiz = useMatch("/quiz/:id/take");
   const folderId = folderMatch?.params.folderId ?? null;
   const breadcrumbPath = folderId ? library.pathTo(folderId) : [];
+  const desktop = isElectronApp();
 
   return (
     <div className="flex min-h-full flex-col">
-      <header className="titlebar-drag sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95">
-        <div className="flex h-11 w-full items-center gap-6 pl-[5.5rem] pr-6">
+      <header
+        className={`${desktop ? "titlebar-drag " : ""}sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95`}
+      >
+        <div
+          className={`flex h-11 w-full items-center gap-6 pr-6 ${desktop ? "pl-[5.5rem]" : "pl-6"}`}
+        >
           <Link
             to="/"
             className="titlebar-no-drag shrink-0 text-base font-semibold tracking-tight text-slate-900 dark:text-neutral-100"
@@ -31,7 +37,7 @@ export function App() {
             )}
           </div>
           <div className="titlebar-no-drag flex shrink-0 items-center gap-3">
-            {takingQuiz ? (
+            {desktop && takingQuiz ? (
               <MobileModeButton />
             ) : (
               <>
@@ -39,7 +45,7 @@ export function App() {
                 <DownloadAiQuizButton />
               </>
             )}
-            <UpdateButton />
+            {desktop && <UpdateButton />}
             <ThemeToggle />
           </div>
         </div>
