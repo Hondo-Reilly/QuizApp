@@ -1,6 +1,6 @@
 {
   "name": "quizapp",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "Electron + React + Tailwind quiz app that imports JSON quizzes.",
   "main": "dist-electron/main.js",
