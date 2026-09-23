@@ -4,7 +4,7 @@ Updated: 2026-09-23. This plan covers the current shared React UI, browser app, 
 
 ## Current baseline and test approach
 
-There are no automated test files, test dependencies, or `test` script in `package.json`. `npm run lint` runs TypeScript checking, while `npm run build` and `npm run build:web` check the desktop and browser bundles. Those commands should remain required, but they do not exercise quiz behavior or persistence.
+The initial fast suite now covers shared validation, grading, answer counts, shuffling, session state, mobile session state, and setup/time preferences. Run it with `npm test`; `npm run test:watch` is available for local iteration. The desktop build also checks that packaged HTML assets use relative paths and exist, preventing the blank window caused by root-absolute `/assets/` URLs. Browser and Electron repository tests, UI journeys, and the known-bug regressions below remain to be added. `npm run lint` runs TypeScript checking, while `npm run build` and `npm run build:web` check the desktop and browser bundles; those commands do not exercise quiz behavior or persistence.
 
 Use a small number of tests at each boundary:
 
@@ -16,7 +16,7 @@ Use a small number of tests at each boundary:
 
 Use a shared fixture with true/false, single-choice, and multiple-answer questions; another fixture should contain special characters for HTML/export tests. Keep separate malformed fixtures for duplicate question IDs, unsafe quiz IDs, invalid answer references, and bad mobile patches. Freeze time and random selection where needed; assert invariants such as “contains each selected question once” instead of a particular shuffle order. Reset Zustand state and localStorage after each test.
 
-For tooling, choose a Vitest release compatible with this repository's **Vite 5** dependency, or upgrade Vite as a separate change before installing current Vitest. Current [Vitest requirements](https://vitest.dev/guide/) differ from its [Vite 5 era documentation](https://v2.vitest.dev/guide/). Use [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) for component behavior, [fake-indexeddb](https://github.com/dumbmatter/fakeIndexedDB) for fast browser-store tests, and [Playwright](https://playwright.dev/docs/intro) for real browser journeys. Its [Electron API](https://playwright.dev/docs/api/class-electron) can support a small desktop smoke suite. An in-memory IndexedDB test does **not** replace a real browser reload test.
+The fast suite uses Vitest 2.1.9, which supports this repository's **Vite 5** dependency; current [Vitest requirements](https://vitest.dev/guide/) differ from its [Vite 5 era documentation](https://v2.vitest.dev/guide/). For later phases, use [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) for component behavior, [fake-indexeddb](https://github.com/dumbmatter/fakeIndexedDB) for fast browser-store tests, and [Playwright](https://playwright.dev/docs/intro) for real browser journeys. Its [Electron API](https://playwright.dev/docs/api/class-electron) can support a small desktop smoke suite. An in-memory IndexedDB test does **not** replace a real browser reload test.
 
 ## P0: protect quiz correctness and user data
 
@@ -70,7 +70,7 @@ Keep Electron and web checks on the same fixture and expected record shape. A ch
 
 ## Suggested rollout and CI gates
 
-1. Add test scripts, a Vite-5-compatible runner, fixtures, and cleanup helpers. Make `npm test` run once and exit; keep a watch command separate. Put shared rules and session tests in the first PR.
+1. **Started:** Test scripts, a Vite-5-compatible runner, fixtures, and shared/session tests are in place. `npm test` runs once and exits; `npm run test:watch` watches locally.
 2. Add browser and desktop repository contract tests before changing storage. Add the unsafe-ID, corruption, transaction, and concurrency regressions alongside their fixes.
 3. Add React interaction tests around completion, retry, reveal modes, and the shared components. Add a Playwright web journey using an isolated browser context and reload.
 4. Add HTTP/SSE mobile tests and a narrow Electron smoke test. Keep real print dialogs, phone pairing, and packaged-app migration on the release checklist.

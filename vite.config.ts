@@ -6,7 +6,9 @@ import path from "node:path";
 const web = process.env.QUIZAPP_WEB === "1";
 
 export default defineConfig({
-  base: web ? "/QuizApp/" : "/",
+  // Electron opens dist/index.html with file://, so packaged asset URLs must
+  // be relative to that file. The web build keeps its GitHub Pages base.
+  base: web ? "/QuizApp/" : "./",
   plugins: [
     react(),
     ...(web
