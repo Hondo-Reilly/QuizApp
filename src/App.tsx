@@ -2,6 +2,7 @@ import { Link, Outlet, useMatch } from "react-router-dom";
 import { DownloadAiQuizButton } from "@/components/library/DownloadAiQuizButton";
 import { DownloadExampleButton } from "@/components/library/DownloadExampleButton";
 import { MobileModeButton } from "@/components/ui/MobileModeButton";
+import { HomeButton } from "@/components/ui/HomeButton";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UpdateButton } from "@/components/ui/UpdateButton";
 import { Breadcrumb } from "@/components/library/Breadcrumb";
@@ -47,6 +48,7 @@ export function App() {
             )}
             {desktop && <UpdateButton />}
             <ThemeToggle />
+            <HomeButton />
           </div>
         </div>
       </header>

@@ -20,7 +20,7 @@ That clears the download mark on QuizApp only. Then open the app from Applicatio
 
 The same quiz screens are at [hondo-reilly.github.io/QuizApp](https://hondo-reilly.github.io/QuizApp/).
 
-Quizzes you import stay in that browser. They are not uploaded. Folders, full quiz files, attempts, and answers are saved there too. Light and dark mode and your setup choices are remembered in the browser.
+Quizzes you import stay in that browser. They are not uploaded to a backend server. Folders, full quiz files, attempts, and answers are saved there too. Light and dark mode and your setup choices are remembered in the browser.
 
 Mobile mode and app updates are only in the Mac app. A phone can open the site and take a quiz, but it cannot join a live Mac session. On the web, Save to PDF uses the browser's print dialog.
 
