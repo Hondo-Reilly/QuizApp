@@ -36,6 +36,7 @@ export async function saveAttempt(input: SaveAttemptInput): Promise<QuizAttempt>
   const attempt: QuizAttempt = {
     id: nanoid(10),
     quizId: input.quizId,
+    startedAt: input.startedAt,
     completedAt: new Date().toISOString(),
     correct: input.correct,
     total: input.total,

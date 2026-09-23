@@ -6,12 +6,20 @@ import {
   useParams,
 } from "react-router-dom";
 import { quizApi } from "@/api/quizApi";
+import { BackLink } from "@/components/ui/BackLink";
 import { Button } from "@/components/ui/Button";
 import { QuestionAnswerList } from "@/components/quiz/QuestionAnswerList";
 import { PrintQuizDialog } from "@/components/quiz/PrintQuizDialog";
 import { AttemptList } from "@/components/library/AttemptList";
 import { MoveQuizDialog } from "@/components/library/MoveQuizDialog";
 import type { UseLibrary } from "@/hooks/useLibrary";
+import {
+  forgetAttempts,
+  rememberAttemptList,
+  rememberQuiz,
+  rememberedAttemptList,
+  rememberedQuiz,
+} from "@/lib/quizPageCache";
 import type { Quiz, QuizAttempt, QuizMetadata } from "@shared/types";
 
 export function QuizBrowsePage() {
@@ -24,21 +32,36 @@ export function QuizBrowsePage() {
   const metadata = library.quizzes.find((item) => item.id === id) ?? null;
   const folderId = metadata?.folderId ?? storedFolderId;
 
-  const [quiz, setQuiz] = useState<Quiz | null>(null);
-  const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [quiz, setQuiz] = useState<Quiz | null>(() => rememberedQuiz(id));
+  const [attempts, setAttempts] = useState<QuizAttempt[]>(
+    () => rememberedAttemptList(id) ?? [],
+  );
+  const [loading, setLoading] = useState(
+    () => rememberedQuiz(id) == null || rememberedAttemptList(id) == null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
+    const knownQuiz = rememberedQuiz(id);
+    const knownAttempts = rememberedAttemptList(id);
+    if (knownQuiz && knownAttempts) {
+      setQuiz(knownQuiz);
+      setAttempts(knownAttempts);
+      setError(null);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     Promise.all([quizApi.getQuiz(id), quizApi.listAttempts(id)])
       .then(([q, loadedAttempts]) => {
         if (!active) return;
         if (!q) setError("Quiz not found.");
         else {
+          rememberQuiz(q);
+          rememberAttemptList(id, loadedAttempts);
           setQuiz(q);
           setAttempts(loadedAttempts);
         }
@@ -103,13 +126,7 @@ export function QuizBrowsePage() {
   return (
     <div className="mx-auto max-w-3xl">
       <header className="mb-8">
-        <button
-          type="button"
-          onClick={back}
-          className="mb-3 text-sm text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-neutral-100"
-        >
-          ← Library
-        </button>
+        <BackLink onClick={back} />
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-neutral-100">
           {quiz.title}
         </h1>
@@ -139,6 +156,7 @@ export function QuizBrowsePage() {
           }
           onDelete={async (ids) => {
             await quizApi.deleteAttempts(ids);
+            forgetAttempts(ids);
             const drop = new Set(ids);
             setAttempts((current) =>
               current.filter((attempt) => !drop.has(attempt.id)),

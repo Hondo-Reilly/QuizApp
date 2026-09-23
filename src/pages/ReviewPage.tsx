@@ -2,6 +2,8 @@ import { useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuizSession } from "@/hooks/useQuizSession";
 import { gradeQuiz } from "@shared/grading";
+import { formatTimeTaken } from "@/lib/formatDuration";
+import { BackLink } from "@/components/ui/BackLink";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { ScoreSummary } from "@/components/review/ScoreSummary";
@@ -13,6 +15,8 @@ export function ReviewPage() {
   const quiz = useQuizSession((s) => s.quiz);
   const answers = useQuizSession((s) => s.answers);
   const order = useQuizSession((s) => s.order);
+  const startedAt = useQuizSession((s) => s.startedAt);
+  const endedAt = useQuizSession((s) => s.endedAt);
   const reset = useQuizSession((s) => s.reset);
 
   useEffect(() => {
@@ -37,6 +41,12 @@ export function ReviewPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
+      <BackLink
+        onClick={() => {
+          reset();
+          navigate(`/quiz/${id}`);
+        }}
+      />
       <PageHeader
         title="Review"
         subtitle={quiz.title}
@@ -68,6 +78,9 @@ export function ReviewPage() {
           correct={grade.correct}
           total={grade.total}
           percent={grade.percent}
+          timeTaken={
+            startedAt && endedAt ? formatTimeTaken(startedAt, endedAt) : null
+          }
         />
       </div>
 

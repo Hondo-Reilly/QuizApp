@@ -12,6 +12,7 @@ export interface SessionConfig {
   shuffleChoices: boolean;
   revealMode: RevealMode;
   questionCount: number;
+  timeLimitMinutes: number | null;
 }
 
 interface SessionState {
@@ -19,11 +20,15 @@ interface SessionState {
   config: SessionConfig;
   order: string[];
   choicesOrder: Record<string, string[]>;
+  startedAt: string | null;
+  endedAt: string | null;
+  deadlineAt: string | null;
   currentIndex: number;
   answers: Record<string, UserAnswer>;
   submitted: Record<string, boolean>;
 
   start: (quiz: Quiz, config: SessionConfig) => void;
+  markEnded: () => string;
   applyRemote: (patch: {
     currentIndex: number;
     answers: Record<string, UserAnswer>;
@@ -47,9 +52,13 @@ const initialState = {
     shuffleChoices: true,
     revealMode: "at_end" as RevealMode,
     questionCount: 0,
+    timeLimitMinutes: null,
   },
   order: [] as string[],
   choicesOrder: {} as Record<string, string[]>,
+  startedAt: null as string | null,
+  endedAt: null as string | null,
+  deadlineAt: null as string | null,
   currentIndex: 0,
   answers: {} as Record<string, UserAnswer>,
   submitted: {} as Record<string, boolean>,
@@ -66,13 +75,7 @@ function buildOrder(quiz: Quiz, config: SessionConfig): string[] {
     return config.shuffleQuestions ? shuffle(allIds) : allIds;
   }
 
-  const picked = shuffle(allIds).slice(0, requested);
-  if (config.shuffleQuestions) return picked;
-
-  const originalIndex = new Map(allIds.map((id, i) => [id, i]));
-  return picked
-    .slice()
-    .sort((a, b) => originalIndex.get(a)! - originalIndex.get(b)!);
+  return shuffle(allIds).slice(0, requested);
 }
 
 function buildChoicesOrder(
@@ -93,15 +96,32 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   ...initialState,
 
   start: (quiz, config) => {
+    const startedAt = new Date().toISOString();
+    const minutes = config.timeLimitMinutes;
+    const deadlineAt =
+      minutes != null && minutes > 0
+        ? new Date(Date.parse(startedAt) + minutes * 60_000).toISOString()
+        : null;
     set({
       quiz,
       config,
       order: buildOrder(quiz, config),
       choicesOrder: buildChoicesOrder(quiz, config.shuffleChoices),
+      startedAt,
+      endedAt: null,
+      deadlineAt,
       currentIndex: 0,
       answers: {},
       submitted: {},
     });
+  },
+
+  markEnded: () => {
+    const existing = get().endedAt;
+    if (existing) return existing;
+    const endedAt = new Date().toISOString();
+    set({ endedAt });
+    return endedAt;
   },
 
   applyRemote: ({ currentIndex, answers, submitted }) =>

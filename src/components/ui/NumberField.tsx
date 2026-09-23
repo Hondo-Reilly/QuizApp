@@ -1,4 +1,4 @@
-import { ChangeEvent } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 
 export interface NumberFieldProps {
   value: number;
@@ -17,15 +17,28 @@ export function NumberField({
   suffix,
   disabled,
 }: NumberFieldProps) {
+  const [draft, setDraft] = useState(String(value));
+  const [editing, setEditing] = useState(false);
+
+  useEffect(() => {
+    if (!editing) setDraft(String(value));
+  }, [editing, value]);
+
+  const commit = (raw: string) => {
+    const parsed = parseInt(raw, 10);
+    const next = Number.isFinite(parsed)
+      ? Math.max(min, Math.min(parsed, max))
+      : min;
+    setDraft(String(next));
+    if (next !== value) onChange(next);
+  };
+
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
-    if (raw === "") {
-      onChange(min);
-      return;
-    }
+    setDraft(raw);
     const parsed = parseInt(raw, 10);
-    if (!Number.isFinite(parsed)) return;
-    onChange(Math.max(min, Math.min(parsed, max)));
+    if (!Number.isFinite(parsed) || parsed < min || parsed > max) return;
+    if (parsed !== value) onChange(parsed);
   };
 
   return (
@@ -34,8 +47,16 @@ export function NumberField({
         type="number"
         min={min}
         max={max}
-        value={value}
+        value={editing ? draft : String(value)}
         disabled={disabled}
+        onFocus={() => {
+          setEditing(true);
+          setDraft(String(value));
+        }}
+        onBlur={(e) => {
+          commit(e.currentTarget.value);
+          setEditing(false);
+        }}
         onChange={handleChange}
         className="w-20 rounded-md border border-slate-300 bg-white px-2 py-1 text-sm tabular-nums text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-slate-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:disabled:bg-neutral-800"
       />

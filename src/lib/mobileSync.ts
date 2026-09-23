@@ -119,6 +119,7 @@ function seedFromStore(): MobileSessionSeed | null {
     answers: state.answers,
     submitted: state.submitted,
     theme: currentTheme(),
+    deadlineAt: state.deadlineAt,
   };
 }
 

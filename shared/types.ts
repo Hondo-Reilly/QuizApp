@@ -89,6 +89,7 @@ export type UserAnswer = boolean | string | string[] | null;
 export interface QuizAttempt {
   id: string;
   quizId: string;
+  startedAt?: string;
   completedAt: string;
   correct: number;
   total: number;
@@ -99,6 +100,7 @@ export interface QuizAttempt {
 
 export interface SaveAttemptInput {
   quizId: string;
+  startedAt: string;
   correct: number;
   total: number;
   percent: number;

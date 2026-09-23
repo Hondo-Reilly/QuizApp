@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { quizApi } from "@/api/quizApi";
 import { Card } from "@/components/ui/Card";
+import { BackLink } from "@/components/ui/BackLink";
 import { Button } from "@/components/ui/Button";
 import { Toggle } from "@/components/ui/Toggle";
 import { RadioGroup } from "@/components/ui/RadioGroup";
@@ -15,6 +16,10 @@ import {
   readQuizSetupPreferences,
   writeQuizSetupPreferences,
 } from "@/lib/quizPreferences";
+import {
+  readQuizTimeSettings,
+  writeQuizTimeSettings,
+} from "@/lib/quizTimeSettings";
 import type { Quiz, RevealMode } from "@shared/types";
 
 const REVEAL_OPTIONS: ReadonlyArray<{
@@ -51,6 +56,11 @@ export function QuizSetupPage() {
   const [revealMode, setRevealMode] = useState<RevealMode>(saved.revealMode);
   const [enableMobile, setEnableMobile] = useState(saved.enableMobile);
   const [questionCount, setQuestionCount] = useState(0);
+  const [timeLimitEnabled, setTimeLimitEnabled] = useState(false);
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState(60);
+  const [timeSettingsQuizId, setTimeSettingsQuizId] = useState<string | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -83,15 +93,32 @@ export function QuizSetupPage() {
     });
   }, [shuffleQuestions, shuffleChoices, revealMode, enableMobile]);
 
+  useEffect(() => {
+    const saved = readQuizTimeSettings(id);
+    setTimeLimitEnabled(saved.timeLimitEnabled);
+    setTimeLimitMinutes(saved.timeLimitMinutes);
+    setTimeSettingsQuizId(id);
+  }, [id]);
+
+  useEffect(() => {
+    if (timeSettingsQuizId !== id) return;
+    writeQuizTimeSettings(id, { timeLimitEnabled, timeLimitMinutes });
+  }, [id, timeSettingsQuizId, timeLimitEnabled, timeLimitMinutes]);
+
   const back = () => navigate(folderId ? `/folder/${folderId}` : "/");
 
   const handleStart = () => {
     if (!quiz) return;
+    const subset =
+      questionCount > 0 && questionCount < quiz.questions.length;
     start(quiz, {
-      shuffleQuestions,
+      shuffleQuestions: subset || shuffleQuestions,
       shuffleChoices,
       revealMode,
       questionCount,
+      timeLimitMinutes: timeLimitEnabled
+        ? Math.max(1, timeLimitMinutes)
+        : null,
     });
     navigate(`/quiz/${id}/take`);
     if (enableMobile && isElectronApp()) {
@@ -123,13 +150,7 @@ export function QuizSetupPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <button
-        type="button"
-        onClick={back}
-        className="mb-3 text-sm text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-neutral-100"
-      >
-        ← Library
-      </button>
+      <BackLink onClick={back} />
       <PageHeader
         title={quiz.title}
         subtitle={quiz.description ?? "Configure this attempt and start."}
@@ -166,12 +187,13 @@ export function QuizSetupPage() {
           </h2>
           <div className="flex flex-col gap-3">
             <Toggle
-              checked={shuffleQuestions}
+              checked={usingSubset || shuffleQuestions}
               onChange={setShuffleQuestions}
+              disabled={usingSubset}
               label="Shuffle questions"
               description={
                 usingSubset
-                  ? "Randomize the order of the chosen subset (otherwise they keep their original order)."
+                  ? "A smaller set is always shown in a random order."
                   : "Randomize the order of questions for this attempt."
               }
             />
@@ -194,6 +216,29 @@ export function QuizSetupPage() {
             options={REVEAL_OPTIONS}
             onChange={setRevealMode}
           />
+        </div>
+
+        <div>
+          <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-neutral-300">
+            Time limit
+          </h2>
+          <Toggle
+            checked={timeLimitEnabled}
+            onChange={setTimeLimitEnabled}
+            label="Time limit"
+            description="Stop the quiz when the time runs out. Unanswered questions are marked incorrect."
+          />
+          {timeLimitEnabled && (
+            <div className="mt-3">
+              <NumberField
+                value={timeLimitMinutes}
+                min={1}
+                max={9999}
+                onChange={setTimeLimitMinutes}
+                suffix="minutes"
+              />
+            </div>
+          )}
         </div>
 
         {isElectronApp() && (

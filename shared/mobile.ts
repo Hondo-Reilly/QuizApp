@@ -11,6 +11,7 @@ export interface MobileSessionSeed {
   answers: Record<string, UserAnswer>;
   submitted: Record<string, boolean>;
   theme: MobileTheme;
+  deadlineAt: string | null;
 }
 
 export interface MobileSession extends MobileSessionSeed {

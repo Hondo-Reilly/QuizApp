@@ -3,6 +3,7 @@ import { AnswerFeedback } from "@/components/quiz/AnswerFeedback";
 import { AfterEachNav } from "@/components/quiz/AfterEachNav";
 import { AtEndNav } from "@/components/quiz/AtEndNav";
 import { ProgressBar } from "@/components/quiz/ProgressBar";
+import { QuizTimer } from "@/components/quiz/QuizTimer";
 import { QuestionCard } from "@/components/quiz/QuestionCard";
 import { countAnswered, hasAnswer } from "@shared/answers";
 import { gradeQuestion } from "@shared/grading";
@@ -115,11 +116,21 @@ export function MobileQuiz() {
       <h1 className="text-xl font-semibold text-slate-900 dark:text-neutral-100">
         {session.quiz.title}
       </h1>
-      <ProgressBar
-        current={session.currentIndex + 1}
-        total={session.order.length}
-        answered={answeredCount}
-      />
+      <div className="flex items-start gap-4">
+        <div className="min-w-0 flex-1">
+          <ProgressBar
+            current={session.currentIndex + 1}
+            total={session.order.length}
+            answered={answeredCount}
+          />
+        </div>
+        {session.deadlineAt && (
+          <QuizTimer
+            deadlineAt={session.deadlineAt}
+            onExpire={() => send({ type: "finish" })}
+          />
+        )}
+      </div>
       <QuestionCard
         question={question}
         value={value}

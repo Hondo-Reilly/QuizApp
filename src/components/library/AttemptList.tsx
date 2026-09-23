@@ -104,7 +104,7 @@ export function AttemptList({ quiz, attempts, onOpen, onDelete }: AttemptListPro
             variant="secondary"
             size="sm"
             disabled={selectedIds.length === 0}
-            className="disabled:!bg-slate-200 disabled:!text-slate-400 dark:disabled:!bg-neutral-800 dark:disabled:!text-neutral-500"
+            className="disabled:!border-0 disabled:!bg-slate-100 disabled:!text-slate-400 dark:disabled:!bg-neutral-800 dark:disabled:!text-neutral-500"
             onClick={() => {
               const chosen = new Set(selectedIds);
               downloadJson(
@@ -123,7 +123,7 @@ export function AttemptList({ quiz, attempts, onOpen, onDelete }: AttemptListPro
             size="sm"
             onClick={handleDelete}
             disabled={deleting || selectedIds.length === 0}
-            className="disabled:!bg-slate-200 disabled:!text-slate-400 dark:disabled:!bg-neutral-800 dark:disabled:!text-neutral-500"
+            className="disabled:!bg-slate-100 disabled:!text-slate-400 dark:disabled:!bg-neutral-800 dark:disabled:!text-neutral-500"
           >
             Delete selected
           </Button>

@@ -2,11 +2,11 @@ import { Link, Outlet, useMatch } from "react-router-dom";
 import { DownloadAiQuizButton } from "@/components/library/DownloadAiQuizButton";
 import { DownloadExampleButton } from "@/components/library/DownloadExampleButton";
 import { MobileModeButton } from "@/components/ui/MobileModeButton";
-import { HomeButton } from "@/components/ui/HomeButton";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UpdateButton } from "@/components/ui/UpdateButton";
 import { Breadcrumb } from "@/components/library/Breadcrumb";
 import { useLibrary, type UseLibrary } from "@/hooks/useLibrary";
+import { DevViewIndicator } from "@/components/dev/DevViewIndicator";
 import { isElectronApp } from "@/lib/runtime";
 
 export function App() {
@@ -48,13 +48,13 @@ export function App() {
             )}
             {desktop && <UpdateButton />}
             <ThemeToggle />
-            <HomeButton />
           </div>
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
         <Outlet context={library satisfies UseLibrary} />
       </main>
+      <DevViewIndicator library={library} />
     </div>
   );
 }

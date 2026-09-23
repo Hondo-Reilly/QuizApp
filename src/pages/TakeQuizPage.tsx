@@ -9,6 +9,7 @@ import { useQuizKeyboard } from "@/hooks/useQuizKeyboard";
 import { QuestionCard } from "@/components/quiz/QuestionCard";
 import { AnswerFeedback } from "@/components/quiz/AnswerFeedback";
 import { ProgressBar } from "@/components/quiz/ProgressBar";
+import { QuizTimer } from "@/components/quiz/QuizTimer";
 import { AfterEachNav } from "@/components/quiz/AfterEachNav";
 import { AtEndNav } from "@/components/quiz/AtEndNav";
 import { QuestionSidebar } from "@/components/quiz/QuestionSidebar";
@@ -29,6 +30,7 @@ export function TakeQuizPage() {
   finishRef.current = (fromRemote: boolean) => {
     if (savedAttempt.current) return;
     savedAttempt.current = true;
+    const endedAt = useQuizSession.getState().markEnded();
     const persist = async () => {
       if (!fromRemote && useMobileStore.getState().active) {
         try {
@@ -47,6 +49,7 @@ export function TakeQuizPage() {
       try {
         await quizApi.saveAttempt({
           quizId: quiz.id,
+          startedAt: useQuizSession.getState().startedAt ?? endedAt,
           correct: grade.correct,
           total: grade.total,
           percent: grade.percent,
@@ -152,12 +155,20 @@ export function TakeQuizPage() {
       <div className="min-w-0 flex-1">
         <PageHeader title={session.quiz.title} />
 
-        <div className="mb-4">
-          <ProgressBar
-            current={session.currentIndex + 1}
-            total={session.order.length}
-            answered={answeredCount}
-          />
+        <div className="mb-4 flex items-start gap-4">
+          <div className="min-w-0 flex-1">
+            <ProgressBar
+              current={session.currentIndex + 1}
+              total={session.order.length}
+              answered={answeredCount}
+            />
+          </div>
+          {session.deadlineAt && (
+            <QuizTimer
+              deadlineAt={session.deadlineAt}
+              onExpire={handleFinish}
+            />
+          )}
         </div>
 
         <div className="flex flex-col gap-4">
