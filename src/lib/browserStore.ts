@@ -217,19 +217,38 @@ async function deleteAttemptsForQuizzes(quizIds: string[]): Promise<void> {
   if (next.length !== attempts.length) await writeKey(ATTEMPTS_KEY, next);
 }
 
-function printHtml(html: string): boolean {
-  const popup = window.open("", "_blank", "noopener,noreferrer");
-  if (!popup) return false;
-  popup.document.open();
-  popup.document.write(html);
-  popup.document.close();
-  const print = () => {
-    popup.focus();
-    popup.print();
-  };
-  if (popup.document.readyState === "complete") print();
-  else popup.addEventListener("load", print, { once: true });
-  return true;
+function printHtml(html: string): Promise<boolean> {
+  const iframe = document.createElement("iframe");
+  iframe.title = "Print quiz";
+  iframe.setAttribute(
+    "style",
+    "position:fixed;left:-10000px;top:0;width:800px;height:1000px;border:0",
+  );
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (printed: boolean) => {
+      if (settled) return;
+      settled = true;
+      iframe.remove();
+      resolve(printed);
+    };
+
+    iframe.onload = () => {
+      const frame = iframe.contentWindow;
+      if (!frame) {
+        finish(false);
+        return;
+      }
+      frame.addEventListener("afterprint", () => finish(true), { once: true });
+      window.setTimeout(() => finish(true), 60_000);
+      frame.focus();
+      frame.print();
+    };
+
+    iframe.srcdoc = html;
+    document.body.appendChild(iframe);
+  });
 }
 
 const noUpdate: UpdateCheck = {
@@ -407,7 +426,7 @@ export const browserQuizApi: QuizApi = {
   checkForUpdate: () => Promise.resolve(noUpdate),
   downloadUpdate: () => Promise.resolve(),
   onUpdateProgress: (_listener: (progress: UpdateProgress) => void) => () => undefined,
-  saveQuizPdf: (html) => Promise.resolve(printHtml(html)),
+  saveQuizPdf: (html) => printHtml(html),
   startMobile: () => Promise.reject(new Error("Mobile mode is only available in the desktop app.")),
   stopMobile: () => Promise.resolve(),
   patchMobile: () => Promise.resolve(null),

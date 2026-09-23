@@ -1,4 +1,5 @@
 import { Link, Outlet, useMatch } from "react-router-dom";
+import { version } from "../package.json";
 import { DownloadAiQuizButton } from "@/components/library/DownloadAiQuizButton";
 import { DownloadExampleButton } from "@/components/library/DownloadExampleButton";
 import { MobileModeButton } from "@/components/ui/MobileModeButton";
@@ -51,9 +52,16 @@ export function App() {
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
+      <main
+        className={`mx-auto w-full max-w-6xl flex-1 px-6 pt-8 ${desktop ? "pb-8" : "pb-14"}`}
+      >
         <Outlet context={library satisfies UseLibrary} />
       </main>
+      {!desktop && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 bg-slate-50/95 py-2 text-center text-xs text-slate-400 dark:bg-neutral-950/95 dark:text-neutral-500">
+          v{version}
+        </div>
+      )}
       <DevViewIndicator library={library} />
     </div>
   );
