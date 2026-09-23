@@ -38,7 +38,7 @@ export function QuestionSidebar({
   );
 
   return (
-    <div className="sticky top-[5.5rem] self-start max-h-[calc(100vh-7.5rem)] overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+    <div className="sticky top-[4.75rem] self-start max-h-[calc(100vh-6.75rem)] overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
       <div className="flex items-baseline justify-between px-2 pb-2 pt-1">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
           Questions

@@ -20,6 +20,7 @@ export function applyTheme(theme: Theme): void {
   const root = document.documentElement;
   if (theme === "dark") root.classList.add("dark");
   else root.classList.remove("dark");
+  window.quizApi?.setNativeTheme(theme);
 }
 
 export function rememberTheme(theme: Theme): void {

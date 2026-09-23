@@ -41,12 +41,18 @@ function enableDevTools(win: BrowserWindow): void {
 
 function createWindow(): void {
   const win = new BrowserWindow({
-    width: 1100,
-    height: 760,
+    width: 1280,
+    height: 840,
     minWidth: 720,
     minHeight: 520,
     backgroundColor: "#f8fafc",
     title: "QuizApp",
+    ...(process.platform === "darwin"
+      ? {
+          titleBarStyle: "hidden" as const,
+          trafficLightPosition: { x: 16, y: 14 },
+        }
+      : {}),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -55,6 +61,17 @@ function createWindow(): void {
       devTools: isDev,
     },
   });
+
+  if (process.platform === "darwin") {
+    const showWindowButtons = () => {
+      if (!win.isDestroyed()) win.setWindowButtonVisibility(true);
+    };
+    win.on("blur", () => {
+      showWindowButtons();
+      setTimeout(showWindowButtons, 0);
+    });
+    win.on("focus", showWindowButtons);
+  }
 
   if (isDev) {
     enableDevTools(win);

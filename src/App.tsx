@@ -17,20 +17,20 @@ export function App() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-6">
+      <header className="titlebar-drag sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95">
+        <div className="flex h-11 w-full items-center gap-6 pl-[5.5rem] pr-6">
           <Link
             to="/"
-            className="shrink-0 text-base font-semibold tracking-tight text-slate-900 dark:text-neutral-100"
+            className="titlebar-no-drag shrink-0 text-base font-semibold tracking-tight text-slate-900 dark:text-neutral-100"
           >
             QuizApp
           </Link>
-          <div className="min-w-0 flex-1">
+          <div className="titlebar-no-drag min-w-0 flex-1">
             {breadcrumbPath.length > 0 && (
               <Breadcrumb path={breadcrumbPath} />
             )}
           </div>
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="titlebar-no-drag flex shrink-0 items-center gap-3">
             {takingQuiz ? (
               <MobileModeButton />
             ) : (

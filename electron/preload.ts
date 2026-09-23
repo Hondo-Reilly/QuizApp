@@ -77,6 +77,9 @@ const quizApi = {
       ipcRenderer.removeListener(IpcChannels.mobileConnected, wrapped);
     };
   },
+  setNativeTheme: (theme: "light" | "dark"): void => {
+    ipcRenderer.send(IpcChannels.setTheme, theme);
+  },
 };
 
 export type QuizApi = typeof quizApi;

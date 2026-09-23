@@ -20,6 +20,7 @@ export const IpcChannels = {
   mobilePatch: "mobile:patch",
   mobileSnapshot: "mobile:snapshot",
   mobileConnected: "mobile:connected",
+  setTheme: "theme:set",
 } as const;
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels];
