@@ -2,6 +2,16 @@
 
 An Electron + React + Tailwind desktop app for importing and taking JSON-based quizzes. This is mostly a vibecoded app so I can avoid paying for another subscription so expect some bugs.
 
+## Features
+
+- Import quizzes from `.json` files into a local library of folders
+- Three question types: true/false, multiple choice, and select-all-that-apply (multi-answer)
+- Optional shuffled question order per attempt
+- Two reveal modes: see the answer after each question, or only at the end
+- Review screen with grade and per-question breakdown
+- Light and dark mode
+- Mobile mode on the Mac: a phone on the same Wi-Fi can take the current quiz with the app
+
 ## Install
 
 QuizApp is Mac only for now (Apple Silicon). Download the latest build from the [releases page](https://github.com/Hondo-Reilly/QuizApp/releases), open the disk image, and drag QuizApp into Applications.
@@ -23,15 +33,6 @@ The same quiz screens are at [hondo-reilly.github.io/QuizApp](https://hondo-reil
 Quizzes you import stay in that browser. They are not uploaded to a backend server. Folders, full quiz files, attempts, and answers are saved there too. Light and dark mode and your setup choices are remembered in the browser.
 
 Mobile mode and app updates are only in the Mac app. A phone can open the site and take a quiz, but it cannot join a live Mac session. On the web, Save to PDF uses the browser's print dialog.
-
-## Features
-
-- Import quizzes from `.json` files into a persistent local library (stored in Electron's `userData` folder)
-- Three question types: true/false, multiple choice, and select-all-that-apply (multi-answer)
-- Optional shuffled question order per attempt
-- Two reveal modes: see the answer after each question, or only at the end
-- Review screen with grade and per-question breakdown
-- Mobile mode: a phone on the same Wi-Fi can take the current quiz with the Mac
 
 ## Mobile mode
 
