@@ -1,7 +1,8 @@
-import { app, BrowserWindow, Menu, MenuItem, nativeImage } from "electron";
+import { app, BrowserWindow, nativeImage } from "electron";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { registerIpcHandlers } from "./ipc/handlers";
+import { installAppDataMenu } from "./lib/appDataMenu";
 import { simulatedUpdateEnabled } from "./lib/updates";
 
 const DOCK_ICON = path.join(
@@ -35,20 +36,6 @@ function enableDevTools(win: BrowserWindow): void {
       win.webContents.toggleDevTools();
     }
   });
-
-  const menu = Menu.getApplicationMenu();
-  const view = menu?.items.find((item) => item.role === "viewMenu");
-  if (!view?.submenu) return;
-  if (view.submenu.items.some((item) => item.role === "toggleDevTools")) return;
-  view.submenu.append(new MenuItem({ type: "separator" }));
-  view.submenu.append(new MenuItem({ role: "reload" }));
-  view.submenu.append(
-    new MenuItem({
-      label: "Toggle Developer Tools",
-      accelerator: "Alt+Command+I",
-      click: () => win.webContents.toggleDevTools(),
-    }),
-  );
 }
 
 function createWindow(): void {
@@ -85,6 +72,7 @@ app.whenReady().then(() => {
   applyDockIcon();
   registerIpcHandlers();
   createWindow();
+  installAppDataMenu();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
