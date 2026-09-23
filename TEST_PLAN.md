@@ -4,7 +4,7 @@ Updated: 2026-09-23. This plan covers the current shared React UI, browser app, 
 
 ## Current baseline and test approach
 
-The initial fast suite now covers shared validation, grading, answer counts, shuffling, session state, mobile session state, and setup/time preferences. Run it with `npm test`; `npm run test:watch` is available for local iteration. The desktop build also checks that packaged HTML assets use relative paths and exist, preventing the blank window caused by root-absolute `/assets/` URLs. Browser and Electron repository tests, UI journeys, and the known-bug regressions below remain to be added. `npm run lint` runs TypeScript checking, while `npm run build` and `npm run build:web` check the desktop and browser bundles; those commands do not exercise quiz behavior or persistence.
+The initial fast suite now covers shared validation, grading, answer counts, shuffling, session state, mobile session state, setup/time preferences, and the packaged-asset path rule. Run it with `npm test`; `npm run test:watch` is available for local iteration. The desktop build checks that HTML assets use relative paths and exist; the Mac package check verifies those entry points and assets inside `app.asar` and confirms the DMG was produced. GitHub's Verify builds workflow runs tests/web checks and Mac packaging on changes to `main` and pull requests. Browser and Electron repository tests, UI journeys, and the known-bug regressions below remain to be added. `npm run lint` runs TypeScript checking, while `npm run build` and `npm run build:web` check the desktop and browser bundles; those commands do not exercise quiz behavior or persistence.
 
 Use a small number of tests at each boundary:
 
