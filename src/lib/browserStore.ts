@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+import { allocateStorageId } from "@shared/storageId";
 import type { QuizApi } from "../../electron/preload";
 import { parseQuiz } from "@shared/schema";
 import type {
@@ -186,11 +187,12 @@ async function importQuizText(
 
   const library = await readLibrary();
   const existingIds = new Set(library.quizzes.map((quiz) => quiz.id));
-  let id = parsed.id ?? slugify(parsed.title);
-  if (!parsed.id || existingIds.has(id)) {
-    const base = slugify(parsed.title);
-    id = existingIds.has(base) ? `${base}-${nanoid(6)}` : base;
-  }
+  const id = allocateStorageId(
+    parsed.id,
+    parsed.title,
+    existingIds,
+    () => nanoid(6),
+  );
 
   const quiz = { ...parsed, id } as Quiz;
   await writeKey(quizKey(id), quiz);

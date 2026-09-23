@@ -2,6 +2,8 @@ import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { nanoid } from "nanoid";
 import { parseQuiz } from "../../shared/schema";
+import { allocateStorageId } from "../../shared/storageId";
+import { DamagedStoreError, readJsonIfPresent, writeJsonAtomic } from "./durableJson";
 import type {
   Folder,
   LibrarySnapshot,
@@ -39,34 +41,31 @@ function migrateV1(rawArray: unknown[]): IndexFile {
 
 async function readIndex(): Promise<IndexFile> {
   await ensureDir();
-  if (!existsSync(indexFile())) return emptyIndex();
-  try {
-    const raw = await fs.readFile(indexFile(), "utf-8");
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      const migrated = migrateV1(parsed);
-      await writeIndex(migrated);
-      return migrated;
-    }
-    if (parsed && typeof parsed === "object") {
-      const obj = parsed as Partial<IndexFile>;
-      return {
-        version: INDEX_VERSION,
-        folders: Array.isArray(obj.folders) ? obj.folders : [],
-        quizzes: Array.isArray(obj.quizzes)
-          ? obj.quizzes.map((q) => ({ ...q, folderId: q.folderId ?? null }))
-          : [],
-      };
-    }
-    return emptyIndex();
-  } catch {
-    return emptyIndex();
+  const parsed = await readJsonIfPresent(indexFile());
+  if (parsed === undefined) return emptyIndex();
+  if (Array.isArray(parsed)) {
+    const migrated = migrateV1(parsed);
+    await writeIndex(migrated);
+    return migrated;
   }
+  if (parsed && typeof parsed === "object") {
+    const obj = parsed as Partial<IndexFile>;
+    const hasFolders = Array.isArray(obj.folders);
+    const hasQuizzes = Array.isArray(obj.quizzes);
+    if (!hasFolders && !hasQuizzes) throw new DamagedStoreError(indexFile());
+    return {
+      version: INDEX_VERSION,
+      folders: hasFolders ? obj.folders! : [],
+      quizzes: hasQuizzes
+        ? obj.quizzes!.map((q) => ({ ...q, folderId: q.folderId ?? null }))
+        : [],
+    };
+  }
+  throw new DamagedStoreError(indexFile());
 }
 
 async function writeIndex(index: IndexFile): Promise<void> {
-  await ensureDir();
-  await fs.writeFile(indexFile(), JSON.stringify(index, null, 2), "utf-8");
+  await writeJsonAtomic(indexFile(), index);
 }
 
 function slugify(input: string): string {
@@ -116,7 +115,12 @@ export async function listQuizzes(): Promise<QuizMetadata[]> {
 }
 
 export async function getQuiz(id: string): Promise<Quiz | null> {
-  const path = quizFile(id);
+  let path: string;
+  try {
+    path = quizFile(id);
+  } catch {
+    return null;
+  }
   if (!existsSync(path)) return null;
   const raw = await fs.readFile(path, "utf-8");
   const parsed = parseQuiz(JSON.parse(raw));
@@ -124,7 +128,12 @@ export async function getQuiz(id: string): Promise<Quiz | null> {
 }
 
 export async function deleteQuiz(id: string): Promise<void> {
-  const path = quizFile(id);
+  let path: string;
+  try {
+    path = quizFile(id);
+  } catch {
+    return;
+  }
   if (existsSync(path)) await fs.unlink(path);
   const index = await readIndex();
   await writeIndex({
@@ -145,11 +154,12 @@ export async function importQuizFromFile(
   const index = await readIndex();
   const existingIds = new Set(index.quizzes.map((q) => q.id));
 
-  let id = parsed.id ?? slugify(parsed.title);
-  if (!parsed.id || existingIds.has(id)) {
-    const base = slugify(parsed.title);
-    id = existingIds.has(base) ? `${base}-${nanoid(6)}` : base;
-  }
+  const id = allocateStorageId(
+    parsed.id,
+    parsed.title,
+    existingIds,
+    () => nanoid(6),
+  );
 
   const quiz: Quiz = { ...parsed, id } as Quiz;
   await ensureDir();
@@ -264,7 +274,12 @@ export async function deleteFolder(
   }
 
   for (const q of quizzesToDelete) {
-    const path = quizFile(q.id);
+    let path: string;
+    try {
+      path = quizFile(q.id);
+    } catch {
+      continue;
+    }
     if (existsSync(path)) await fs.unlink(path);
   }
 

@@ -8,6 +8,12 @@ import { countAnswered, hasAnswer } from "@shared/answers";
 import { gradeQuestion } from "@shared/grading";
 import type { MobilePatch, MobileSession } from "@shared/mobile";
 
+function withSessionToken(path: string): string {
+  const token = new URLSearchParams(window.location.search).get("token") ?? "";
+  const join = path.includes("?") ? "&" : "?";
+  return `${path}${join}token=${encodeURIComponent(token)}`;
+}
+
 export function MobileQuiz() {
   const [session, setSession] = useState<MobileSession | null>(null);
   const [ended, setEnded] = useState<"finished" | "stopped" | null>(null);
@@ -30,7 +36,7 @@ export function MobileQuiz() {
       if (next.finished) setEnded("finished");
     };
 
-    void fetch("/session")
+    void fetch(withSessionToken("/session"))
       .then(async (response) => {
         if (!response.ok) throw new Error("Mobile mode is not running.");
         const data: unknown = await response.json();
@@ -44,7 +50,7 @@ export function MobileQuiz() {
         );
       });
 
-    const events = new EventSource("/events");
+    const events = new EventSource(withSessionToken("/events"));
     events.onmessage = (event) => {
       const data: unknown = JSON.parse(event.data);
       if (isSession(data)) apply(data);
@@ -89,7 +95,7 @@ export function MobileQuiz() {
   const isLast = session.currentIndex >= session.order.length - 1;
 
   const send = (patch: MobilePatch) => {
-    void fetch("/session", {
+    void fetch(withSessionToken("/session"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),

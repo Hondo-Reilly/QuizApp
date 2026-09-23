@@ -1,8 +1,15 @@
+import { randomBytes } from "node:crypto";
 import { app, BrowserWindow } from "electron";
 import fs from "node:fs/promises";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
+import {
+  mobileBodyWithinLimit,
+  mobileJsonContentType,
+  mobileOriginAllowed,
+  mobileTokensMatch,
+} from "./mobileAccess";
 import { IpcChannels } from "../../shared/ipcChannels";
 import {
   applyMobilePatch,
@@ -17,6 +24,7 @@ const clients = new Set<http.ServerResponse>();
 
 let server: http.Server | null = null;
 let session: MobileSession | null = null;
+let sessionToken: string | null = null;
 let publicUrl: string | null = null;
 let starting: Promise<string> | null = null;
 let generation = 0;
@@ -34,6 +42,7 @@ export function startMobileServer(seed: MobileSessionSeed): Promise<string> {
 
   const current = ++generation;
   session = createMobileSession(seed);
+  sessionToken = randomBytes(24).toString("base64url");
   const created = http.createServer((req, res) => {
     void handleRequest(req, res).catch(() => {
       if (!res.headersSent) {
@@ -48,6 +57,7 @@ export function startMobileServer(seed: MobileSessionSeed): Promise<string> {
     created.once("error", (error) => {
       if (generation !== current) return;
       session = null;
+      sessionToken = null;
       server = null;
       publicUrl = null;
       reject(error);
@@ -59,7 +69,7 @@ export function startMobileServer(seed: MobileSessionSeed): Promise<string> {
       }
       const address = created.address();
       const port = typeof address === "object" && address ? address.port : 0;
-      const url = `http://${lanAddress()}:${port}`;
+      const url = `http://${lanAddress()}:${port}/?token=${encodeURIComponent(sessionToken ?? "")}`;
       publicUrl = url;
       keepAlive = setInterval(() => {
         for (const client of clients) client.write(": ping\n\n");
@@ -91,6 +101,7 @@ export async function stopMobileServer(): Promise<void> {
   const closing = server;
   server = null;
   session = null;
+  sessionToken = null;
   publicUrl = null;
   await new Promise<void>((resolve) => closing.close(() => resolve()));
 }
@@ -132,11 +143,31 @@ function broadcast(next: MobileSession): void {
   }
 }
 
+function headerValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function allowMobileRequest(req: http.IncomingMessage, url: URL): boolean {
+  if (!sessionToken) return false;
+  if (
+    !mobileOriginAllowed(headerValue(req.headers.origin), headerValue(req.headers.host))
+  ) {
+    return false;
+  }
+  return mobileTokensMatch(url.searchParams.get("token"), sessionToken);
+}
+
 async function handleRequest(
   req: http.IncomingMessage,
   res: http.ServerResponse,
 ): Promise<void> {
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
+  const guarded =
+    url.pathname === "/session" || url.pathname === "/events";
+  if (guarded && !allowMobileRequest(req, url)) {
+    sendJson(res, 401, { error: "Mobile session was not authorized." });
+    return;
+  }
   if (req.method === "GET" && url.pathname === "/session") {
     if (session) notifyPhoneConnected();
     sendJson(res, session ? 200 : 404, session ?? { error: "Mobile mode is not running." });
@@ -161,6 +192,11 @@ async function handleRequest(
   if (req.method === "POST" && url.pathname === "/session") {
     if (!session) {
       sendJson(res, 404, { error: "Mobile mode is not running." });
+      return;
+    }
+    const contentType = headerValue(req.headers["content-type"]);
+    if (!mobileJsonContentType(contentType)) {
+      sendJson(res, 415, { error: "Expected JSON." });
       return;
     }
     const body = await readBody(req);
@@ -268,7 +304,9 @@ async function readBody(req: http.IncomingMessage): Promise<string> {
   for await (const chunk of req) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     size += buffer.length;
-    if (size > 1_000_000) throw new Error("Body too large.");
+    if (!mobileBodyWithinLimit(size)) {
+      throw new Error("Body too large.");
+    }
     chunks.push(buffer);
   }
   return Buffer.concat(chunks).toString("utf8");

@@ -63,15 +63,30 @@ export const questionSchema = z.union([
   multiAnswerSchema,
 ]);
 
-export const quizSchema = z.object({
-  schemaVersion: z.literal(1),
-  id: z.string().min(1).optional(),
-  title: z.string().min(1),
-  description: z.string().optional(),
-  author: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-  questions: z.array(questionSchema).min(1),
-});
+export const quizSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    id: z.string().min(1).optional(),
+    title: z.string().min(1),
+    description: z.string().optional(),
+    author: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+    questions: z.array(questionSchema).min(1),
+  })
+  .superRefine((quiz, ctx) => {
+    const seen = new Set<string>();
+    quiz.questions.forEach((question, index) => {
+      if (seen.has(question.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Duplicate question id "${question.id}"`,
+          path: ["questions", index, "id"],
+        });
+        return;
+      }
+      seen.add(question.id);
+    });
+  });
 
 export type ParsedQuizInput = z.infer<typeof quizSchema>;
 

@@ -1,7 +1,6 @@
-import fs from "node:fs/promises";
-import { existsSync } from "node:fs";
 import { nanoid } from "nanoid";
 import type { QuizAttempt, SaveAttemptInput } from "../../shared/types";
+import { DamagedStoreError, readJsonIfPresent, writeJsonAtomic } from "./durableJson";
 import { attemptsFile } from "./paths";
 
 interface AttemptsFile {
@@ -14,21 +13,18 @@ function emptyFile(): AttemptsFile {
 }
 
 async function readAttempts(): Promise<AttemptsFile> {
-  if (!existsSync(attemptsFile())) return emptyFile();
-  try {
-    const raw = await fs.readFile(attemptsFile(), "utf-8");
-    const parsed = JSON.parse(raw) as Partial<AttemptsFile>;
-    return {
-      version: 1,
-      attempts: Array.isArray(parsed.attempts) ? parsed.attempts : [],
-    };
-  } catch {
-    return emptyFile();
+  const parsed = await readJsonIfPresent(attemptsFile());
+  if (parsed === undefined) return emptyFile();
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new DamagedStoreError(attemptsFile());
   }
+  const attempts = (parsed as Partial<AttemptsFile>).attempts;
+  if (!Array.isArray(attempts)) throw new DamagedStoreError(attemptsFile());
+  return { version: 1, attempts };
 }
 
 async function writeAttempts(file: AttemptsFile): Promise<void> {
-  await fs.writeFile(attemptsFile(), JSON.stringify(file, null, 2), "utf-8");
+  await writeJsonAtomic(attemptsFile(), file);
 }
 
 export async function saveAttempt(input: SaveAttemptInput): Promise<QuizAttempt> {

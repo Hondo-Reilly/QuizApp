@@ -33,6 +33,12 @@ describe("quiz import validation", () => {
     expect(() => parseQuiz(quiz)).toThrow();
   });
 
+  it("rejects a repeated question id and names it", () => {
+    const quiz = makeQuiz();
+    quiz.questions[1].id = quiz.questions[0].id;
+    expect(() => parseQuiz(quiz)).toThrow(/Duplicate question id \\"tf\\"/);
+  });
+
   it("rejects repeated answers in a multi-answer question", () => {
     const quiz = makeQuiz();
     const question = quiz.questions[2];
