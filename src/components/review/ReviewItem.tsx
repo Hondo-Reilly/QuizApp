@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/Card";
+import { QuestionResultCard, ResultBadge } from "@/components/quiz/QuestionResultCard";
 import type { Question, UserAnswer } from "@shared/types";
 
 export interface ReviewItemProps {
@@ -48,22 +48,15 @@ export function ReviewItem({
   correct,
 }: ReviewItemProps) {
   return (
-    <Card className="flex flex-col gap-3">
-      <div className="flex items-start justify-between gap-3">
+    <QuestionResultCard
+      heading={
         <h3 className="text-base font-semibold text-slate-900 dark:text-neutral-100">
           {index + 1}. {question.prompt}
         </h3>
-        <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
-            correct
-              ? "bg-green-100 text-green-800 dark:bg-green-950/60 dark:text-green-300"
-              : "bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300"
-          }`}
-        >
-          {correct ? "Correct" : "Incorrect"}
-        </span>
-      </div>
-
+      }
+      status={<ResultBadge correct={correct} />}
+      explanation={question.explanation}
+    >
       <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
         <div>
           <dt className="text-xs uppercase tracking-wide text-slate-500 dark:text-neutral-400">
@@ -89,11 +82,6 @@ export function ReviewItem({
         </div>
       </dl>
 
-      {question.explanation && (
-        <p className="rounded-md bg-slate-50 p-3 text-sm text-slate-700 dark:bg-neutral-800 dark:text-neutral-300">
-          {question.explanation}
-        </p>
-      )}
-    </Card>
+    </QuestionResultCard>
   );
 }

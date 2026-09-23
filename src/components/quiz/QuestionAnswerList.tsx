@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/Card";
+import { QuestionResultCard, ResultBadge } from "./QuestionResultCard";
 import { gradeQuestion } from "@shared/grading";
 import type { Choice, Question, UserAnswer } from "@shared/types";
 
@@ -121,38 +121,29 @@ export function QuestionAnswerList({
         const correct = showSelections ? gradeQuestion(question, answer ?? null) : false;
         return (
           <li key={question.id}>
-            <Card className="flex flex-col gap-3">
-              <div className="flex items-start justify-between gap-3">
+            <QuestionResultCard
+              heading={
                 <h2 className="text-base font-semibold text-slate-900 dark:text-neutral-100">
                   {index + 1}. {question.prompt}
                 </h2>
-                {showSelections ? (
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                      correct
-                        ? "bg-green-100 text-green-800 dark:bg-green-950/60 dark:text-green-300"
-                        : "bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300"
-                    }`}
-                  >
-                    {correct ? "Correct" : "Incorrect"}
-                  </span>
+              }
+              status={
+                showSelections ? (
+                  <ResultBadge correct={correct} />
                 ) : (
                   <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-neutral-800 dark:text-neutral-300">
                     {typeLabel(question)}
                   </span>
-                )}
-              </div>
+                )
+              }
+              explanation={question.explanation}
+            >
               <ul className="flex flex-col gap-2">
                 {choicesFor(question, answer, showSelections).map((choice) => (
                   <ChoiceRow key={choice.id} text={choice.text} mark={choice.mark} />
                 ))}
               </ul>
-              {question.explanation && (
-                <p className="rounded-md bg-slate-50 p-3 text-sm text-slate-700 dark:bg-neutral-800 dark:text-neutral-300">
-                  {question.explanation}
-                </p>
-              )}
-            </Card>
+            </QuestionResultCard>
           </li>
         );
       })}

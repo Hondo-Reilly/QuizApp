@@ -3,8 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuizSession } from "@/hooks/useQuizSession";
 import { gradeQuiz } from "@shared/grading";
 import { formatTimeTaken } from "@/lib/formatDuration";
-import { BackLink } from "@/components/ui/BackLink";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { DetailPageLayout } from "@/components/ui/DetailPageLayout";
 import { Button } from "@/components/ui/Button";
 import { ScoreSummary } from "@/components/review/ScoreSummary";
 import { ReviewItem } from "@/components/review/ReviewItem";
@@ -40,39 +39,36 @@ export function ReviewPage() {
   if (!quiz) return null;
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <BackLink
-        onClick={() => {
-          reset();
-          navigate(`/quiz/${id}`);
-        }}
-      />
-      <PageHeader
-        title="Review"
-        subtitle={quiz.title}
-        actions={
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                reset();
-                navigate(`/quiz/${id}/setup`);
-              }}
-            >
-              Retake
-            </Button>
-            <Button
-              onClick={() => {
-                reset();
-                navigate("/");
-              }}
-            >
-              Back to library
-            </Button>
-          </>
-        }
-      />
-
+    <DetailPageLayout
+      width="2xl"
+      onBack={() => {
+        reset();
+        navigate(`/quiz/${id}`);
+      }}
+      title="Review"
+      subtitle={quiz.title}
+      actions={
+        <>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              reset();
+              navigate(`/quiz/${id}/setup`);
+            }}
+          >
+            Retake
+          </Button>
+          <Button
+            onClick={() => {
+              reset();
+              navigate("/");
+            }}
+          >
+            Back to library
+          </Button>
+        </>
+      }
+    >
       <div className="mb-6">
         <ScoreSummary
           correct={grade.correct}
@@ -100,6 +96,6 @@ export function ReviewPage() {
           );
         })}
       </div>
-    </div>
+    </DetailPageLayout>
   );
 }

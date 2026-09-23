@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { LibraryItemCard } from "./LibraryItemCard";
 import type { Folder } from "@shared/types";
 
 export interface FolderCardProps {
@@ -37,35 +37,27 @@ export function FolderCard({
   const navigate = useNavigate();
 
   return (
-    <Card className="flex flex-col gap-3">
-      <button
-        type="button"
-        onClick={() => navigate(`/folder/${folder.id}`)}
-        className="flex flex-1 flex-col gap-2 text-left"
-      >
-        <div className="flex items-center gap-2">
-          <FolderIcon />
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-neutral-100">
-            {folder.name}
-          </h3>
-        </div>
-        {folder.description && (
-          <p className="line-clamp-2 text-sm text-slate-600 dark:text-neutral-400">
-            {folder.description}
-          </p>
-        )}
-        <div className="text-xs text-slate-500 dark:text-neutral-400">
+    <LibraryItemCard
+      variant="folder"
+      title={folder.name}
+      description={folder.description}
+      icon={<FolderIcon />}
+      onOpen={() => navigate(`/folder/${folder.id}`)}
+      metadata={
+        <>
           {quizCount} {quizCount === 1 ? "quiz" : "quizzes"}
-        </div>
-      </button>
-      <div className="flex items-center justify-end gap-2">
-        <Button variant="ghost" size="sm" onClick={() => onRename(folder)}>
-          Rename
-        </Button>
-        <Button variant="ghost" size="sm" onClick={() => onDelete(folder)}>
-          Delete
-        </Button>
-      </div>
-    </Card>
+        </>
+      }
+      actions={
+        <>
+          <Button variant="ghost" size="sm" onClick={() => onRename(folder)}>
+            Rename
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => onDelete(folder)}>
+            Delete
+          </Button>
+        </>
+      }
+    />
   );
 }

@@ -8,8 +8,7 @@ import { useMobileStore } from "@/state/mobileStore";
 import { useQuizKeyboard } from "@/hooks/useQuizKeyboard";
 import { QuestionCard } from "@/components/quiz/QuestionCard";
 import { AnswerFeedback } from "@/components/quiz/AnswerFeedback";
-import { ProgressBar } from "@/components/quiz/ProgressBar";
-import { QuizTimer } from "@/components/quiz/QuizTimer";
+import { QuizProgressHeader } from "@/components/quiz/QuizProgressHeader";
 import { AfterEachNav } from "@/components/quiz/AfterEachNav";
 import { AtEndNav } from "@/components/quiz/AtEndNav";
 import { QuestionSidebar } from "@/components/quiz/QuestionSidebar";
@@ -155,21 +154,14 @@ export function TakeQuizPage() {
       <div className="min-w-0 flex-1">
         <PageHeader title={session.quiz.title} />
 
-        <div className="mb-4 flex items-start gap-4">
-          <div className="min-w-0 flex-1">
-            <ProgressBar
-              current={session.currentIndex + 1}
-              total={session.order.length}
-              answered={answeredCount}
-            />
-          </div>
-          {session.deadlineAt && (
-            <QuizTimer
-              deadlineAt={session.deadlineAt}
-              onExpire={handleFinish}
-            />
-          )}
-        </div>
+        <QuizProgressHeader
+          className="mb-4"
+          current={session.currentIndex + 1}
+          total={session.order.length}
+          answered={answeredCount}
+          deadlineAt={session.deadlineAt}
+          onExpire={handleFinish}
+        />
 
         <div className="flex flex-col gap-4">
           <QuestionCard

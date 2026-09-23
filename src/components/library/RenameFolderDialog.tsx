@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
-import { Button } from "@/components/ui/Button";
-import { FieldLabel, TextArea, TextInput } from "@/components/ui/TextField";
+import { DialogActions } from "@/components/ui/DialogActions";
+import { FolderFields } from "./FolderFields";
 import type { Folder } from "@shared/types";
 
 export interface RenameFolderDialogProps {
@@ -64,35 +64,22 @@ export function RenameFolderDialog({
       title="Rename folder"
       onClose={onClose}
       footer={
-        <>
-          <Button variant="secondary" onClick={onClose} disabled={submitting}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
-            Save changes
-          </Button>
-        </>
+        <DialogActions
+          onCancel={onClose}
+          onConfirm={handleSubmit}
+          confirmLabel="Save changes"
+          busy={submitting}
+        />
       }
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <FieldLabel label="Name">
-          <TextInput
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus
-            maxLength={80}
-          />
-        </FieldLabel>
-        <FieldLabel label="Description">
-          <TextArea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            maxLength={280}
-          />
-        </FieldLabel>
-        {error && (
-          <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
-        )}
+        <FolderFields
+          name={name}
+          description={description}
+          onNameChange={setName}
+          onDescriptionChange={setDescription}
+          error={error}
+        />
       </form>
     </Modal>
   );

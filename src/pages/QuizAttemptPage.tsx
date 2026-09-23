@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { quizApi } from "@/api/quizApi";
-import { BackLink } from "@/components/ui/BackLink";
 import { Button } from "@/components/ui/Button";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { DetailPageLayout } from "@/components/ui/DetailPageLayout";
+import { LoadingMessage, PageErrorState } from "@/components/ui/PageState";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { QuestionAnswerList } from "@/components/quiz/QuestionAnswerList";
 import {
   attemptExportFilename,
@@ -115,35 +116,29 @@ export function QuizAttemptPage() {
     navigate(`/quiz/${id}`, { state: { folderId } });
 
   if (loading) {
-    return (
-      <div className="text-sm text-slate-500 dark:text-neutral-400">
-        Loading...
-      </div>
-    );
+    return <LoadingMessage />;
   }
 
   if (error || !quiz || !attempt) {
     return (
-      <div>
-        <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-          {error ?? "Attempt not found."}
-        </div>
-        <Button variant="secondary" onClick={back}>
-          Back to quiz
-        </Button>
-      </div>
+      <PageErrorState
+        message={error ?? "Attempt not found."}
+        backLabel="Back to quiz"
+        onBack={back}
+      />
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <BackLink onClick={back} />
-      <PageHeader title={quiz.title} subtitle={attemptSubtitle(attempt)} />
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
-          Questions
-        </h2>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+    <DetailPageLayout
+      width="3xl"
+      onBack={back}
+      title={quiz.title}
+      subtitle={attemptSubtitle(attempt)}
+    >
+      <SectionHeader
+        title="Questions"
+        actions={
           <Button
             variant="secondary"
             size="sm"
@@ -156,12 +151,9 @@ export function QuizAttemptPage() {
           >
             Export attempt
           </Button>
-          <Button variant="secondary" size="sm" onClick={back}>
-            Back to quiz
-          </Button>
-        </div>
-      </div>
+        }
+      />
       <QuestionAnswerList questions={questions} answers={attempt.answers} />
-    </div>
+    </DetailPageLayout>
   );
 }

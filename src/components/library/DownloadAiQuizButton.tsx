@@ -30,7 +30,7 @@ export function DownloadAiQuizButton() {
       onClick={triggerDownload}
       title="Download the quiz-app-maker skill"
     >
-      Download AI quiz skill
+      Download Ai Quiz Skill
     </Button>
   );
 }

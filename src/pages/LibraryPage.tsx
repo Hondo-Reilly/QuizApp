@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { ErrorNotice, LoadingMessage } from "@/components/ui/PageState";
 import { Button } from "@/components/ui/Button";
 import { ImportButton } from "@/components/library/ImportButton";
 import { QuizCard } from "@/components/library/QuizCard";
@@ -93,25 +95,17 @@ export function LibraryPage() {
     <div>
       <PageHeader title={title} subtitle={subtitle} actions={headerActions} />
 
-      {error && (
-        <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-          {error}
-        </div>
-      )}
+      {error && <ErrorNotice message={error} />}
 
       {loading ? (
-        <div className="text-sm text-slate-500 dark:text-neutral-400">
-          Loading...
-        </div>
+        <LoadingMessage />
       ) : libraryIsEmpty && currentFolderId === null ? (
         <EmptyState onImport={() => importQuizzes(null)} />
       ) : (
         <div className="flex flex-col gap-8">
           {childFolders.length > 0 && (
             <section>
-              <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
-                Folders
-              </h2>
+              <SectionHeader title="Folders" />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {childFolders.map((folder) => (
                   <FolderCard
@@ -128,9 +122,7 @@ export function LibraryPage() {
 
           {childQuizzes.length > 0 && (
             <section>
-              <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
-                Quizzes
-              </h2>
+              <SectionHeader title="Quizzes" />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {childQuizzes.map((quiz) => (
                   <QuizCard

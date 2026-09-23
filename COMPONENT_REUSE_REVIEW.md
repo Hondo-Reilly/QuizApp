@@ -1,24 +1,64 @@
 # Component reuse review
 
-Reviewed: 2026-09-22. This is a static inventory of the current `src/` worktree, including the in-progress timer component. It documents opportunities to reuse code while preserving the current UI. No component code was changed for this review.
+Updated: 2026-09-23 against commit `ab64121` and the current `src/` worktree. This review asks whether the same layout or interface element is implemented in multiple views. The goal is one clear source for shared structure, spacing, states, and behavior on both web and Electron. All listed P1 and P2 component items are implemented.
 
-## How reuse was counted
+## Review standard
 
-I counted exported React components in `src/components/**/*.tsx`, then counted JSX references to each imported component across `src/**/*.tsx`. **Consumer files** are distinct files that render a component. **JSX sites** are places where the tag appears in source. A tag inside `.map()` counts as one source site even though it can render many cards at runtime. These counts describe source reuse, not runtime render frequency.
+- When two or more views use the same general structure or visual element, put that structure in a reusable component. Pass the title, text, actions, state, or content as props or children.
+- Keep page-specific navigation, data fetching, and save behavior in the views. A shared component should make the layout easier to recognize and change in one place.
+- Do not equate a one-file consumer with waste. A `QuizCard` used once in source renders for every quiz. The important question is whether another view hand-copies its layout or presentation.
+- Preserve existing DOM, classes, responsive widths, dark-mode colors, focus behavior, and platform behavior during extraction. Intentional differences can be explicit variants; unrelated layouts should not be forced into one component.
+
+## Repeated patterns to consolidate
+
+| Priority | Pattern and evidence | Reusable component boundary | Consistency benefit and UI risk |
+| --- | --- | --- | --- |
+| **P1 · Complete** | Four detail views repeated a centered frame, back control, and title/subtitle; Browse had its own heading markup. | [`DetailPageLayout`](src/components/ui/DetailPageLayout.tsx) now composes `BackLink` and `PageHeader` for Browse, Setup, Attempt, and Review. It keeps each view's width and supports Browse's roomier header spacing. | Shared detail-page structure, with route actions and body content still owned by each view. |
+| **P1 · Complete** | Library, Browse, and Attempt repeated uppercase section headings, sometimes with action buttons. | [`SectionHeader`](src/components/ui/SectionHeader.tsx) now owns the heading and optional action row in all five placements. | One place controls section title and action alignment. |
+| **P1 · Complete** | Library, Browse, Setup, and Attempt repeated loading and red error presentation; the three detail error screens also repeated a back button. | [`PageState`](src/components/ui/PageState.tsx) now provides `LoadingMessage`, `ErrorNotice`, and a composed `PageErrorState`. | Shared page-state markup and styling; messages and back destinations stay page-specific. |
+| **P2 · Complete** | New and rename folder dialogs repeated name/description fields, error text, and Cancel/confirm actions. | [`FolderFields`](src/components/library/FolderFields.tsx) now owns the fields and error presentation; [`DialogActions`](src/components/ui/DialogActions.tsx) owns the footer buttons. Each dialog retains its own initial values, labels, validation, and submit callback. | One source for folder form layout and button states. |
+| **P2 · Complete** | Desktop/web taking and phone repeated the progress-plus-timer row. | [`QuizProgressHeader`](src/components/quiz/QuizProgressHeader.tsx) now composes `ProgressBar` and `QuizTimer` on both surfaces, with platform-specific expiry callbacks. | One status layout across quiz surfaces. |
+| **P2 · Complete** | Review and saved-answer views repeated a question card header, result pill, and explanation panel. | [`QuestionResultCard`](src/components/quiz/QuestionResultCard.tsx) and `ResultBadge` now share that markup. Callers supply their existing `h2`/`h3` headings and distinct answer content. | One result presentation while preserving heading semantics. |
+| **P2 · Complete** | Folder and quiz cards repeated a clickable card body, title/description, metadata area, and action row. | [`LibraryItemCard`](src/components/library/LibraryItemCard.tsx) now owns that structure with folder/quiz variants and content/action slots. | One card layout while preserving each card's navigation and actions. |
+
+The targeted component patterns are now shared. The remaining opportunities below concern date formatting and derived quiz state, which are shared logic rather than layout components.
+
+## Views to review
+
+1. **Library and a folder:** section headings above folder/quiz grids; New folder and Import actions; empty, loading, and error presentation.
+2. **Quiz detail:** title and description spacing, Back control, Previous attempts heading, and Questions action row at wide and narrow widths.
+3. **Quiz setup:** Back control, title/subtitle, settings card, and loading/error states.
+4. **Saved attempt:** Back control, title/subtitle, Questions heading with Export attempt action, and loading/error states.
+5. **Review:** Back control, title/subtitle, Retake and Back to library actions, score summary, and question list.
+
+Check those views in light and dark mode on web and Electron. The source layout is shared by both builds.
+
+For the P2 changes, also review New folder and Rename folder dialogs; folder and quiz cards; the progress bar and timer while taking a quiz on desktop/web and phone; and question status/explanations in Quiz detail, Saved attempt, and Review. Check both answer-reveal modes and a quiz without a timer.
+
+## Current reuse snapshot
+
+I counted exported React components in `src/components/**/*.tsx`, then counted JSX references to each imported component across `src/**/*.tsx`. **Consumer files** are distinct files that render a component. **JSX sites** are places where the tag appears in source. A tag inside `.map()` counts as one source site even though it can render many cards at runtime. These counts describe source reuse, not runtime render frequency or a quality score.
 
 | Area | Exported components | Used by 2+ files | Used by 1 file | Unused |
 | --- | ---: | ---: | ---: | ---: |
-| Library | 12 | 2 | 10 | 0 |
-| Quiz | 12 | 7 | 5 | 0 |
+| Development | 1 | 0 | 1 | 0 |
+| Library | 14 | 4 | 10 | 0 |
+| Quiz | 15 | 8 | 7 | 0 |
 | Review | 2 | 0 | 2 | 0 |
-| UI primitives and controls | 17 | 8 | 8 | 1 |
-| **Total** | **43** | **17** | **25** | **1** |
+| UI primitives and controls | 23 | 12 | 10 | 1 |
+| **Total** | **55** | **24** | **30** | **1** |
 
-There are **128 direct JSX sites** across **28 consumer files**. Of the 42 used components, 17 (about 40%) have more than one consumer file. That ratio understates platform reuse: all six pages in [`src/pages/`](src/pages/) serve both Electron and the web build through the shared UI, even when a component has only one source consumer. The phone UI separately shares six quiz components with [`TakeQuizPage`](src/pages/TakeQuizPage.tsx): `QuestionCard`, `ProgressBar`, `QuizTimer`, `AnswerFeedback`, `AfterEachNav`, and `AtEndNav`.
+There are **144 direct JSX sites** across **35 consumer files**. Of the 54 used components, 24 (about 44%) have more than one consumer file. This is context for the layout audit, not a target to raise. `BackLink` has one source consumer, `DetailPageLayout`, but that layout renders it on four views. `ProgressBar` and `QuizTimer` likewise have one source consumer, `QuizProgressHeader`, which renders on desktop/web and phone. All six pages in [`src/pages/`](src/pages/) serve both Electron and the web build. The phone UI shares the question controls, feedback, navigation, and progress layout with [`TakeQuizPage`](src/pages/TakeQuizPage.tsx).
 
-## Component inventory
+## Component inventory (supporting detail)
 
 Counts below are **consumer files / JSX sites**.
+
+### Development
+
+| Component | Use | Main consumer(s) |
+| --- | ---: | --- |
+| [`DevViewIndicator`](src/components/dev/DevViewIndicator.tsx) | 1 / 1 | App shell in development mode |
 
 ### Library
 
@@ -30,8 +70,10 @@ Counts below are **consumer files / JSX sites**.
 | [`DownloadExampleButton`](src/components/library/DownloadExampleButton.tsx) | 1 / 1 | App shell |
 | [`EmptyState`](src/components/library/EmptyState.tsx) | 1 / 1 | Library |
 | [`FolderCard`](src/components/library/FolderCard.tsx) | 1 / 1 | Library; rendered for each folder |
+| [`FolderFields`](src/components/library/FolderFields.tsx) | 2 / 2 | New and rename folder dialogs |
 | [`FolderTreePicker`](src/components/library/FolderTreePicker.tsx) | 1 / 1 | Move dialog |
 | [`ImportButton`](src/components/library/ImportButton.tsx) | 2 / 2 | Library and empty state |
+| [`LibraryItemCard`](src/components/library/LibraryItemCard.tsx) | 2 / 2 | Folder and quiz card layout |
 | [`MoveQuizDialog`](src/components/library/MoveQuizDialog.tsx) | 2 / 2 | Library and quiz browse |
 | [`NewFolderDialog`](src/components/library/NewFolderDialog.tsx) | 1 / 1 | Library |
 | [`QuizCard`](src/components/library/QuizCard.tsx) | 1 / 1 | Library; rendered for each quiz |
@@ -47,11 +89,14 @@ Counts below are **consumer files / JSX sites**.
 | [`MultiAnswerInput`](src/components/quiz/MultiAnswerInput.tsx) | 1 / 1 | QuestionCard |
 | [`MultipleChoiceInput`](src/components/quiz/MultipleChoiceInput.tsx) | 1 / 1 | QuestionCard |
 | [`PrintQuizDialog`](src/components/quiz/PrintQuizDialog.tsx) | 1 / 1 | Quiz browse |
-| [`ProgressBar`](src/components/quiz/ProgressBar.tsx) | 2 / 2 | Desktop/web taking and phone |
+| [`ProgressBar`](src/components/quiz/ProgressBar.tsx) | 1 / 1 | Through QuizProgressHeader on desktop/web and phone |
 | [`QuestionAnswerList`](src/components/quiz/QuestionAnswerList.tsx) | 2 / 2 | Quiz browse and saved attempt |
 | [`QuestionCard`](src/components/quiz/QuestionCard.tsx) | 2 / 2 | Desktop/web taking and phone |
+| [`QuestionResultCard`](src/components/quiz/QuestionResultCard.tsx) | 2 / 2 | Review and answer list card layout |
 | [`QuestionSidebar`](src/components/quiz/QuestionSidebar.tsx) | 1 / 1 | Desktop/web taking |
-| [`QuizTimer`](src/components/quiz/QuizTimer.tsx) | 2 / 2 | Desktop/web taking and phone |
+| [`QuizProgressHeader`](src/components/quiz/QuizProgressHeader.tsx) | 2 / 2 | Desktop/web taking and phone |
+| [`QuizTimer`](src/components/quiz/QuizTimer.tsx) | 1 / 1 | Through QuizProgressHeader on desktop/web and phone |
+| [`ResultBadge`](src/components/quiz/QuestionResultCard.tsx) | 2 / 2 | Review and answer list status |
 | [`TrueFalseInput`](src/components/quiz/TrueFalseInput.tsx) | 1 / 1 | QuestionCard |
 
 ### Review
@@ -65,50 +110,48 @@ Counts below are **consumer files / JSX sites**.
 
 | Component | Use | Notes |
 | --- | ---: | --- |
-| [`Button`](src/components/ui/Button.tsx) | **19 / 48** | Most reused primitive |
-| [`Card`](src/components/ui/Card.tsx) | **8 / 8** | Shared surface styling |
+| [`BackLink`](src/components/ui/BackLink.tsx) | 1 / 1 | Used through DetailPageLayout on four views |
+| [`Button`](src/components/ui/Button.tsx) | **19 / 43** | Most reused primitive |
+| [`Card`](src/components/ui/Card.tsx) | **6 / 6** | Shared surface styling |
 | [`Checkbox`](src/components/ui/Checkbox.tsx) | **0 / 0** | Exported but unused |
-| [`HomeButton`](src/components/ui/HomeButton.tsx) | 1 / 1 | App shell control |
+| [`DetailPageLayout`](src/components/ui/DetailPageLayout.tsx) | **4 / 4** | Browse, setup, attempt, and review frames |
+| [`DialogActions`](src/components/ui/DialogActions.tsx) | 2 / 2 | New and rename folder dialog footers |
+| [`ErrorNotice`](src/components/ui/PageState.tsx) | 2 / 2 | Library and PageErrorState |
+| [`LoadingMessage`](src/components/ui/PageState.tsx) | **4 / 4** | Library, browse, setup, and attempt |
 | [`MobileModeButton`](src/components/ui/MobileModeButton.tsx) | 1 / 1 | Electron app shell control |
 | [`Modal`](src/components/ui/Modal.tsx) | **6 / 6** | All six dialogs use it |
 | [`NumberField`](src/components/ui/NumberField.tsx) | 1 / 2 | Question count and time limit in setup |
-| [`PageHeader`](src/components/ui/PageHeader.tsx) | **5 / 6** | Shared page heading layout |
+| [`PageErrorState`](src/components/ui/PageState.tsx) | **3 / 3** | Browse, setup, and attempt errors |
+| [`PageHeader`](src/components/ui/PageHeader.tsx) | **3 / 4** | Library, taking, and DetailPageLayout |
 | [`RadioGroup`](src/components/ui/RadioGroup.tsx) | 1 / 1 | Setup reveal mode |
 | [`ReleaseNotes`](src/components/ui/ReleaseNotes.tsx) | 1 / 1 | Update dialog |
-| [`FieldLabel`](src/components/ui/TextField.tsx) | 2 / 4 | New and rename folder dialogs |
-| [`TextArea`](src/components/ui/TextField.tsx) | 2 / 2 | New and rename folder dialogs |
-| [`TextInput`](src/components/ui/TextField.tsx) | 4 / 4 | Folder, mobile, and update dialogs |
+| [`SectionHeader`](src/components/ui/SectionHeader.tsx) | **3 / 5** | Library, browse, and attempt section headings |
+| [`FieldLabel`](src/components/ui/TextField.tsx) | 1 / 2 | FolderFields |
+| [`TextArea`](src/components/ui/TextField.tsx) | 1 / 1 | FolderFields |
+| [`TextInput`](src/components/ui/TextField.tsx) | 3 / 3 | FolderFields, mobile, and update dialogs |
 | [`ThemeToggle`](src/components/ui/ThemeToggle.tsx) | 1 / 1 | App shell control |
 | [`Toggle`](src/components/ui/Toggle.tsx) | 2 / 6 | Setup and print dialogs |
 | [`UpdateButton`](src/components/ui/UpdateButton.tsx) | 1 / 1 | Electron app shell control |
 | [`UpdateDialog`](src/components/ui/UpdateDialog.tsx) | 1 / 1 | Update button |
 
-## Where more reuse would help
+## Shared patterns already working
 
-| Priority | Opportunity | Safe boundary | UI risk |
-| --- | --- | --- | --- |
-| 1 | Share folder form fields between [`NewFolderDialog`](src/components/library/NewFolderDialog.tsx#L70) and [`RenameFolderDialog`](src/components/library/RenameFolderDialog.tsx#L77). Both repeat name/description controls, lengths, trimming, error display, and submit state. | Extract a presentational `FolderFields` component and, if useful, a small validation helper. Keep separate dialog titles, footer labels, callbacks, and initial/reset behavior. | Low if existing markup/classes stay identical. |
-| 2 | Share the repeated loading and error presentation in [`LibraryPage`](src/pages/LibraryPage.tsx#L96), [`QuizBrowsePage`](src/pages/QuizBrowsePage.tsx#L60), [`QuizSetupPage`](src/pages/QuizSetupPage.tsx#L128), and [`QuizAttemptPage`](src/pages/QuizAttemptPage.tsx#L94). | Add `LoadingMessage` and `ErrorNotice` primitives for the identical styled blocks. Leave each page's navigation and fetching logic in place. | Low; preserve spacing and text. |
-| 3 | Share answer status and explanation presentation between [`ReviewItem`](src/components/review/ReviewItem.tsx#L51) and [`QuestionAnswerList`](src/components/quiz/QuestionAnswerList.tsx#L123). | Extract the small status badge and explanation panel. Keep the full question layouts separate because one summarizes answers and the other lists choices. | Low to medium; verify review and saved-attempt screenshots. |
-| 4 | Centralize attempt date formatting repeated in [`AttemptList`](src/components/library/AttemptList.tsx#L17) and [`QuizAttemptPage`](src/pages/QuizAttemptPage.tsx#L28). | Use one pure formatter; keep the shorter imported-date format used by `QuizCard` as a separate option. | Low; verify locale output. |
-| 5 | Reduce duplicated derived quiz state in [`TakeQuizPage`](src/pages/TakeQuizPage.tsx#L72) and [`MobileQuiz`](src/mobile/MobileQuiz.tsx#L79): current question, answer, submitted state, answered count, first/last checks. | Share a pure selector over quiz/session data. Keep desktop store actions and phone HTTP/SSE actions separate, and keep their layouts separate. | Medium; check answer reveal, navigation, finish, and timer on both. |
+- `Button`, `Card`, and `Modal` give multiple views the same basic controls, surfaces, and dialogs. `PageHeader` and `BackLink` are composed by `DetailPageLayout`, so the four detail pages now share their header structure too.
+- The quiz-taking page and phone share `QuestionCard`, `QuizProgressHeader`, `AnswerFeedback`, `AfterEachNav`, and `AtEndNav`. `QuizProgressHeader` composes `ProgressBar` and `QuizTimer` for both. They keep their own page frame and transport.
+- `FolderCard`, `QuizCard`, and `ReviewItem` are meaningful components even with one source consumer: each is rendered repeatedly from a list and owns a recognizable visual unit.
+- Keep `AfterEachNav` and `AtEndNav` separate because they present different reveal-mode controls. `ReviewItem` and `QuestionAnswerList` can remain separate view components that compose the same `QuestionResultCard` layout.
+- [`Checkbox`](src/components/ui/Checkbox.tsx) is unused. Remove it if there is no planned use; adding it to a screen merely to raise its reuse count would not improve consistency.
 
-The first three are component reuse opportunities. The date formatter and quiz selector are shared logic that would make components simpler and keep behavior aligned.
+## Supporting logic to share
 
-## Reuse that is already appropriate
+- [`AttemptList`](src/components/library/AttemptList.tsx#L17) and [`QuizAttemptPage`](src/pages/QuizAttemptPage.tsx#L35) format attempt dates separately. A common formatter would keep labels consistent; the imported-date style on `QuizCard` can remain an explicit option.
+- [`TakeQuizPage`](src/pages/TakeQuizPage.tsx#L72) and [`MobileQuiz`](src/mobile/MobileQuiz.tsx#L79) derive the current question, answer, submitted state, answered count, and first/last state in parallel. A pure selector would reduce drift without combining the two page layouts or their actions.
 
-- The six core question controls shared by the desktop/web taking page and phone are the strongest example of reuse. They already preserve the same answer appearance while each surface keeps its own layout and transport.
-- `Button`, `Card`, `Modal`, `PageHeader`, and text fields provide useful consistency. Their call counts are healthy; no larger design-system rewrite is needed for the current app.
-- `FolderCard`, `QuizCard`, and `ReviewItem` each have one source consumer because they render inside a list. They still create many runtime instances and encapsulate real behavior.
-- App shell controls such as `ThemeToggle`, `HomeButton`, and `UpdateButton` are naturally single-placement components. A one-file count is not evidence of a problem.
-- Keep `AfterEachNav` and `AtEndNav` separate. Their reveal-mode behavior differs, and merging them would add branching to a simple UI. Keep `ReviewItem` and `QuestionAnswerList` as separate full components for the same reason.
-- [`Checkbox`](src/components/ui/Checkbox.tsx) is unused. Remove it if it has no planned consumer. Using it for `AttemptList` solely to raise reuse would require ref and indeterminate support and would add complexity without changing the UI.
+## How to extract without changing the UI
 
-## How to make a reuse change safely
+1. Capture each affected view in light and dark mode on the web and Electron builds. Include narrow widths, loading/error states, dialogs, quiz taking, and review where relevant.
+2. Extract one repeated structure at a time. Preserve DOM order, classes, labels, spacing, focus, and disabled states first. Make any visual unification a separate, reviewable change.
+3. Give shared components a small semantic API: content and actions as props or children, with only the variants needed by existing screens. Avoid route names, store calls, or platform checks inside generic layout components.
+4. Check all consumers after each extraction, including phone quiz status and timer expiry. Verify `npm run lint`, `npm run build:web`, and `npm run build`.
 
-1. Capture the affected screens in light and dark mode on the web and Electron builds before refactoring. Include empty, loading, error, quiz taking, review, and dialogs as applicable.
-2. Extract one presentational piece at a time with the same DOM structure, class names, labels, and props. Avoid changing data flow and visuals in the same change.
-3. Check keyboard focus and disabled states for dialog and form extractions. Verify both `npm run build` and `npm run build:web`.
-4. For the quiz selector, exercise both reveal modes, true/false, single choice, multi-answer, the phone sync flow, and timer expiry. This is the only recommended extraction with meaningful behavior risk.
-
-The existing uncommitted timer and setup changes were not altered during this review.
+`npm run lint`, `npm run build:web`, and `npm run build` passed after the P2 implementation. The web library, missing-quiz error state, and New folder dialog were visually checked. The data-dependent quiz screens and Electron UI still need a manual visual check.

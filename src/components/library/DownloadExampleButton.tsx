@@ -18,7 +18,7 @@ function triggerDownload(): void {
 export function DownloadExampleButton() {
   return (
     <Button size="sm" variant="secondary" onClick={triggerDownload}>
-      Download example quiz
+      Download Example Quiz
     </Button>
   );
 }

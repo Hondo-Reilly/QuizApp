@@ -6,8 +6,10 @@ import {
   useParams,
 } from "react-router-dom";
 import { quizApi } from "@/api/quizApi";
-import { BackLink } from "@/components/ui/BackLink";
 import { Button } from "@/components/ui/Button";
+import { DetailPageLayout } from "@/components/ui/DetailPageLayout";
+import { LoadingMessage, PageErrorState } from "@/components/ui/PageState";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { QuestionAnswerList } from "@/components/quiz/QuestionAnswerList";
 import { PrintQuizDialog } from "@/components/quiz/PrintQuizDialog";
 import { AttemptList } from "@/components/library/AttemptList";
@@ -81,23 +83,16 @@ export function QuizBrowsePage() {
   const back = () => navigate(folderId ? `/folder/${folderId}` : "/");
 
   if (loading) {
-    return (
-      <div className="text-sm text-slate-500 dark:text-neutral-400">
-        Loading...
-      </div>
-    );
+    return <LoadingMessage />;
   }
 
   if (error || !quiz) {
     return (
-      <div>
-        <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-          {error ?? "Quiz not found."}
-        </div>
-        <Button variant="secondary" onClick={back}>
-          Back to library
-        </Button>
-      </div>
+      <PageErrorState
+        message={error ?? "Quiz not found."}
+        backLabel="Back to library"
+        onBack={back}
+      />
     );
   }
 
@@ -124,18 +119,16 @@ export function QuizBrowsePage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <header className="mb-8">
-        <BackLink onClick={back} />
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-neutral-100">
-          {quiz.title}
-        </h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
-          {quiz.description ??
-            `${total} ${total === 1 ? "question" : "questions"}`}
-        </p>
-      </header>
-
+    <DetailPageLayout
+      width="3xl"
+      onBack={back}
+      title={quiz.title}
+      subtitle={
+        quiz.description ??
+        `${total} ${total === 1 ? "question" : "questions"}`
+      }
+      headerSpacing="roomy"
+    >
       <PrintQuizDialog
         open={printOpen}
         quiz={quiz}
@@ -143,9 +136,7 @@ export function QuizBrowsePage() {
       />
 
       <section className="mb-8">
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
-          Previous attempts
-        </h2>
+        <SectionHeader title="Previous attempts" />
         <AttemptList
           quiz={quiz}
           attempts={attempts}
@@ -166,25 +157,37 @@ export function QuizBrowsePage() {
       </section>
 
       <section>
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
-            Questions
-          </h2>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setPrintOpen(true)}>
-              Save to PDF
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setMoveOpen(true)}>
-              Move
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => void handleDelete()}>
-              Delete
-            </Button>
-            <Button size="sm" onClick={() => navigate(`/quiz/${id}/setup`)}>
-              Start quiz
-            </Button>
-          </div>
-        </div>
+        <SectionHeader
+          title="Questions"
+          actions={
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setPrintOpen(true)}
+              >
+                Save to PDF
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setMoveOpen(true)}
+              >
+                Move
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void handleDelete()}
+              >
+                Delete
+              </Button>
+              <Button size="sm" onClick={() => navigate(`/quiz/${id}/setup`)}>
+                Start quiz
+              </Button>
+            </>
+          }
+        />
         <QuestionAnswerList questions={quiz.questions} />
       </section>
 
@@ -195,6 +198,6 @@ export function QuizBrowsePage() {
         onClose={() => setMoveOpen(false)}
         onMove={(nextFolderId) => library.moveQuiz(quiz.id, nextFolderId)}
       />
-    </div>
+    </DetailPageLayout>
   );
 }

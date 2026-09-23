@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
-import { Button } from "@/components/ui/Button";
-import { FieldLabel, TextArea, TextInput } from "@/components/ui/TextField";
+import { DialogActions } from "@/components/ui/DialogActions";
+import { FolderFields } from "./FolderFields";
 
 export interface NewFolderDialogProps {
   open: boolean;
@@ -57,42 +57,24 @@ export function NewFolderDialog({
       title="New folder"
       onClose={onClose}
       footer={
-        <>
-          <Button variant="secondary" onClick={onClose} disabled={submitting}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
-            Create folder
-          </Button>
-        </>
+        <DialogActions
+          onCancel={onClose}
+          onConfirm={handleSubmit}
+          confirmLabel="Create folder"
+          busy={submitting}
+        />
       }
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        {parentName && (
-          <p className="text-xs text-slate-500 dark:text-neutral-400">
-            Will be created inside <span className="font-medium">{parentName}</span>.
-          </p>
-        )}
-        <FieldLabel label="Name">
-          <TextInput
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. History"
-            autoFocus
-            maxLength={80}
-          />
-        </FieldLabel>
-        <FieldLabel label="Description" hint="Optional - shown on the folder card.">
-          <TextArea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="What's in this folder?"
-            maxLength={280}
-          />
-        </FieldLabel>
-        {error && (
-          <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
-        )}
+        <FolderFields
+          name={name}
+          description={description}
+          onNameChange={setName}
+          onDescriptionChange={setDescription}
+          parentName={parentName}
+          newFolder
+          error={error}
+        />
       </form>
     </Modal>
   );

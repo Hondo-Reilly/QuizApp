@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { quizApi } from "@/api/quizApi";
 import { Card } from "@/components/ui/Card";
-import { BackLink } from "@/components/ui/BackLink";
 import { Button } from "@/components/ui/Button";
+import { DetailPageLayout } from "@/components/ui/DetailPageLayout";
+import { LoadingMessage, PageErrorState } from "@/components/ui/PageState";
 import { Toggle } from "@/components/ui/Toggle";
 import { RadioGroup } from "@/components/ui/RadioGroup";
 import { NumberField } from "@/components/ui/NumberField";
-import { PageHeader } from "@/components/ui/PageHeader";
 import type { UseLibrary } from "@/hooks/useLibrary";
 import { useQuizSession } from "@/hooks/useQuizSession";
 import { startMobileSession } from "@/lib/mobileSync";
@@ -126,22 +126,14 @@ export function QuizSetupPage() {
     }
   };
 
-  if (loading)
-    return (
-      <div className="text-sm text-slate-500 dark:text-neutral-400">
-        Loading...
-      </div>
-    );
+  if (loading) return <LoadingMessage />;
   if (error)
     return (
-      <div>
-        <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-          {error}
-        </div>
-        <Button variant="secondary" onClick={() => navigate("/")}>
-          Back to library
-        </Button>
-      </div>
+      <PageErrorState
+        message={error}
+        backLabel="Back to library"
+        onBack={() => navigate("/")}
+      />
     );
   if (!quiz) return null;
 
@@ -149,13 +141,12 @@ export function QuizSetupPage() {
   const usingSubset = questionCount > 0 && questionCount < total;
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <BackLink onClick={back} />
-      <PageHeader
-        title={quiz.title}
-        subtitle={quiz.description ?? "Configure this attempt and start."}
-      />
-
+    <DetailPageLayout
+      width="2xl"
+      onBack={back}
+      title={quiz.title}
+      subtitle={quiz.description ?? "Configure this attempt and start."}
+    >
       <Card className="flex flex-col gap-6">
         <div>
           <h2 className="mb-1 text-sm font-semibold text-slate-700 dark:text-neutral-300">
@@ -262,6 +253,6 @@ export function QuizSetupPage() {
           <Button onClick={handleStart}>Start quiz</Button>
         </div>
       </Card>
-    </div>
+    </DetailPageLayout>
   );
 }
