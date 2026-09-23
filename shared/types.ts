@@ -78,6 +78,12 @@ export interface UpdateCheck {
   releaseNotes: string | null;
 }
 
+export interface UpdateProgress {
+  received: number;
+  total: number | null;
+  percent: number | null;
+}
+
 export type UserAnswer = boolean | string | string[] | null;
 
 export interface QuizAttempt {

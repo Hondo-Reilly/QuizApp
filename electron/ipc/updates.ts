@@ -4,5 +4,10 @@ import { checkForUpdate, downloadLatestUpdate } from "../lib/updates";
 
 export function registerUpdateHandlers(): void {
   ipcMain.handle(IpcChannels.checkForUpdate, () => checkForUpdate());
-  ipcMain.handle(IpcChannels.downloadUpdate, () => downloadLatestUpdate());
+  ipcMain.handle(IpcChannels.downloadUpdate, (event) =>
+    downloadLatestUpdate((progress) => {
+      if (event.sender.isDestroyed()) return;
+      event.sender.send(IpcChannels.updateProgress, progress);
+    }),
+  );
 }

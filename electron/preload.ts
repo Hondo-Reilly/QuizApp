@@ -9,6 +9,7 @@ import type {
   QuizMetadata,
   SaveAttemptInput,
   UpdateCheck,
+  UpdateProgress,
 } from "../shared/types";
 import type { ImportResult } from "./ipc/quizLibrary";
 
@@ -55,6 +56,14 @@ const quizApi = {
     ipcRenderer.invoke(IpcChannels.checkForUpdate),
   downloadUpdate: (): Promise<void> =>
     ipcRenderer.invoke(IpcChannels.downloadUpdate),
+  onUpdateProgress: (listener: (progress: UpdateProgress) => void) => {
+    const wrapped = (_event: IpcRendererEvent, progress: UpdateProgress) =>
+      listener(progress);
+    ipcRenderer.on(IpcChannels.updateProgress, wrapped);
+    return () => {
+      ipcRenderer.removeListener(IpcChannels.updateProgress, wrapped);
+    };
+  },
   saveQuizPdf: (html: string, filename: string): Promise<boolean> =>
     ipcRenderer.invoke(IpcChannels.saveQuizPdf, { html, filename }),
   startMobile: (seed: MobileSessionSeed): Promise<string> =>

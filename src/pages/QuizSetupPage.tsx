@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { quizApi } from "@/api/quizApi";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -7,6 +7,7 @@ import { Toggle } from "@/components/ui/Toggle";
 import { RadioGroup } from "@/components/ui/RadioGroup";
 import { NumberField } from "@/components/ui/NumberField";
 import { PageHeader } from "@/components/ui/PageHeader";
+import type { UseLibrary } from "@/hooks/useLibrary";
 import { useQuizSession } from "@/hooks/useQuizSession";
 import { startMobileSession } from "@/lib/mobileSync";
 import {
@@ -35,6 +36,9 @@ const REVEAL_OPTIONS: ReadonlyArray<{
 export function QuizSetupPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const library = useOutletContext<UseLibrary>();
+  const folderId =
+    library.quizzes.find((item) => item.id === id)?.folderId ?? null;
   const start = useQuizSession((s) => s.start);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,6 +82,8 @@ export function QuizSetupPage() {
     });
   }, [shuffleQuestions, shuffleChoices, revealMode, enableMobile]);
 
+  const back = () => navigate(folderId ? `/folder/${folderId}` : "/");
+
   const handleStart = () => {
     if (!quiz) return;
     start(quiz, {
@@ -116,6 +122,13 @@ export function QuizSetupPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
+      <button
+        type="button"
+        onClick={back}
+        className="mb-3 text-sm text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-neutral-100"
+      >
+        ← Library
+      </button>
       <PageHeader
         title={quiz.title}
         subtitle={quiz.description ?? "Configure this attempt and start."}
@@ -195,7 +208,7 @@ export function QuizSetupPage() {
         </div>
 
         <div className="flex items-center justify-end gap-2">
-          <Button variant="secondary" onClick={() => navigate("/")}>
+          <Button variant="secondary" onClick={back}>
             Cancel
           </Button>
           <Button onClick={handleStart}>Start quiz</Button>

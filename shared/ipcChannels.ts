@@ -14,6 +14,7 @@ export const IpcChannels = {
   deleteAttempts: "attempt:delete",
   checkForUpdate: "updates:check",
   downloadUpdate: "updates:download",
+  updateProgress: "updates:progress",
   saveQuizPdf: "quiz:save-pdf",
   mobileStart: "mobile:start",
   mobileStop: "mobile:stop",

@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { quizApi } from "@/api/quizApi";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ReleaseNotes } from "@/components/ui/ReleaseNotes";
 import { TextInput } from "@/components/ui/TextField";
-import type { UpdateCheck } from "@shared/types";
+import type { UpdateCheck, UpdateProgress } from "@shared/types";
 
 const INSTALL_COMMAND = "xattr -cr /Applications/QuizApp.app";
 
@@ -19,9 +19,16 @@ export interface UpdateDialogProps {
 
 export function UpdateDialog({ check, onClose }: UpdateDialogProps) {
   const [downloading, setDownloading] = useState(false);
+  const [progress, setProgress] = useState<UpdateProgress | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const open = !!check?.updateAvailable && !!check.latestVersion;
+
+  useEffect(() => quizApi.onUpdateProgress(setProgress), []);
+
+  useEffect(() => {
+    if (!open) setProgress(null);
+  }, [open]);
 
   const handleCopy = async () => {
     try {
@@ -40,6 +47,7 @@ export function UpdateDialog({ check, onClose }: UpdateDialogProps) {
 
   const handleDownload = async () => {
     setDownloading(true);
+    setProgress({ received: 0, total: null, percent: 0 });
     setError(null);
     try {
       await quizApi.downloadUpdate();
@@ -50,6 +58,14 @@ export function UpdateDialog({ check, onClose }: UpdateDialogProps) {
       setDownloading(false);
     }
   };
+
+  const percent = progress?.percent;
+  const downloadLabel =
+    downloading && percent != null
+      ? `Downloading ${percent}%`
+      : downloading
+        ? "Downloading..."
+        : "Download and open";
 
   return (
     <Modal
@@ -63,11 +79,11 @@ export function UpdateDialog({ check, onClose }: UpdateDialogProps) {
             Cancel
           </Button>
           <Button
-            className="flex-1"
+            className={`flex-1 ${downloading ? "!bg-brand-500 !text-white" : ""}`}
             onClick={() => void handleDownload()}
             disabled={downloading}
           >
-            {downloading ? "Downloading..." : "Download and open"}
+            {downloadLabel}
           </Button>
         </>
       }
@@ -104,6 +120,23 @@ export function UpdateDialog({ check, onClose }: UpdateDialogProps) {
                 {copied ? "Copied" : "Copy"}
               </Button>
             </div>
+          </div>
+        )}
+        {downloading && (
+          <div
+            className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-neutral-800"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={percent ?? undefined}
+            aria-label="Download progress"
+          >
+            <div
+              className={`h-full bg-brand-500 transition-[width] duration-150 ${
+                percent == null ? "w-1/3 animate-pulse" : ""
+              }`}
+              style={percent != null ? { width: `${percent}%` } : undefined}
+            />
           </div>
         )}
         {error && (

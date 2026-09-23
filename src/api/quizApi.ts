@@ -7,6 +7,7 @@ import type {
   QuizMetadata,
   SaveAttemptInput,
   UpdateCheck,
+  UpdateProgress,
 } from "@shared/types";
 import type {
   CreateFolderPayload,
@@ -40,6 +41,8 @@ export const quizApi = {
     window.quizApi.deleteAttempts(ids),
   checkForUpdate: (): Promise<UpdateCheck> => window.quizApi.checkForUpdate(),
   downloadUpdate: (): Promise<void> => window.quizApi.downloadUpdate(),
+  onUpdateProgress: (listener: (progress: UpdateProgress) => void) =>
+    window.quizApi.onUpdateProgress(listener),
   saveQuizPdf: (html: string, filename: string): Promise<boolean> =>
     window.quizApi.saveQuizPdf(html, filename),
   startMobile: (seed: MobileSessionSeed): Promise<string> =>
