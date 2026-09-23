@@ -109,11 +109,9 @@ export function useLibrary(): UseLibrary {
     async (folderId: string | null) => {
       setError(null);
       const result = await quizApi.importQuiz(folderId);
-      if (!result.ok && result.error) {
-        setError(result.error);
-        return;
-      }
-      if (result.ok) await refresh();
+      if (result.cancelled) return;
+      if ((result.imported?.length ?? 0) > 0 || result.ok) await refresh();
+      if (!result.ok && result.error) setError(result.error);
     },
     [refresh],
   );

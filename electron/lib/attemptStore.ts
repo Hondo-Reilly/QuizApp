@@ -1,7 +1,10 @@
 import { nanoid } from "nanoid";
 import type { QuizAttempt, SaveAttemptInput } from "../../shared/types";
 import { DamagedStoreError, readJsonIfPresent, writeJsonAtomic } from "./durableJson";
+import { createMutationQueue } from "./mutationQueue";
 import { attemptsFile } from "./paths";
+
+const attemptWrites = createMutationQueue();
 
 interface AttemptsFile {
   version: number;
@@ -27,7 +30,11 @@ async function writeAttempts(file: AttemptsFile): Promise<void> {
   await writeJsonAtomic(attemptsFile(), file);
 }
 
-export async function saveAttempt(input: SaveAttemptInput): Promise<QuizAttempt> {
+export function saveAttempt(input: SaveAttemptInput): Promise<QuizAttempt> {
+  return attemptWrites.enqueue(() => writeSavedAttempt(input));
+}
+
+async function writeSavedAttempt(input: SaveAttemptInput): Promise<QuizAttempt> {
   const file = await readAttempts();
   const attempt: QuizAttempt = {
     id: nanoid(10),
@@ -62,7 +69,11 @@ export async function getAttempt(id: string): Promise<QuizAttempt | null> {
   return file.attempts.find((attempt) => attempt.id === id) ?? null;
 }
 
-export async function deleteAttempts(ids: string[]): Promise<void> {
+export function deleteAttempts(ids: string[]): Promise<void> {
+  return attemptWrites.enqueue(() => removeAttempts(ids));
+}
+
+async function removeAttempts(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   const drop = new Set(ids);
   const file = await readAttempts();
@@ -71,7 +82,11 @@ export async function deleteAttempts(ids: string[]): Promise<void> {
   await writeAttempts({ ...file, attempts: next });
 }
 
-export async function deleteAttemptsForQuizzes(quizIds: string[]): Promise<void> {
+export function deleteAttemptsForQuizzes(quizIds: string[]): Promise<void> {
+  return attemptWrites.enqueue(() => removeAttemptsForQuizzes(quizIds));
+}
+
+async function removeAttemptsForQuizzes(quizIds: string[]): Promise<void> {
   if (quizIds.length === 0) return;
   const drop = new Set(quizIds);
   const file = await readAttempts();

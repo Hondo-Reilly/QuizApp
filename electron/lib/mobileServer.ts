@@ -15,6 +15,7 @@ import {
   applyMobilePatch,
   createMobileSession,
   isMobilePatch,
+  mobilePatchIssue,
   type MobilePatch,
   type MobileSession,
   type MobileSessionSeed,
@@ -110,7 +111,7 @@ export function patchMobileSession(
   patch: MobilePatch,
 ): Promise<MobileSession | null> {
   const run = chain.then(() => {
-    if (!session) return null;
+    if (!session || mobilePatchIssue(session, patch)) return null;
     const next = applyMobilePatch(session, patch);
     if (next !== session) {
       session = next;
@@ -209,6 +210,11 @@ async function handleRequest(
     }
     if (!isMobilePatch(parsed)) {
       sendJson(res, 400, { error: "Invalid update." });
+      return;
+    }
+    const issue = session ? mobilePatchIssue(session, parsed) : "Mobile mode is not running.";
+    if (issue) {
+      sendJson(res, 400, { error: issue });
       return;
     }
     const next = await patchMobileSession(parsed);

@@ -1,4 +1,6 @@
 import { BrowserWindow, dialog, ipcMain } from "electron";
+import path from "node:path";
+import { importBatchMessage, type ImportFailure } from "../../shared/importBatch";
 import { IpcChannels } from "../../shared/ipcChannels";
 import {
   createFolder,
@@ -19,6 +21,7 @@ export interface ImportResult {
   cancelled?: boolean;
   error?: string;
   imported?: Awaited<ReturnType<typeof importQuizFromFile>>[];
+  failures?: ImportFailure[];
 }
 
 async function handleImport(
@@ -36,14 +39,19 @@ async function handleImport(
   }
 
   const imported: Awaited<ReturnType<typeof importQuizFromFile>>[] = [];
+  const failures: ImportFailure[] = [];
   for (const filePath of result.filePaths) {
     try {
       imported.push(await importQuizFromFile(filePath, folderId));
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return { ok: false, error: `Failed to import ${filePath}: ${message}` };
+      failures.push({
+        name: path.basename(filePath),
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
+  const error = importBatchMessage(imported.length, failures);
+  if (error) return { ok: false, error, imported, failures };
   return { ok: true, imported };
 }
 

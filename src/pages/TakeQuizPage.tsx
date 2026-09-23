@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { quizApi } from "@/api/quizApi";
 import { useMobileSync } from "@/hooks/useMobileSync";
@@ -13,6 +13,8 @@ import { AfterEachNav } from "@/components/quiz/AfterEachNav";
 import { AtEndNav } from "@/components/quiz/AtEndNav";
 import { QuestionSidebar } from "@/components/quiz/QuestionSidebar";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { ErrorNotice } from "@/components/ui/PageState";
+import { Button } from "@/components/ui/Button";
 import { gradeQuestion, gradeQuiz } from "@shared/grading";
 import { countAnswered, hasAnswer } from "@shared/answers";
 import type { UserAnswer } from "@shared/types";
@@ -22,30 +24,33 @@ export function TakeQuizPage() {
   const navigate = useNavigate();
   const session = useQuizSession();
   const savedAttempt = useRef(false);
+  const saving = useRef(false);
   const finishRef = useRef<(fromRemote: boolean) => void>(() => {});
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useMobileSync(() => finishRef.current(true));
 
   finishRef.current = (fromRemote: boolean) => {
-    if (savedAttempt.current) return;
-    savedAttempt.current = true;
+    if (savedAttempt.current || saving.current) return;
+    saving.current = true;
+    setSaveError(null);
     const endedAt = useQuizSession.getState().markEnded();
-    const persist = async () => {
-      if (!fromRemote && useMobileStore.getState().active) {
-        try {
-          const next = await sendMobilePatch({ type: "finish" });
-          if (next) applyMobileSession(next);
-        } catch {
-          // Leaving the quiz still stops the server.
-        }
-      }
-      const { quiz, order, answers } = useQuizSession.getState();
-      if (!quiz) return;
-      const ordered = order
-        .map((questionId) => quiz.questions.find((q) => q.id === questionId))
-        .filter((q): q is NonNullable<typeof q> => !!q);
-      const grade = gradeQuiz(ordered, answers);
+    void (async () => {
       try {
+        if (!fromRemote && useMobileStore.getState().active) {
+          try {
+            const next = await sendMobilePatch({ type: "finish" });
+            if (next) applyMobileSession(next);
+          } catch {
+            // Leaving the quiz still stops the server.
+          }
+        }
+        const { quiz, order, answers } = useQuizSession.getState();
+        if (!quiz) throw new Error("This quiz is no longer open.");
+        const ordered = order
+          .map((questionId) => quiz.questions.find((q) => q.id === questionId))
+          .filter((q): q is NonNullable<typeof q> => !!q);
+        const grade = gradeQuiz(ordered, answers);
         await quizApi.saveAttempt({
           quizId: quiz.id,
           startedAt: useQuizSession.getState().startedAt ?? endedAt,
@@ -55,11 +60,19 @@ export function TakeQuizPage() {
           questionIds: ordered.map((q) => q.id),
           answers,
         });
-      } catch {
-        savedAttempt.current = false;
+        savedAttempt.current = true;
+        navigate(`/quiz/${id}/review`);
+      } catch (err) {
+        const detail = err instanceof Error ? err.message.trim() : "";
+        setSaveError(
+          detail
+            ? `Could not save this attempt. Your answers are still on this page. ${detail}`
+            : "Could not save this attempt. Your answers are still on this page.",
+        );
+      } finally {
+        saving.current = false;
       }
-    };
-    void persist().finally(() => navigate(`/quiz/${id}/review`));
+    })();
   };
 
   useEffect(() => {
@@ -178,6 +191,13 @@ export function TakeQuizPage() {
               correct={gradeQuestion(question, value)}
               explanation={question.explanation}
             />
+          )}
+
+          {saveError && (
+            <div className="flex flex-col items-start gap-3">
+              <ErrorNotice message={saveError} />
+              <Button onClick={handleFinish}>Retry save</Button>
+            </div>
           )}
 
           {revealAfterEach ? (

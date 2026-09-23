@@ -1,4 +1,5 @@
-import type { Quiz, RevealMode, UserAnswer } from "./types";
+import { hasAnswer } from "./answers";
+import type { Question, Quiz, RevealMode, UserAnswer } from "./types";
 
 export type MobileTheme = "light" | "dark";
 
@@ -52,6 +53,8 @@ export function applyMobilePatch(
   session: MobileSession,
   patch: MobilePatch,
 ): MobileSession {
+  if (mobilePatchIssue(session, patch)) return session;
+
   if (patch.type === "theme") {
     if (patch.theme !== "light" && patch.theme !== "dark") return session;
     if (session.theme === patch.theme) return session;
@@ -98,19 +101,84 @@ function clampIndex(index: number, length: number): number {
   return Math.max(0, Math.min(Math.trunc(index), length - 1));
 }
 
+const PATCH_KEYS: Record<MobilePatch["type"], readonly string[]> = {
+  finish: ["type"],
+  theme: ["type", "theme"],
+  index: ["type", "currentIndex"],
+  submit: ["type", "questionId"],
+  answer: ["type", "questionId", "answer"],
+};
+
+function exactPatchKeys(value: object, type: string): boolean {
+  const allowed = PATCH_KEYS[type as MobilePatch["type"]];
+  if (!allowed) return false;
+  const keys = Object.keys(value);
+  return keys.length === allowed.length && keys.every((key) => allowed.includes(key));
+}
+
+function isQuestionId(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && value.length <= 128;
+}
+
+function isPatchAnswer(value: unknown): value is UserAnswer {
+  if (value === null || typeof value === "boolean") return true;
+  if (typeof value === "string") return value.length <= 200;
+  if (!Array.isArray(value) || value.length > 100) return false;
+  return value.every((item) => typeof item === "string" && item.length <= 200);
+}
+
 export function isMobilePatch(value: unknown): value is MobilePatch {
   if (!value || typeof value !== "object") return false;
   const patch = value as Partial<MobilePatch>;
+  if (typeof patch.type !== "string" || !exactPatchKeys(value, patch.type)) return false;
   if (patch.type === "finish") return true;
-  if (patch.type === "theme") {
-    const theme = (patch as { theme?: unknown }).theme;
-    return theme === "light" || theme === "dark";
-  }
-  if (patch.type === "index") {
-    return typeof (patch as { currentIndex?: unknown }).currentIndex === "number";
-  }
-  if (patch.type === "submit" || patch.type === "answer") {
-    return typeof (patch as { questionId?: unknown }).questionId === "string";
+  if (patch.type === "theme") return patch.theme === "light" || patch.theme === "dark";
+  if (patch.type === "index") return Number.isFinite(patch.currentIndex);
+  if (patch.type === "submit") return isQuestionId(patch.questionId);
+  if (patch.type === "answer") {
+    return isQuestionId(patch.questionId) && isPatchAnswer(patch.answer);
   }
   return false;
+}
+
+export function mobilePatchIssue(
+  session: MobileSession,
+  patch: MobilePatch,
+): string | null {
+  if (patch.type === "theme" || patch.type === "finish" || patch.type === "index") {
+    return null;
+  }
+  if (!session.order.includes(patch.questionId)) {
+    return "That question is not in this quiz.";
+  }
+  if (session.finished || session.submitted[patch.questionId]) return null;
+  const question = session.quiz.questions.find((item) => item.id === patch.questionId);
+  if (!question) return "That question is not in this quiz.";
+  if (patch.type === "submit") {
+    return hasAnswer(session.answers[patch.questionId] ?? null)
+      ? null
+      : "Choose an answer before submitting.";
+  }
+  return answerFitsQuestion(question, patch.answer)
+    ? null
+    : "That answer does not match this question.";
+}
+
+function answerFitsQuestion(question: Question, answer: UserAnswer): boolean {
+  if (answer === null) return true;
+  if (question.type === "true_false") return typeof answer === "boolean";
+  if (question.type === "multiple_choice") {
+    return (
+      typeof answer === "string" &&
+      question.choices.some((choice) => choice.id === answer)
+    );
+  }
+  if (!Array.isArray(answer)) return false;
+  const allowed = new Set(question.choices.map((choice) => choice.id));
+  const seen = new Set<string>();
+  return answer.every((id) => {
+    if (!allowed.has(id) || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
 }

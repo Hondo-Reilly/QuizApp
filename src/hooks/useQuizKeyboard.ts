@@ -20,11 +20,22 @@ function digitIndex(key: string): number | null {
   return n >= 1 && n <= 9 ? n - 1 : null;
 }
 
-function isTypingTarget(el: EventTarget | null): boolean {
+function isInteractiveTarget(el: EventTarget | null): boolean {
   if (!(el instanceof HTMLElement)) return false;
+  if (el.isContentEditable) return true;
+  if (el.closest("[aria-modal='true']")) return true;
   const tag = el.tagName;
-  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
-  return el.isContentEditable;
+  if (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    tag === "BUTTON" ||
+    tag === "A"
+  ) {
+    return true;
+  }
+  const role = el.getAttribute("role");
+  return role === "button" || role === "link";
 }
 
 export function useQuizKeyboard({
@@ -40,7 +51,8 @@ export function useQuizKeyboard({
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (isTypingTarget(e.target)) return;
+      if (document.querySelector("[aria-modal='true']")) return;
+      if (isInteractiveTarget(e.target)) return;
 
       if (e.key === "Enter") {
         e.preventDefault();

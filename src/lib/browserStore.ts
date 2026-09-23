@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 import { allocateStorageId } from "@shared/storageId";
+import { importBatchMessage, type ImportFailure } from "@shared/importBatch";
 import type { QuizApi } from "../../electron/preload";
 import { parseQuiz } from "@shared/schema";
 import type {
@@ -267,14 +268,19 @@ export const browserQuizApi: QuizApi = {
       const files = await pickQuizFiles();
       if (!files || files.length === 0) return { ok: false, cancelled: true };
       const imported = [];
+      const failures: ImportFailure[] = [];
       for (const file of files) {
         try {
           imported.push(await importQuizText(await file.text(), folderId, file.name));
         } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          return { ok: false, error: message, imported };
+          failures.push({
+            name: file.name,
+            error: err instanceof Error ? err.message : String(err),
+          });
         }
       }
+      const error = importBatchMessage(imported.length, failures);
+      if (error) return { ok: false, error, imported, failures };
       return { ok: true, imported };
     }),
   listQuizzes: () =>

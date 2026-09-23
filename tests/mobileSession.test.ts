@@ -3,6 +3,7 @@ import {
   applyMobilePatch,
   createMobileSession,
   isMobilePatch,
+  mobilePatchIssue,
 } from "@shared/mobile";
 import { makeQuiz } from "./fixtures/quiz";
 
@@ -81,5 +82,44 @@ describe("mobile session state", () => {
     expect(isMobilePatch({ type: "unknown" })).toBe(false);
     expect(isMobilePatch({ type: "index", currentIndex: "2" })).toBe(false);
     expect(isMobilePatch({ type: "theme", theme: "blue" })).toBe(false);
+    expect(isMobilePatch({ type: "answer", questionId: "tf", answer: false, extra: true })).toBe(
+      false,
+    );
+    expect(isMobilePatch({ type: "finish", extra: true })).toBe(false);
+  });
+
+  it("rejects answers and submits that do not fit the question", () => {
+    const initial = createMobileSession(seed());
+    expect(
+      mobilePatchIssue(initial, { type: "answer", questionId: "tf", answer: "no" }),
+    ).toMatch(/does not match/);
+    expect(
+      applyMobilePatch(initial, { type: "answer", questionId: "tf", answer: "no" }),
+    ).toBe(initial);
+    expect(mobilePatchIssue(initial, { type: "submit", questionId: "tf" })).toMatch(
+      /Choose an answer/,
+    );
+    expect(applyMobilePatch(initial, { type: "submit", questionId: "single" })).toBe(
+      initial,
+    );
+    const answered = applyMobilePatch(initial, {
+      type: "answer",
+      questionId: "multi",
+      answer: ["a", "a"],
+    });
+    expect(answered).toBe(initial);
+    expect(
+      mobilePatchIssue(initial, {
+        type: "answer",
+        questionId: "single",
+        answer: "missing",
+      }),
+    ).toMatch(/does not match/);
+    const chosen = applyMobilePatch(initial, {
+      type: "answer",
+      questionId: "single",
+      answer: "b",
+    });
+    expect(mobilePatchIssue(chosen, { type: "submit", questionId: "single" })).toBeNull();
   });
 });

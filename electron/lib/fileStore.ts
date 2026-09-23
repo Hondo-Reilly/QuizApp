@@ -11,7 +11,10 @@ import type {
   QuizMetadata,
 } from "../../shared/types";
 import { deleteAttemptsForQuizzes } from "./attemptStore";
+import { createMutationQueue } from "./mutationQueue";
 import { indexFile, quizFile, quizzesDir } from "./paths";
+
+const libraryWrites = createMutationQueue();
 
 const INDEX_VERSION = 2;
 
@@ -127,7 +130,11 @@ export async function getQuiz(id: string): Promise<Quiz | null> {
   return { ...parsed, id: parsed.id ?? id } as Quiz;
 }
 
-export async function deleteQuiz(id: string): Promise<void> {
+export function deleteQuiz(id: string): Promise<void> {
+  return libraryWrites.enqueue(() => removeQuiz(id));
+}
+
+async function removeQuiz(id: string): Promise<void> {
   let path: string;
   try {
     path = quizFile(id);
@@ -143,7 +150,14 @@ export async function deleteQuiz(id: string): Promise<void> {
   await deleteAttemptsForQuizzes([id]);
 }
 
-export async function importQuizFromFile(
+export function importQuizFromFile(
+  sourcePath: string,
+  folderId: string | null = null,
+): Promise<QuizMetadata> {
+  return libraryWrites.enqueue(() => importQuizFile(sourcePath, folderId));
+}
+
+async function importQuizFile(
   sourcePath: string,
   folderId: string | null = null,
 ): Promise<QuizMetadata> {
@@ -183,7 +197,11 @@ export interface CreateFolderInput {
   parentId?: string | null;
 }
 
-export async function createFolder(input: CreateFolderInput): Promise<Folder> {
+export function createFolder(input: CreateFolderInput): Promise<Folder> {
+  return libraryWrites.enqueue(() => addFolder(input));
+}
+
+async function addFolder(input: CreateFolderInput): Promise<Folder> {
   const trimmed = input.name.trim();
   if (!trimmed) throw new Error("Folder name is required");
 
@@ -214,7 +232,11 @@ export interface UpdateFolderInput {
   description?: string;
 }
 
-export async function updateFolder(input: UpdateFolderInput): Promise<Folder> {
+export function updateFolder(input: UpdateFolderInput): Promise<Folder> {
+  return libraryWrites.enqueue(() => editFolder(input));
+}
+
+async function editFolder(input: UpdateFolderInput): Promise<Folder> {
   const index = await readIndex();
   const existing = index.folders.find((f) => f.id === input.id);
   if (!existing) throw new Error("Folder not found");
@@ -257,7 +279,14 @@ function collectDescendantFolderIds(
   return ids;
 }
 
-export async function deleteFolder(
+export function deleteFolder(
+  id: string,
+  opts: { recursive?: boolean } = {},
+): Promise<void> {
+  return libraryWrites.enqueue(() => removeFolder(id, opts));
+}
+
+async function removeFolder(
   id: string,
   opts: { recursive?: boolean } = {},
 ): Promise<void> {
@@ -293,7 +322,14 @@ export async function deleteFolder(
   await deleteAttemptsForQuizzes(quizzesToDelete.map((q) => q.id));
 }
 
-export async function moveQuiz(
+export function moveQuiz(
+  quizId: string,
+  folderId: string | null,
+): Promise<void> {
+  return libraryWrites.enqueue(() => relocateQuiz(quizId, folderId));
+}
+
+async function relocateQuiz(
   quizId: string,
   folderId: string | null,
 ): Promise<void> {
