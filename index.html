@@ -17,6 +17,8 @@
           if (window.quizApi && window.quizApi.setNativeTheme) {
             window.quizApi.setNativeTheme(dark ? "dark" : "light");
           }
+          var accent = localStorage.getItem("quizapp:accent");
+          if (accent) document.documentElement.setAttribute("data-accent", accent);
         } catch (e) {}
       })();
     </script>

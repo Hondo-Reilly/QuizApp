@@ -17,8 +17,9 @@ import {
   moveBrowserQuiz,
   updateBrowserFolder,
 } from "./browserLibrary";
+import { clearAppLocalStorage } from "./appStorage";
 import { pickQuizFiles, printHtml } from "./browserLocal";
-import { run } from "./idbRecords";
+import { deleteDatabase, run } from "./idbRecords";
 
 const noUpdate: UpdateCheck = {
   updateAvailable: false,
@@ -65,6 +66,11 @@ export const browserQuizApi: QuizApi = {
   listAttempts: (quizId) => run(() => listBrowserAttempts(quizId)),
   getAttempt: (id) => run(() => getBrowserAttempt(id)),
   deleteAttempts: (ids) => run(() => deleteBrowserAttempts(ids)),
+  deleteAllAppData: () =>
+    run(async () => {
+      await deleteDatabase();
+      clearAppLocalStorage(window.localStorage);
+    }),
   checkForUpdate: () => Promise.resolve(noUpdate),
   downloadUpdate: () => Promise.resolve(),
   onUpdateProgress: (_listener: (progress: UpdateProgress) => void) => () => undefined,

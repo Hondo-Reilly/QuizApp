@@ -17,6 +17,10 @@ import { indexFile, quizFile, quizzesDir } from "./paths";
 
 const libraryWrites = createMutationQueue();
 
+export function enqueueLibraryWrite<T>(task: () => Promise<T>): Promise<T> {
+  return libraryWrites.enqueue(task);
+}
+
 const INDEX_VERSION = 2;
 
 interface IndexFile {

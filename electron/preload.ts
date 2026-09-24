@@ -45,6 +45,8 @@ const quizApi: QuizApi = {
     ipcRenderer.invoke(IpcChannels.getAttempt, id),
   deleteAttempts: (ids: string[]): Promise<void> =>
     ipcRenderer.invoke(IpcChannels.deleteAttempts, ids),
+  deleteAllAppData: (): Promise<void> =>
+    ipcRenderer.invoke(IpcChannels.deleteAllAppData),
   checkForUpdate: (): Promise<UpdateCheck> =>
     ipcRenderer.invoke(IpcChannels.checkForUpdate),
   downloadUpdate: (): Promise<void> =>

@@ -6,6 +6,10 @@ import { attemptsFile } from "./paths";
 
 const attemptWrites = createMutationQueue();
 
+export function enqueueAttemptWrite<T>(task: () => Promise<T>): Promise<T> {
+  return attemptWrites.enqueue(task);
+}
+
 interface AttemptsFile {
   version: number;
   attempts: QuizAttempt[];

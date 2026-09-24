@@ -72,6 +72,17 @@ export type RecordChange =
   | { key: string; value: unknown }
   | { key: string; delete: true };
 
+export function deleteDatabase(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(DB_NAME);
+    request.onsuccess = () => resolve();
+    request.onerror = () =>
+      reject(request.error ?? new Error("Could not delete saved data."));
+    request.onblocked = () =>
+      reject(new Error("Could not delete saved data because it is still in use."));
+  });
+}
+
 export function changeRecords(changes: readonly RecordChange[]): Promise<void> {
   return access("readwrite", (store) => {
     for (const change of changes) {

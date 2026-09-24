@@ -3,6 +3,7 @@ import { version } from "../package.json";
 import { DownloadAiQuizButton } from "@/components/library/DownloadAiQuizButton";
 import { DownloadExampleButton } from "@/components/library/DownloadExampleButton";
 import { MobileModeButton } from "@/components/ui/MobileModeButton";
+import { SettingsButton } from "@/components/ui/SettingsButton";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UpdateButton } from "@/components/ui/UpdateButton";
 import { Breadcrumb } from "@/components/library/Breadcrumb";
@@ -56,6 +57,7 @@ export function App() {
             )}
             {desktop && <UpdateButton />}
             <ThemeToggle />
+            <SettingsButton />
           </div>
         </div>
       </header>

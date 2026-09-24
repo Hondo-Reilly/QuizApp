@@ -12,6 +12,7 @@ export const IpcChannels = {
   listAttempts: "attempt:list",
   getAttempt: "attempt:get",
   deleteAttempts: "attempt:delete",
+  deleteAllAppData: "app:delete-all-data",
   checkForUpdate: "updates:check",
   downloadUpdate: "updates:download",
   updateProgress: "updates:progress",

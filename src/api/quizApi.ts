@@ -20,6 +20,7 @@ export const quizApi: QuizApi = {
   listAttempts: (quizId) => activeQuizApi().listAttempts(quizId),
   getAttempt: (id) => activeQuizApi().getAttempt(id),
   deleteAttempts: (ids) => activeQuizApi().deleteAttempts(ids),
+  deleteAllAppData: () => activeQuizApi().deleteAllAppData(),
   checkForUpdate: () => activeQuizApi().checkForUpdate(),
   downloadUpdate: () => activeQuizApi().downloadUpdate(),
   onUpdateProgress: (listener) => activeQuizApi().onUpdateProgress(listener),

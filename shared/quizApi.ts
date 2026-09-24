@@ -45,6 +45,7 @@ export interface QuizApi {
   listAttempts(quizId: string): Promise<QuizAttempt[]>;
   getAttempt(id: string): Promise<QuizAttempt | null>;
   deleteAttempts(ids: string[]): Promise<void>;
+  deleteAllAppData(): Promise<void>;
   checkForUpdate(): Promise<UpdateCheck>;
   downloadUpdate(): Promise<void>;
   onUpdateProgress(listener: (progress: UpdateProgress) => void): () => void;

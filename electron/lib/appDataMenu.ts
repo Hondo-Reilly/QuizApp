@@ -1,6 +1,5 @@
 import { app, BrowserWindow, dialog, Menu, shell } from "electron";
-import fs from "node:fs/promises";
-import { attemptsFile, quizzesDir } from "./paths";
+import { eraseAppData } from "./eraseAppData";
 
 async function deleteAllAppData(): Promise<void> {
   const parent =
@@ -19,11 +18,8 @@ async function deleteAllAppData(): Promise<void> {
     : await dialog.showMessageBox(options);
   if (response !== 1) return;
 
-  await fs.rm(quizzesDir(), { recursive: true, force: true });
-  await fs.rm(attemptsFile(), { force: true });
-
+  await eraseAppData();
   for (const win of BrowserWindow.getAllWindows()) {
-    await win.webContents.session.clearStorageData();
     win.webContents.reload();
   }
 }
