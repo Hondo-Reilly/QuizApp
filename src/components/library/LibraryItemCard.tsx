@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { DragEvent, DragEventHandler, ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
 
 export interface LibraryItemCardProps {
@@ -9,6 +9,14 @@ export interface LibraryItemCardProps {
   metadata: ReactNode;
   actions: ReactNode;
   onOpen: () => void;
+  draggable?: boolean;
+  dragging?: boolean;
+  dropActive?: boolean;
+  onDragStart?: (event: DragEvent<HTMLElement>) => void;
+  onDragEnd?: (event: DragEvent<HTMLElement>) => void;
+  onDragOver?: (event: DragEvent<HTMLElement>) => void;
+  onDragLeave?: (event: DragEvent<HTMLElement>) => void;
+  onDrop?: (event: DragEvent<HTMLElement>) => void;
 }
 
 export function LibraryItemCard({
@@ -19,6 +27,14 @@ export function LibraryItemCard({
   metadata,
   actions,
   onOpen,
+  draggable = false,
+  dragging = false,
+  dropActive = false,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop,
 }: LibraryItemCardProps) {
   const heading = (
     <h3 className="text-lg font-semibold text-slate-900 dark:text-neutral-100">
@@ -27,14 +43,41 @@ export function LibraryItemCard({
   );
 
   return (
-    <Card className="flex flex-col gap-3">
+    <Card
+      draggable={draggable}
+      onDragStart={(event) => {
+        const target = event.target;
+        if (target instanceof Element && target.closest("[data-no-drag]")) {
+          event.preventDefault();
+          return;
+        }
+        const card = event.currentTarget;
+        const rect = card.getBoundingClientRect();
+        event.dataTransfer.setDragImage(
+          card,
+          event.clientX - rect.left,
+          event.clientY - rect.top,
+        );
+        onDragStart?.(event);
+      }}
+      onDragEnd={onDragEnd as DragEventHandler<HTMLDivElement>}
+      onDragOver={onDragOver as DragEventHandler<HTMLDivElement>}
+      onDragLeave={onDragLeave as DragEventHandler<HTMLDivElement>}
+      onDrop={onDrop as DragEventHandler<HTMLDivElement>}
+      aria-grabbed={draggable ? dragging : undefined}
+      className={`flex flex-col gap-3 ${draggable ? "cursor-grab select-none active:cursor-grabbing" : ""} ${dragging ? "opacity-60" : ""} ${dropActive ? "bg-brand-50 ring-2 ring-brand-500 dark:bg-neutral-800" : ""}`}
+    >
       <button
         type="button"
+        draggable={false}
+        onDragOver={onDragOver as DragEventHandler<HTMLButtonElement>}
+        onDragLeave={onDragLeave as DragEventHandler<HTMLButtonElement>}
+        onDrop={onDrop as DragEventHandler<HTMLButtonElement>}
         onClick={onOpen}
         className={
           variant === "folder"
             ? "flex flex-1 flex-col gap-2 text-left"
-            : "flex flex-1 flex-col text-left"
+            : "flex flex-1 cursor-grab flex-col text-left active:cursor-grabbing"
         }
       >
         {icon ? (
@@ -62,7 +105,9 @@ export function LibraryItemCard({
           {metadata}
         </div>
       </button>
-      <div className="flex items-center justify-end gap-2">{actions}</div>
+      <div data-no-drag className="flex items-center justify-end gap-2">
+        {actions}
+      </div>
     </Card>
   );
 }

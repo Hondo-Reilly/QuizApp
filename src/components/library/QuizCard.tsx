@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
+import { writeQuizDrag } from "@/lib/quizDrag";
 import { LibraryItemCard } from "./LibraryItemCard";
 import type { QuizMetadata } from "@shared/types";
 
@@ -23,12 +25,23 @@ function formatDate(iso: string): string {
 
 export function QuizCard({ quiz, onDelete, onMove }: QuizCardProps) {
   const navigate = useNavigate();
+  const [dragging, setDragging] = useState(false);
 
   return (
     <LibraryItemCard
       variant="quiz"
       title={quiz.title}
       description={quiz.description}
+      draggable
+      dragging={dragging}
+      onDragStart={(event) => {
+        writeQuizDrag(event.dataTransfer, {
+          id: quiz.id,
+          folderId: quiz.folderId,
+        });
+        setDragging(true);
+      }}
+      onDragEnd={() => setDragging(false)}
       onOpen={() =>
         navigate(`/quiz/${quiz.id}`, { state: { folderId: quiz.folderId } })
       }

@@ -9,6 +9,7 @@ import { Breadcrumb } from "@/components/library/Breadcrumb";
 import { useLibrary, type UseLibrary } from "@/hooks/useLibrary";
 import { DevViewIndicator } from "@/components/dev/DevViewIndicator";
 import { isElectronApp } from "@/lib/runtime";
+import type { DraggedQuiz } from "@/lib/quizDrag";
 
 export function App() {
   const library = useLibrary();
@@ -35,7 +36,13 @@ export function App() {
           </Link>
           <div className="titlebar-no-drag min-w-0 flex-1">
             {breadcrumbPath.length > 0 && (
-              <Breadcrumb path={breadcrumbPath} />
+              <Breadcrumb
+                path={breadcrumbPath}
+                onDropQuiz={(quiz: DraggedQuiz, folderId) => {
+                  if ((quiz.folderId ?? null) === folderId) return;
+                  void library.moveQuiz(quiz.id, folderId);
+                }}
+              />
             )}
           </div>
           <div className="titlebar-no-drag flex shrink-0 items-center gap-3">

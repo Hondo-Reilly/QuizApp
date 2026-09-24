@@ -12,6 +12,7 @@ import { NewFolderDialog } from "@/components/library/NewFolderDialog";
 import { RenameFolderDialog } from "@/components/library/RenameFolderDialog";
 import { MoveQuizDialog } from "@/components/library/MoveQuizDialog";
 import type { UseLibrary } from "@/hooks/useLibrary";
+import type { DraggedQuiz } from "@/lib/quizDrag";
 import type { Folder, QuizMetadata } from "@shared/types";
 
 export function LibraryPage() {
@@ -50,6 +51,11 @@ export function LibraryPage() {
 
   const isInvalidFolder =
     currentFolderId !== null && currentFolder === null && !loading;
+
+  const handleDropQuiz = async (quiz: DraggedQuiz, folderId: string | null) => {
+    if ((quiz.folderId ?? null) === folderId) return;
+    await moveQuiz(quiz.id, folderId);
+  };
 
   const handleDeleteFolder = async (folder: Folder) => {
     const count = countsByFolder.get(folder.id) ?? 0;
@@ -114,6 +120,7 @@ export function LibraryPage() {
                     quizCount={countsByFolder.get(folder.id) ?? 0}
                     onRename={setRenameTarget}
                     onDelete={handleDeleteFolder}
+                    onDropQuiz={(quiz) => handleDropQuiz(quiz, folder.id)}
                   />
                 ))}
               </div>

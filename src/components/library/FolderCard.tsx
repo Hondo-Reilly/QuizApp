@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
+import { useQuizDrop, type DraggedQuiz } from "@/lib/quizDrag";
 import { LibraryItemCard } from "./LibraryItemCard";
 import type { Folder } from "@shared/types";
 
@@ -8,6 +9,7 @@ export interface FolderCardProps {
   quizCount: number;
   onRename: (folder: Folder) => void;
   onDelete: (folder: Folder) => void;
+  onDropQuiz: (quiz: DraggedQuiz) => void;
 }
 
 function FolderIcon() {
@@ -33,8 +35,10 @@ export function FolderCard({
   quizCount,
   onRename,
   onDelete,
+  onDropQuiz,
 }: FolderCardProps) {
   const navigate = useNavigate();
+  const { over, dropProps } = useQuizDrop(onDropQuiz);
 
   return (
     <LibraryItemCard
@@ -42,6 +46,10 @@ export function FolderCard({
       title={folder.name}
       description={folder.description}
       icon={<FolderIcon />}
+      dropActive={over}
+      onDragOver={dropProps.onDragOver}
+      onDragLeave={dropProps.onDragLeave}
+      onDrop={dropProps.onDrop}
       onOpen={() => navigate(`/folder/${folder.id}`)}
       metadata={
         <>
