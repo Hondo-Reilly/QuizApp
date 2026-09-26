@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, Outlet, useMatch } from "react-router-dom";
 import { version } from "../package.json";
 import { DownloadAiQuizButton } from "@/components/library/DownloadAiQuizButton";
@@ -10,10 +11,16 @@ import { Breadcrumb } from "@/components/library/Breadcrumb";
 import { useLibrary, type UseLibrary } from "@/hooks/useLibrary";
 import { DevViewIndicator } from "@/components/dev/DevViewIndicator";
 import { isElectronApp } from "@/lib/runtime";
+import { hideSplash } from "@/lib/splash";
 import type { DraggedQuiz } from "@/lib/quizDrag";
 
 export function App() {
   const library = useLibrary();
+
+  // The splash stays up until the library's first load settles, loaded or failed.
+  useEffect(() => {
+    if (!library.loading) hideSplash();
+  }, [library.loading]);
 
   const folderMatch = useMatch("/folder/:folderId");
   const takingQuiz = useMatch("/quiz/:id/take");

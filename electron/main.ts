@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeImage, protocol, shell } from "electron";
+import { app, BrowserWindow, nativeImage, nativeTheme, protocol, shell } from "electron";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { registerIpcHandlers } from "./ipc/handlers";
@@ -54,7 +54,10 @@ function createWindow(): void {
     height: 840,
     minWidth: 720,
     minHeight: 520,
-    backgroundColor: "#f8fafc",
+    // Hidden until the splash has painted, so launch never flashes an empty
+    // window. The page corrects the color once it knows the saved theme.
+    show: false,
+    backgroundColor: nativeTheme.shouldUseDarkColors ? "#0a0a0a" : "#f8fafc",
     title: "QuizApp",
     ...(process.platform === "darwin"
       ? {
@@ -81,6 +84,15 @@ function createWindow(): void {
     });
     win.on("focus", showWindowButtons);
   }
+
+  let shown = false;
+  const showWindow = () => {
+    if (shown || win.isDestroyed()) return;
+    shown = true;
+    win.show();
+  };
+  win.once("ready-to-show", showWindow);
+  setTimeout(showWindow, 3000);
 
   // Markdown links open in the default browser, never in an app window.
   win.webContents.setWindowOpenHandler(({ url }) => {

@@ -5,6 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <title>QuizApp</title>
+    <style>
+      /* Launch splash, shown before the app's code loads. src/lib/splash.ts hides it. */
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        background: #f8fafc;
+        color: #0f172a;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        transition: opacity 180ms ease-out;
+        -webkit-app-region: drag;
+      }
+      .dark #splash {
+        background: #0a0a0a;
+        color: #f5f5f5;
+      }
+      #splash.splash-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .splash-title {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .splash-spinner {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 3px solid rgb(148 163 184 / 0.3);
+        border-top-color: rgb(var(--brand-500, 59 109 240));
+        /* Fast launches never show the spinner; it only fades in after 300ms. */
+        animation:
+          splash-spin 0.8s linear infinite,
+          splash-appear 0.2s ease-out 0.3s both;
+      }
+      @keyframes splash-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes splash-appear {
+        from {
+          opacity: 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #splash {
+          transition: none;
+        }
+        .splash-spinner {
+          animation:
+            splash-spin 2.4s linear infinite,
+            splash-appear 0.2s ease-out 0.3s both;
+        }
+      }
+    </style>
     <script>
       (function () {
         try {
@@ -24,6 +86,17 @@
     </script>
   </head>
   <body class="bg-slate-50 text-slate-900 antialiased dark:bg-neutral-950 dark:text-neutral-100">
+    <div id="splash" role="status" aria-label="Loading QuizApp">
+      <div class="splash-title">QuizApp</div>
+      <div class="splash-spinner" aria-hidden="true"></div>
+    </div>
+    <script>
+      // Never leave the splash up if the app fails to start.
+      setTimeout(function () {
+        var splash = document.getElementById("splash");
+        if (splash) splash.classList.add("splash-hidden");
+      }, 15000);
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
