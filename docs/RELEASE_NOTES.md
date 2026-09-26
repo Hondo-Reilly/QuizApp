@@ -1,15 +1,18 @@
-# v0.2.0
+# v0.3.0
+
+## New
+
+- Scenario questions: a quiz can define shared case studies or passages, and each question can show one above its prompt. Questions that share a scenario stay together when shuffled. Existing quiz files import unchanged.
+- The Ai Quiz Skill download and the example quiz now cover scenario questions.
+- Settings now include an accent color and **Delete All App Data**, which removes quizzes, attempts, and saved settings after confirmation.
 
 ## Fixes
 
-- Fixed the blank window in affected installed Mac builds by making packaged UI asset paths relative to the app's HTML file.
-- Added a desktop build check that rejects missing or root-absolute asset paths before a DMG is produced.
-- Added the first 20 automated tests for quiz validation and grading, session behavior, mobile session state, and setup preferences.
+- A failed attempt save now stays on the quiz so it can be retried.
+- Desktop library writes run one at a time, and related browser writes share a single transaction.
+- Imports that only partly succeed now report which files failed.
+- Mobile mode checks answers sent from the phone, and keyboard focus stays inside open dialogs.
 
-## Installation note for existing Mac users
+## Installation note
 
-**A manual reinstall is likely needed if your installed app opens to a blank window.** The blank window prevents the in-app update controls from loading. Quit QuizApp, download the v0.2.0 Apple Silicon DMG, open it, and drag QuizApp into Applications, replacing the existing app. Saved quizzes, attempts, and settings are stored separately from the application bundle and should remain available after replacement. Do not use **Delete All App Data** for this update.
-
-The previously installed v0.1.5 build and some earlier v0.1.6 packages used broken asset paths. The v0.1.4 DMG inspected during diagnosis used working relative paths. The browser build is unaffected by this Mac packaging issue.
-
-QuizApp is currently unsigned; if macOS blocks the newly downloaded app, follow the [Mac installation instructions](https://github.com/Hondo-Reilly/QuizApp#install).
+QuizApp is currently unsigned. If macOS blocks the downloaded app, follow the [Mac installation instructions](https://github.com/Hondo-Reilly/QuizApp#install).
