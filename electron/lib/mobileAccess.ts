@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 
-const MAX_MOBILE_BODY = 64 * 1024;
+// Room for a long written answer in JSON. Photos use their own upload route.
+const MAX_MOBILE_BODY = 256 * 1024;
 
 export function mobileTokensMatch(
   provided: string | null,

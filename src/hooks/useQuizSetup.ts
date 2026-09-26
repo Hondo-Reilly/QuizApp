@@ -12,6 +12,7 @@ import {
 } from "@/lib/quizTimeSettings";
 import { isElectronApp } from "@/lib/runtime";
 import { useSessionStore } from "@/state/sessionStore";
+import { isOpenQuestion } from "@shared/questionTypes";
 import type { Quiz, RevealMode } from "@shared/types";
 
 export function useQuizSetup(quizId: string, folderId: string | null) {
@@ -24,6 +25,7 @@ export function useQuizSetup(quizId: string, folderId: string | null) {
   const [shuffleChoices, setShuffleChoices] = useState(saved.shuffleChoices);
   const [revealMode, setRevealMode] = useState<RevealMode>(saved.revealMode);
   const [enableMobile, setEnableMobile] = useState(saved.enableMobile);
+  const [selfMark, setSelfMark] = useState(saved.selfMark);
   const [questionCount, setQuestionCount] = useState(0);
   const [timeLimitEnabled, setTimeLimitEnabled] = useState(false);
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(60);
@@ -56,8 +58,9 @@ export function useQuizSetup(quizId: string, folderId: string | null) {
       shuffleChoices,
       revealMode,
       enableMobile,
+      selfMark,
     });
-  }, [shuffleQuestions, shuffleChoices, revealMode, enableMobile]);
+  }, [shuffleQuestions, shuffleChoices, revealMode, enableMobile, selfMark]);
 
   useEffect(() => {
     const time = readQuizTimeSettings(quizId);
@@ -82,6 +85,8 @@ export function useQuizSetup(quizId: string, folderId: string | null) {
       revealMode,
       questionCount,
       timeLimitMinutes: timeLimitEnabled ? Math.max(1, timeLimitMinutes) : null,
+      // Only quizzes with written or photo answers have anything to self-mark.
+      selfMark: selfMark && quiz.questions.some(isOpenQuestion),
     });
     navigate(`/quiz/${quizId}/take`);
     if (enableMobile && isElectronApp()) {
@@ -101,6 +106,8 @@ export function useQuizSetup(quizId: string, folderId: string | null) {
     setRevealMode,
     enableMobile,
     setEnableMobile,
+    selfMark,
+    setSelfMark,
     questionCount,
     setQuestionCount,
     timeLimitEnabled,

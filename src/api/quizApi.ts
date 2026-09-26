@@ -21,6 +21,12 @@ export const quizApi: QuizApi = {
   saveAttempt: (input) => activeQuizApi().saveAttempt(input),
   listAttempts: (quizId) => activeQuizApi().listAttempts(quizId),
   getAttempt: (id) => activeQuizApi().getAttempt(id),
+  setAttemptFlags: (id, flagged) => activeQuizApi().setAttemptFlags(id, flagged),
+  setAttemptSelfMarks: (id, selfMarks, score) =>
+    activeQuizApi().setAttemptSelfMarks(id, selfMarks, score),
+  getAttemptPhotoUrls: (attemptId, names) =>
+    activeQuizApi().getAttemptPhotoUrls(attemptId, names),
+  getMobilePhoto: (name) => activeQuizApi().getMobilePhoto(name),
   deleteAttempts: (ids) => activeQuizApi().deleteAttempts(ids),
   deleteAllAppData: () => activeQuizApi().deleteAllAppData(),
   checkForUpdate: () => activeQuizApi().checkForUpdate(),

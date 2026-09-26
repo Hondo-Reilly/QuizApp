@@ -7,6 +7,8 @@ export interface QuizSetupPreferences {
   shuffleChoices: boolean;
   revealMode: RevealMode;
   enableMobile: boolean;
+  /** Mark my own written and photo answers. */
+  selfMark: boolean;
 }
 
 const DEFAULTS: QuizSetupPreferences = {
@@ -14,6 +16,7 @@ const DEFAULTS: QuizSetupPreferences = {
   shuffleChoices: true,
   revealMode: "at_end",
   enableMobile: false,
+  selfMark: false,
 };
 
 function isRevealMode(value: unknown): value is RevealMode {
@@ -42,6 +45,8 @@ export function readQuizSetupPreferences(): QuizSetupPreferences {
         typeof parsed.enableMobile === "boolean"
           ? parsed.enableMobile
           : DEFAULTS.enableMobile,
+      selfMark:
+        typeof parsed.selfMark === "boolean" ? parsed.selfMark : DEFAULTS.selfMark,
     };
   } catch {
     return DEFAULTS;

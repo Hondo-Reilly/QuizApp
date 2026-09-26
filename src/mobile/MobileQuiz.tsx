@@ -8,8 +8,9 @@ import {
   QuizContentProvider,
   type LoadAssetUrls,
 } from "@/components/content/QuizContentContext";
-import { countAnswered, hasAnswer } from "@shared/answers";
-import { gradeQuestion } from "@shared/grading";
+import { countAnswered, isAnswered } from "@shared/answers";
+import { PhotoSourceProvider, type PhotoSource } from "@/components/content/PhotoSource";
+import { processPhoto } from "@/lib/photos";
 import { scenarioFor } from "@shared/scenarios";
 import type { MobilePatch, MobileSession } from "@shared/mobile";
 
@@ -29,6 +30,28 @@ const loadMobileAssetUrls: LoadAssetUrls = (_quizId, paths) =>
       ]),
     ),
   );
+
+// Photos taken on the phone are uploaded to the Mac, which keeps them for the attempt.
+const mobilePhotoSource: PhotoSource = {
+  resolve: (names) =>
+    Promise.resolve(
+      Object.fromEntries(
+        names.map((name) => [name, withSessionToken(`/photo/${encodeURIComponent(name)}`)]),
+      ),
+    ),
+  async add(questionId, file) {
+    const data = await processPhoto(file);
+    const response = await fetch(
+      withSessionToken(`/photo?questionId=${encodeURIComponent(questionId)}`),
+      { method: "POST", headers: { "Content-Type": "image/jpeg" }, body: data as BodyInit },
+    );
+    const body = (await response.json().catch(() => ({}))) as { name?: string; error?: string };
+    if (!response.ok || !body.name) {
+      throw new Error(body.error ?? "The photo could not be sent to your computer.");
+    }
+    return body.name;
+  },
+};
 
 export function MobileQuiz() {
   const [session, setSession] = useState<MobileSession | null>(null);
@@ -134,6 +157,7 @@ export function MobileQuiz() {
 
   return (
     <QuizContentProvider quiz={session.quiz} loadAssetUrls={loadMobileAssetUrls}>
+      <PhotoSourceProvider source={mobilePhotoSource}>
       <main className="mx-auto flex min-h-full w-full max-w-lg flex-col gap-4 px-4 py-6">
         <h1 className="text-xl font-semibold text-slate-900 dark:text-neutral-100">
           {session.quiz.title}
@@ -155,11 +179,22 @@ export function MobileQuiz() {
           reveal={locked}
           disabled={locked}
           choiceOrder={session.choicesOrder[question.id]}
+          flagged={!!session.flagged?.[question.id]}
+          onToggleFlag={() =>
+            send({
+              type: "flag",
+              questionId: question.id,
+              flagged: !session.flagged?.[question.id],
+            })
+          }
         />
         {locked && (
           <AnswerFeedback
-            correct={gradeQuestion(question, value)}
-            explanation={question.explanation}
+            question={question}
+            value={value}
+            selfMarking={session.selfMarking}
+            selfMark={session.selfMarks?.[question.id]}
+            onSelfMark={(mark) => send({ type: "mark", questionId: question.id, mark })}
           />
         )}
         {error && (
@@ -170,7 +205,7 @@ export function MobileQuiz() {
             isFirst={isFirst}
             isLast={isLast}
             submitted={submitted}
-            canSubmit={hasAnswer(value)}
+            canSubmit={isAnswered(question, value)}
             onPrevious={() => send({ type: "index", currentIndex: session.currentIndex - 1 })}
             onNext={() => send({ type: "index", currentIndex: session.currentIndex + 1 })}
             onSubmit={() => send({ type: "submit", questionId: question.id })}
@@ -187,6 +222,7 @@ export function MobileQuiz() {
           />
         )}
       </main>
+      </PhotoSourceProvider>
     </QuizContentProvider>
   );
 }

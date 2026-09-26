@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import { enqueueAttemptWrite } from "./attemptStore";
 import { enqueueLibraryWrite } from "./fileStore";
 import { stopMobileServer } from "./mobileServer";
-import { attemptsFile, quizzesDir } from "./paths";
+import { attemptPhotosRoot, attemptsFile, quizzesDir } from "./paths";
 
 export async function eraseAppData(): Promise<void> {
   await stopMobileServer();
@@ -11,6 +11,7 @@ export async function eraseAppData(): Promise<void> {
   await enqueueAttemptWrite(async () => {
     await fs.rm(attempts, { force: true });
     await fs.rm(`${attempts}.bak`, { force: true });
+    await fs.rm(attemptPhotosRoot(), { recursive: true, force: true });
   });
   await enqueueLibraryWrite(() =>
     fs.rm(quizzesDir(), { recursive: true, force: true }),

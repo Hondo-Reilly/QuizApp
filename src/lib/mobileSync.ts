@@ -8,7 +8,7 @@ import {
   type MobileSession,
   type MobileSessionSeed,
 } from "@shared/mobile";
-import type { UserAnswer } from "@shared/types";
+import type { SelfMark, UserAnswer } from "@shared/types";
 
 let applying = false;
 let arming = false;
@@ -18,6 +18,8 @@ interface SessionSlice {
   currentIndex: number;
   answers: Record<string, UserAnswer>;
   submitted: Record<string, boolean>;
+  flagged: Record<string, boolean>;
+  selfMarks: Record<string, SelfMark>;
 }
 
 export function installMobileSync(onRemoteFinish: () => void): () => void {
@@ -95,6 +97,8 @@ export function applyMobileSession(snapshot: {
   currentIndex: number;
   answers: MobileSession["answers"];
   submitted: MobileSession["submitted"];
+  flagged: MobileSession["flagged"];
+  selfMarks: MobileSession["selfMarks"];
 }): void {
   applying = true;
   useSessionStore.getState().applyRemote(snapshot);
@@ -112,6 +116,9 @@ function seedFromStore(): MobileSessionSeed | null {
     currentIndex: state.currentIndex,
     answers: state.answers,
     submitted: state.submitted,
+    flagged: state.flagged,
+    selfMarks: state.selfMarks,
+    selfMarking: state.config.selfMark,
     theme: currentTheme(),
     deadlineAt: state.deadlineAt,
   };
@@ -142,6 +149,24 @@ function diff(prev: SessionSlice, next: SessionSlice): MobilePatch[] {
   for (const questionId of submittedIds) {
     if (!prev.submitted[questionId] && next.submitted[questionId]) {
       patches.push({ type: "submit", questionId });
+    }
+  }
+  const flaggedIds = new Set([
+    ...Object.keys(prev.flagged),
+    ...Object.keys(next.flagged),
+  ]);
+  for (const questionId of flaggedIds) {
+    if (!!prev.flagged[questionId] !== !!next.flagged[questionId]) {
+      patches.push({ type: "flag", questionId, flagged: !!next.flagged[questionId] });
+    }
+  }
+  const markedIds = new Set([
+    ...Object.keys(prev.selfMarks),
+    ...Object.keys(next.selfMarks),
+  ]);
+  for (const questionId of markedIds) {
+    if (prev.selfMarks[questionId] !== next.selfMarks[questionId]) {
+      patches.push({ type: "mark", questionId, mark: next.selfMarks[questionId] ?? null });
     }
   }
   return patches;

@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { imageContentType, imageRefs } from "../../shared/quizContent";
+import { isPhotoName, maxImagesOf } from "../../shared/questionTypes";
 import { readQuizAsset } from "./quizAssets";
 import { app, BrowserWindow } from "electron";
 import fs from "node:fs/promises";
@@ -35,6 +36,16 @@ let cancelStart: (() => void) | null = null;
 let chain: Promise<void> = Promise.resolve();
 let keepAlive: ReturnType<typeof setInterval> | null = null;
 
+/** Photos the phone uploaded for image-response answers in this session. */
+const photos = new Map<string, { questionId: string; data: Buffer }>();
+const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
+const MAX_SESSION_PHOTOS = 200;
+
+export function getMobilePhoto(name: string): Uint8Array | null {
+  const photo = photos.get(name);
+  return photo ? new Uint8Array(photo.data) : null;
+}
+
 export function mobileServerUrl(): string | null {
   return publicUrl;
 }
@@ -44,6 +55,7 @@ export function startMobileServer(seed: MobileSessionSeed): Promise<string> {
   if (starting) return starting;
 
   const current = ++generation;
+  photos.clear();
   session = createMobileSession(seed);
   sessionToken = randomBytes(24).toString("base64url");
   const created = http.createServer((req, res) => {
@@ -99,6 +111,7 @@ export async function stopMobileServer(): Promise<void> {
     client.end();
   }
   clients.clear();
+  photos.clear();
   if (keepAlive) clearInterval(keepAlive);
   keepAlive = null;
   const closing = server;
@@ -192,6 +205,14 @@ async function handleRequest(
     req.on("close", () => clients.delete(res));
     return;
   }
+  if (req.method === "POST" && url.pathname === "/photo") {
+    await receivePhoto(req, res, url);
+    return;
+  }
+  if (req.method === "GET" && url.pathname.startsWith("/photo/")) {
+    servePhoto(req, res, url);
+    return;
+  }
   if (req.method === "GET" && url.pathname.startsWith("/asset/")) {
     await serveQuizAsset(req, res, url);
     return;
@@ -232,6 +253,88 @@ async function handleRequest(
     return;
   }
   sendJson(res, 405, { error: "Method not allowed." });
+}
+
+async function receivePhoto(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  url: URL,
+): Promise<void> {
+  if (!allowMobileRequest(req, url) || !session) {
+    sendJson(res, 401, { error: "Mobile session was not authorized." });
+    return;
+  }
+  const questionId = url.searchParams.get("questionId") ?? "";
+  const question = session.quiz.questions.find((item) => item.id === questionId);
+  if (!question || question.type !== "image_response" || !session.order.includes(questionId)) {
+    sendJson(res, 400, { error: "That question does not take a photo." });
+    return;
+  }
+  if (session.finished || session.submitted[questionId]) {
+    sendJson(res, 400, { error: "This answer can no longer change." });
+    return;
+  }
+  if (headerValue(req.headers["content-type"]) !== "image/jpeg") {
+    sendJson(res, 415, { error: "Expected a JPEG photo." });
+    return;
+  }
+  const forQuestion = [...photos.values()].filter((photo) => photo.questionId === questionId);
+  if (photos.size >= MAX_SESSION_PHOTOS || forQuestion.length >= maxImagesOf(question) * 4) {
+    sendJson(res, 400, { error: "Too many photos for this question." });
+    return;
+  }
+  let data: Buffer;
+  try {
+    data = await readBinaryBody(req, MAX_PHOTO_BYTES);
+  } catch {
+    sendJson(res, 413, { error: "That photo is too large." });
+    return;
+  }
+  if (data.length < 3 || data[0] !== 0xff || data[1] !== 0xd8 || data[2] !== 0xff) {
+    sendJson(res, 400, { error: "That file is not a JPEG photo." });
+    return;
+  }
+  const stem = questionId.replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 60) || "photo";
+  const name = `${stem}-${randomBytes(6).toString("hex")}.jpg`;
+  photos.set(name, { questionId, data });
+  sendJson(res, 200, { name });
+}
+
+function servePhoto(req: http.IncomingMessage, res: http.ServerResponse, url: URL): void {
+  if (!allowMobileRequest(req, url)) {
+    sendJson(res, 401, { error: "Mobile session was not authorized." });
+    return;
+  }
+  let name: string;
+  try {
+    name = decodeURIComponent(url.pathname.slice("/photo/".length));
+  } catch {
+    sendJson(res, 400, { error: "Invalid photo name." });
+    return;
+  }
+  const photo = isPhotoName(name) ? photos.get(name) : undefined;
+  if (!photo) {
+    sendJson(res, 404, { error: "Not found." });
+    return;
+  }
+  res.writeHead(200, {
+    "Content-Type": "image/jpeg",
+    "Content-Length": photo.data.length,
+    "Cache-Control": "no-store",
+  });
+  res.end(photo.data);
+}
+
+async function readBinaryBody(req: http.IncomingMessage, limit: number): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of req) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    size += buffer.length;
+    if (size > limit) throw new Error("Body too large.");
+    chunks.push(buffer);
+  }
+  return Buffer.concat(chunks);
 }
 
 async function serveQuizAsset(

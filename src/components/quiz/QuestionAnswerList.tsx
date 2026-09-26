@@ -1,30 +1,31 @@
 import { QuestionResultCard, ResultBadge } from "./QuestionResultCard";
 import { ScenarioPanel } from "./ScenarioPanel";
 import { ChoiceContent } from "@/components/content/ChoiceContent";
+import { FlagButton } from "./FlagButton";
 import { QuizImageView } from "@/components/content/QuizImageView";
 import { RichText } from "@/components/content/RichText";
-import { gradeQuestion } from "@shared/grading";
+import { questionOutcome } from "@shared/grading";
+import { isChoiceQuestion, isOpenQuestion, questionTypeLabel } from "@shared/questionTypes";
+import { OpenAnswerView, SampleAnswerView } from "./OpenAnswer";
+import { SelfMarkControl } from "./SelfMarkControl";
 import { startsScenario } from "@shared/scenarios";
-import type { Choice, Question, QuizImage, Scenario, UserAnswer } from "@shared/types";
+import type { Choice, Question, QuizImage, Scenario, SelfMark, UserAnswer } from "@shared/types";
 
 export interface QuestionAnswerListProps {
   questions: Question[];
   scenarios?: Scenario[];
   answers?: Record<string, UserAnswer>;
+  /** With onToggleFlag, shows a flag button on each question. */
+  flagged?: ReadonlySet<string>;
+  onToggleFlag?: (questionId: string) => void;
+  /** Self-marks of written and photo answers in the attempt. */
+  selfMarks?: Record<string, SelfMark>;
+  /** Shows self-mark buttons on written and photo answers. */
+  onSelfMark?: (questionId: string, mark: SelfMark | null) => void;
 }
 
 type ChoiceMark = "neutral" | "correct" | "picked" | "missed";
 
-function typeLabel(question: Question): string {
-  switch (question.type) {
-    case "true_false":
-      return "True / False";
-    case "multiple_choice":
-      return "Multiple choice";
-    case "multi_answer":
-      return "Select all";
-  }
-}
 
 function isCorrectChoice(question: Question, choice: Choice): boolean {
   if (question.type === "multiple_choice") return question.answer === choice.id;
@@ -95,7 +96,7 @@ function ChoiceRow({
 }
 
 function choicesFor(
-  question: Question,
+  question: Exclude<Question, { type: "short_answer" | "long_answer" | "image_response" }>,
   answer: UserAnswer | undefined,
   showSelections: boolean,
 ): { id: string; text: string; image?: QuizImage; mark: ChoiceMark }[] {
@@ -105,7 +106,9 @@ function choicesFor(
           { id: "true", text: "True", image: undefined, correct: question.answer === true },
           { id: "false", text: "False", image: undefined, correct: question.answer === false },
         ]
-      : question.choices.map((choice) => ({
+      : !isChoiceQuestion(question)
+        ? []
+        : question.choices.map((choice) => ({
           id: choice.id,
           text: choice.text,
           image: choice.image,
@@ -134,6 +137,10 @@ export function QuestionAnswerList({
   questions,
   scenarios,
   answers,
+  flagged,
+  onToggleFlag,
+  selfMarks = {},
+  onSelfMark,
 }: QuestionAnswerListProps) {
   const showSelections = answers !== undefined;
   const scenarioById = new Map(scenarios?.map((scenario) => [scenario.id, scenario]));
@@ -142,7 +149,7 @@ export function QuestionAnswerList({
     <ol className="flex flex-col gap-4">
       {questions.map((question, index) => {
         const answer = answers?.[question.id];
-        const correct = showSelections ? gradeQuestion(question, answer ?? null) : false;
+        const outcome = questionOutcome(question, answer ?? null, selfMarks[question.id]);
         const scenario = startsScenario(questions, index)
           ? scenarioById.get(question.scenarioId ?? "")
           : undefined;
@@ -162,26 +169,54 @@ export function QuestionAnswerList({
               }
               status={
                 showSelections ? (
-                  <ResultBadge correct={correct} />
+                  <div className="flex shrink-0 items-center gap-2">
+                    {onToggleFlag && (
+                      <FlagButton
+                        flagged={!!flagged?.has(question.id)}
+                        onToggle={() => onToggleFlag(question.id)}
+                      />
+                    )}
+                    <ResultBadge outcome={outcome} selfMark={selfMarks[question.id]} />
+                  </div>
                 ) : (
                   <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-neutral-800 dark:text-neutral-300">
-                    {typeLabel(question)}
+                    {questionTypeLabel(question)}
                   </span>
                 )
               }
               explanation={question.explanation}
             >
               {question.image && <QuizImageView image={question.image} />}
-              <ul className="flex flex-col gap-2">
-                {choicesFor(question, answer, showSelections).map((choice) => (
-                  <ChoiceRow
-                    key={choice.id}
-                    text={choice.text}
-                    image={choice.image}
-                    mark={choice.mark}
-                  />
-                ))}
-              </ul>
+              {isOpenQuestion(question) ? (
+                <div className="flex flex-col gap-4">
+                  {showSelections && (
+                    <div className="flex flex-col gap-1.5">
+                      <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-neutral-400">
+                        Your answer
+                      </div>
+                      <OpenAnswerView question={question} answer={answer} />
+                    </div>
+                  )}
+                  <SampleAnswerView question={question} />
+                  {showSelections && onSelfMark && (
+                    <SelfMarkControl
+                      value={selfMarks[question.id]}
+                      onChange={(mark) => onSelfMark(question.id, mark)}
+                    />
+                  )}
+                </div>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {choicesFor(question, answer, showSelections).map((choice) => (
+                    <ChoiceRow
+                      key={choice.id}
+                      text={choice.text}
+                      image={choice.image}
+                      mark={choice.mark}
+                    />
+                  ))}
+                </ul>
+              )}
             </QuestionResultCard>
           </li>
         );

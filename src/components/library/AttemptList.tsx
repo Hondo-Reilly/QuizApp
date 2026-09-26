@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { FlagIcon } from "@/components/quiz/FlagButton";
 import { Button } from "@/components/ui/Button";
-import {
-  allAttemptsExportFilename,
-  buildAllAttemptsExport,
-  downloadJson,
-} from "@/lib/exportAttempt";
+import { downloadAttemptExport } from "@/lib/exportAttempt";
 import type { Quiz, QuizAttempt } from "@shared/types";
 
 export interface AttemptListProps {
@@ -34,6 +31,7 @@ const checkboxClass =
 export function AttemptList({ quiz, attempts, onOpen, onDelete }: AttemptListProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
   const selectedIds = useMemo(
@@ -107,12 +105,15 @@ export function AttemptList({ quiz, attempts, onOpen, onDelete }: AttemptListPro
             className="disabled:!border-0 disabled:!bg-slate-100 disabled:!text-slate-400 dark:disabled:!bg-neutral-800 dark:disabled:!text-neutral-500"
             onClick={() => {
               const chosen = new Set(selectedIds);
-              downloadJson(
-                buildAllAttemptsExport(
-                  quiz,
-                  attempts.filter((attempt) => chosen.has(attempt.id)),
+              setExportError(null);
+              downloadAttemptExport(
+                quiz,
+                attempts.filter((attempt) => chosen.has(attempt.id)),
+                false,
+              ).catch((err: unknown) =>
+                setExportError(
+                  `Could not export. ${err instanceof Error ? err.message : ""}`.trim(),
                 ),
-                allAttemptsExportFilename(quiz.title),
               );
             }}
           >
@@ -129,6 +130,11 @@ export function AttemptList({ quiz, attempts, onOpen, onDelete }: AttemptListPro
           </Button>
         </div>
       </div>
+      {exportError && (
+        <p className="border-b border-slate-200 px-4 py-2 text-sm text-red-600 dark:border-neutral-800 dark:text-red-400">
+          {exportError}
+        </p>
+      )}
       <ul>
         {attempts.map((attempt) => (
           <li
@@ -152,11 +158,24 @@ export function AttemptList({ quiz, attempts, onOpen, onDelete }: AttemptListPro
               <span className="text-slate-700 dark:text-neutral-200">
                 {formatDate(attempt.completedAt)}
               </span>
+              <span className="ml-auto flex shrink-0 items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
+                {(attempt.flagged?.length ?? 0) > 0 && (
+                  <>
+                    <FlagIcon filled />
+                    {attempt.flagged!.length} flagged
+                  </>
+                )}
+              </span>
+              {(attempt.ungraded ?? 0) > 0 && (
+                <span className="shrink-0 text-xs text-violet-700 dark:text-violet-300">
+                  {attempt.ungraded} not graded
+                </span>
+              )}
               <span className="shrink-0 tabular-nums text-slate-600 dark:text-neutral-300">
                 {attempt.correct}/{attempt.total} correct
               </span>
               <span className="w-14 shrink-0 text-right font-semibold tabular-nums text-slate-900 dark:text-neutral-100">
-                {attempt.percent}%
+                {attempt.total > 0 ? `${attempt.percent}%` : "—"}
               </span>
             </button>
           </li>

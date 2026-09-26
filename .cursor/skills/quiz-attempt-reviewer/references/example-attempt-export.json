@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 2,
+  "id": "general-knowledge-sample",
+  "title": "General Knowledge Sample",
+  "description": "A short demo quiz covering all three question types and a shared scenario.",
+  "author": "QuizApp",
+  "tags": [
+    "sample",
+    "demo"
+  ],
+  "scenarios": [
+    {
+      "id": "garden-trip",
+      "title": "Scenario: Planning a Garden",
+      "text": "Maya is planting a vegetable bed that gets about 3 hours of direct sun each morning and is shaded the rest of the day. The soil stays damp for days after rain. She wants a harvest within two months of planting."
+    }
+  ],
+  "completedAt": "2026-09-26T14:09:47.000Z",
+  "correct": 4,
+  "wrong": 3,
+  "ungraded": 0,
+  "percent": 57,
+  "selfMarking": false,
+  "flaggedCount": 3,
+  "questions": [
+    {
+      "id": "q1",
+      "prompt": "The Pacific is the largest ocean on Earth.",
+      "explanation": "The Pacific Ocean covers more area than all of Earth's landmass combined.",
+      "type": "true_false",
+      "answer": true,
+      "selected": true,
+      "correct": true,
+      "outcome": "correct",
+      "flagged": false
+    },
+    {
+      "id": "q2",
+      "prompt": "Which planet is known as the Red Planet?",
+      "explanation": "Mars appears red because of iron oxide (rust) on its surface.",
+      "type": "multiple_choice",
+      "choices": [
+        {
+          "id": "a",
+          "text": "Venus"
+        },
+        {
+          "id": "b",
+          "text": "Mars"
+        },
+        {
+          "id": "c",
+          "text": "Jupiter"
+        },
+        {
+          "id": "d",
+          "text": "Mercury"
+        }
+      ],
+      "answer": "b",
+      "selected": "b",
+      "correct": true,
+      "outcome": "correct",
+      "flagged": false
+    },
+    {
+      "id": "q3",
+      "prompt": "Which of the following are prime numbers?",
+      "explanation": "2, 7, and 11 are prime. 4 = 2 x 2 and 9 = 3 x 3.",
+      "type": "multi_answer",
+      "choices": [
+        {
+          "id": "a",
+          "text": "2"
+        },
+        {
+          "id": "b",
+          "text": "4"
+        },
+        {
+          "id": "c",
+          "text": "7"
+        },
+        {
+          "id": "d",
+          "text": "9"
+        },
+        {
+          "id": "e",
+          "text": "11"
+        }
+      ],
+      "answers": [
+        "a",
+        "c",
+        "e"
+      ],
+      "selected": [
+        "a",
+        "c"
+      ],
+      "correct": false,
+      "outcome": "wrong",
+      "flagged": false
+    },
+    {
+      "id": "q4",
+      "prompt": "What is the capital of Australia?",
+      "explanation": "Canberra was purpose-built as the capital in a compromise between Sydney and Melbourne.",
+      "type": "multiple_choice",
+      "choices": [
+        {
+          "id": "a",
+          "text": "Sydney"
+        },
+        {
+          "id": "b",
+          "text": "Melbourne"
+        },
+        {
+          "id": "c",
+          "text": "Canberra"
+        },
+        {
+          "id": "d",
+          "text": "Perth"
+        }
+      ],
+      "answer": "c",
+      "selected": "a",
+      "correct": false,
+      "outcome": "wrong",
+      "flagged": false
+    },
+    {
+      "id": "q5",
+      "prompt": "Sound travels faster in water than in air.",
+      "explanation": "Sound travels about 4x faster in water (~1480 m/s) than in air (~343 m/s).",
+      "type": "true_false",
+      "answer": true,
+      "selected": true,
+      "correct": true,
+      "outcome": "correct",
+      "flagged": true
+    },
+    {
+      "id": "q6",
+      "scenarioId": "garden-trip",
+      "prompt": "Which crop best suits Maya's bed?",
+      "explanation": "Only lettuce fits all three conditions: partial shade, damp soil, and a harvest inside two months.",
+      "type": "multiple_choice",
+      "choices": [
+        {
+          "id": "a",
+          "text": "Tomatoes, which need 6 to 8 hours of direct sun"
+        },
+        {
+          "id": "b",
+          "text": "Watermelon, which needs about 90 warm, sunny days"
+        },
+        {
+          "id": "c",
+          "text": "Leaf lettuce, which tolerates partial shade and matures quickly"
+        },
+        {
+          "id": "d",
+          "text": "Rosemary, which prefers full sun and dry, fast-draining soil"
+        }
+      ],
+      "answer": "c",
+      "selected": "c",
+      "correct": true,
+      "outcome": "correct",
+      "flagged": true
+    },
+    {
+      "id": "q7",
+      "scenarioId": "garden-trip",
+      "prompt": "Raising the bed a few inches would help with the soil condition described.",
+      "explanation": "Soil that stays damp for days drains poorly. A raised bed lifts the roots above the wettest soil.",
+      "type": "true_false",
+      "answer": true,
+      "selected": false,
+      "correct": false,
+      "outcome": "wrong",
+      "flagged": true
+    }
+  ]
+}

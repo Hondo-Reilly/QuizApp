@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 2,
+  "id": "written-answers-demo",
+  "title": "Written and Photo Answers Demo",
+  "description": "Short answers, a written explanation, a code answer, and a photo answer, plus two auto-graded questions.",
+  "author": "QuizApp",
+  "tags": ["sample", "demo", "written answers"],
+  "textFormat": "markdown",
+  "questions": [
+    {
+      "id": "capital",
+      "type": "multiple_choice",
+      "prompt": "What is the capital of Australia?",
+      "choices": [
+        { "id": "a", "text": "Sydney" },
+        { "id": "b", "text": "Canberra" },
+        { "id": "c", "text": "Melbourne" },
+        { "id": "d", "text": "Perth" }
+      ],
+      "answer": "b",
+      "explanation": "Canberra was purpose-built as the capital as a compromise between Sydney and Melbourne."
+    },
+    {
+      "id": "photosynthesis-gas",
+      "type": "short_answer",
+      "prompt": "Which gas do plants take in from the air for photosynthesis?",
+      "maxLength": 60,
+      "sampleAnswer": "Carbon dioxide ($\\mathrm{CO_2}$)",
+      "rubric": ["Names carbon dioxide (CO₂)"],
+      "explanation": "Plants combine carbon dioxide and water, using light energy, to make glucose and release oxygen."
+    },
+    {
+      "id": "seasons",
+      "type": "long_answer",
+      "prompt": "Explain why Earth has seasons. A common misconception is that it's about distance from the Sun. Address that in your answer.",
+      "minLength": 80,
+      "maxLength": 1200,
+      "sampleAnswer": "Earth's axis is tilted about 23.5° relative to its orbit. As Earth orbits, each hemisphere is tilted toward the Sun for part of the year, so sunlight hits it more directly and days are longer: summer. When it's tilted away, sunlight is spread over a larger area and days are shorter: winter. Distance isn't the cause; Earth is actually closest to the Sun in early January, during the northern winter.",
+      "rubric": [
+        "Axial tilt of about 23.5° is the cause",
+        "More direct sunlight and longer days when a hemisphere tilts toward the Sun",
+        "Rejects the distance explanation (Earth is closest in January)"
+      ]
+    },
+    {
+      "id": "fizzbuzz",
+      "type": "long_answer",
+      "code": true,
+      "language": "python",
+      "prompt": "Write a Python function `fizzbuzz(n)` that returns `\"Fizz\"` for multiples of 3, `\"Buzz\"` for multiples of 5, `\"FizzBuzz\"` for multiples of both, and the number as a string otherwise.",
+      "maxLength": 2000,
+      "sampleAnswer": "def fizzbuzz(n):\n    if n % 15 == 0:\n        return \"FizzBuzz\"\n    if n % 3 == 0:\n        return \"Fizz\"\n    if n % 5 == 0:\n        return \"Buzz\"\n    return str(n)",
+      "rubric": [
+        "Checks divisibility by both 3 and 5 first (or by 15)",
+        "Returns strings in every case, including str(n)",
+        "Uses the modulo operator correctly"
+      ]
+    },
+    {
+      "id": "triangle-sketch",
+      "type": "image_response",
+      "prompt": "On paper, draw a right triangle with legs of 3 cm and 4 cm, label all three sides, and show how you'd find the hypotenuse. Take a photo of your work.",
+      "maxImages": 2,
+      "sampleAnswer": "A right triangle with legs labeled 3 cm and 4 cm and the hypotenuse labeled 5 cm, with the working $c = \\sqrt{3^2 + 4^2} = \\sqrt{25} = 5$.",
+      "rubric": [
+        "Right angle marked between the 3 cm and 4 cm legs",
+        "Hypotenuse labeled 5 cm",
+        "Shows the Pythagorean calculation"
+      ]
+    },
+    {
+      "id": "boiling",
+      "type": "true_false",
+      "prompt": "Water boils at a lower temperature at high altitude.",
+      "answer": true,
+      "explanation": "Lower air pressure at altitude lowers the boiling point."
+    }
+  ]
+}

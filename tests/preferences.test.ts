@@ -29,6 +29,7 @@ describe("setup preferences", () => {
       shuffleChoices: false,
       revealMode: "after_each" as const,
       enableMobile: true,
+      selfMark: true,
     };
     writeQuizSetupPreferences(chosen);
     expect(readQuizSetupPreferences()).toEqual(chosen);
@@ -42,6 +43,7 @@ describe("setup preferences", () => {
       shuffleChoices: true,
       revealMode: "at_end",
       enableMobile: false,
+      selfMark: false,
     });
     stored.set("quizapp:setup", JSON.stringify({
       shuffleQuestions: true,

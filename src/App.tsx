@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link, Outlet, useMatch } from "react-router-dom";
 import { version } from "../package.json";
-import { DownloadAiQuizButton } from "@/components/library/DownloadAiQuizButton";
+import { AiSkillsMenu } from "@/components/library/AiSkillsMenu";
 import { DownloadExampleButton } from "@/components/library/DownloadExampleButton";
 import { MobileModeButton } from "@/components/ui/MobileModeButton";
 import { SettingsButton } from "@/components/ui/SettingsButton";
@@ -59,7 +59,7 @@ export function App() {
             ) : (
               <>
                 <DownloadExampleButton />
-                <DownloadAiQuizButton />
+                <AiSkillsMenu />
               </>
             )}
             {desktop && <UpdateButton />}

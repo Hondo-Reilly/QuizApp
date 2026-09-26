@@ -1,7 +1,8 @@
 import { quizApi } from "@/api/quizApi";
 import { imageRefs, textFormatOf } from "@shared/quizContent";
 import { scenarioFor, startsScenario } from "@shared/scenarios";
-import type { Question, Quiz, QuizImage } from "@shared/types";
+import { isChoiceQuestion, isCodeQuestion, isOpenQuestion, textLimits } from "@shared/questionTypes";
+import type { OpenQuestion, Question, Quiz, QuizImage } from "@shared/types";
 
 export interface PrintQuizOptions {
   showAnswers: boolean;
@@ -36,6 +37,7 @@ function imageHtml(image: QuizImage | undefined, ctx: PrintContext, className: s
 function choices(
   question: Question,
 ): { text: string; image?: QuizImage; correct: boolean }[] {
+  if (!isChoiceQuestion(question) && question.type !== "true_false") return [];
   if (question.type === "true_false") {
     return [
       { text: "True", correct: question.answer === true },
@@ -52,8 +54,33 @@ function choices(
   }));
 }
 
+function sampleHtml(question: OpenQuestion, ctx: PrintContext): string {
+  if (!question.sampleAnswer) return "";
+  if (isCodeQuestion(question)) return `<pre class="code">${escapeHtml(question.sampleAnswer)}</pre>`;
+  return ctx.markdown ? textHtml(question.sampleAnswer, ctx) : `<p>${escapeHtml(question.sampleAnswer)}</p>`;
+}
+
+/** Room to write or attach an answer on paper, sized to the question's limits. */
+function responseSpaceHtml(question: OpenQuestion): string {
+  if (question.type === "image_response") {
+    return `<div class="response-box">Draw or attach your answer here</div>`;
+  }
+  if (isCodeQuestion(question)) {
+    return `<div class="response-box code-box"></div>`;
+  }
+  const { maxLength } = textLimits(question);
+  const lines =
+    question.type === "short_answer"
+      ? Math.min(3, Math.max(1, Math.ceil(maxLength / 90)))
+      : Math.min(20, Math.max(4, Math.ceil(maxLength / 90)));
+  return `<div class="lines">${"<div></div>".repeat(lines)}</div>`;
+}
+
 // Choice ids (a, b, ...) identify image-only choices in the answer key.
 function keyHtml(question: Question, ctx: PrintContext): string {
+  if (isOpenQuestion(question)) {
+    return question.sampleAnswer ? sampleHtml(question, ctx) : "Answers vary";
+  }
   return choices(question)
     .map((choice, index) => ({ choice, index }))
     .filter(({ choice }) => choice.correct)
@@ -79,7 +106,15 @@ function questionHtml(
     })
     .join("");
   const image = imageHtml(question.image, ctx, "question-image");
-  return `<section class="question"><div class="prompt"><span>${index + 1}.</span><div>${textHtml(question.prompt, ctx)}</div></div>${image}<ol>${items}</ol></section>`;
+  const prompt = `<div class="prompt"><span>${index + 1}.</span><div>${textHtml(question.prompt, ctx)}</div></div>`;
+  if (isOpenQuestion(question)) {
+    const sample =
+      showAnswers && question.sampleAnswer
+        ? `<div class="sample"><strong>Sample answer</strong>${sampleHtml(question, ctx)}</div>`
+        : "";
+    return `<section class="question">${prompt}${image}${responseSpaceHtml(question)}${sample}</section>`;
+  }
+  return `<section class="question">${prompt}${image}<ol>${items}</ol></section>`;
 }
 
 function scenarioHtml(quiz: Quiz, index: number, ctx: PrintContext): string {
@@ -131,6 +166,12 @@ function buildHtml(quiz: Quiz, options: PrintQuizOptions, ctx: PrintContext): st
     table { border-collapse: collapse; margin: 4px 0 8px; }
     th, td { border: 1px solid #999; padding: 2px 6px; }
     eqn { display: block; text-align: center; margin: 6px 0; }
+    .lines div { border-bottom: 1px solid #bbb; height: 28px; }
+    .response-box { border: 1px solid #999; border-radius: 4px; height: 2.8in; color: #999; font-size: 12px; padding: 6px; }
+    .code-box { height: 3.2in; }
+    pre.code { font-family: Menlo, monospace; font-size: 11px; white-space: pre-wrap; background: #f4f4f4; padding: 6px; margin: 4px 0; }
+    .sample { margin-top: 8px; font-size: 13px; }
+    .sample strong { display: block; margin-bottom: 2px; }
     .scenario { border-left: 3px solid #999; padding: 4px 0 4px 12px; margin: 24px 0 16px; break-inside: avoid; }
     .scenario h3 { font-size: 15px; margin: 0 0 6px; }
     .scenario p { margin: 0; white-space: pre-line; }

@@ -1,4 +1,5 @@
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { isOpenQuestion } from "@shared/questionTypes";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { DetailPageLayout } from "@/components/ui/DetailPageLayout";
@@ -109,6 +110,17 @@ export function QuizSetupPage() {
             onChange={setup.setRevealMode}
           />
         </SetupSection>
+
+        {setup.quiz?.questions.some(isOpenQuestion) && (
+          <SetupSection title="Written and photo answers">
+            <Toggle
+              checked={setup.selfMark}
+              onChange={setup.setSelfMark}
+              label="Mark my own answers"
+              description="QuizApp can't grade written or photo answers. With this on, you compare each one to the sample answer and choose I got it, I missed it, or I'm not sure. Marked answers count toward your score."
+            />
+          </SetupSection>
+        )}
 
         <SetupSection title="Time limit">
           <Toggle

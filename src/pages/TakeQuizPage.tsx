@@ -14,8 +14,8 @@ import { QuestionSidebar } from "@/components/quiz/QuestionSidebar";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ErrorNotice } from "@/components/ui/PageState";
 import { Button } from "@/components/ui/Button";
-import { gradeQuestion } from "@shared/grading";
-import { countAnswered, hasAnswer } from "@shared/answers";
+import { countAnswered, isAnswered } from "@shared/answers";
+import { PhotoSourceProvider, sessionPhotoSource } from "@/components/content/PhotoSource";
 import { scenarioFor } from "@shared/scenarios";
 import type { UserAnswer } from "@shared/types";
 
@@ -68,10 +68,16 @@ export function TakeQuizPage() {
     [question, session],
   );
 
+  const handleToggleFlag = useCallback(() => {
+    if (question) session.toggleFlag(question.id);
+  }, [question, session]);
+
   const handlePrimary = useCallback(() => {
     if (revealAfterEach) {
       if (!submitted) {
-        if (hasAnswer(value)) handleSubmitReveal();
+        // Read the store: Enter in a text box saves its draft just before this runs.
+        const latest = question ? useSessionStore.getState().answers[question.id] : null;
+        if (isAnswered(question ?? undefined, latest ?? null)) handleSubmitReveal();
       } else if (isLast) {
         handleFinish();
       } else {
@@ -85,7 +91,7 @@ export function TakeQuizPage() {
   }, [
     revealAfterEach,
     submitted,
-    value,
+    question,
     isLast,
     allAnswered,
     handleSubmitReveal,
@@ -101,6 +107,7 @@ export function TakeQuizPage() {
     onPrimary: handlePrimary,
     onPrevious: handlePrevious,
     onNext: handleNext,
+    onToggleFlag: handleToggleFlag,
     answerDisabled: lockedForReveal,
   });
 
@@ -108,6 +115,7 @@ export function TakeQuizPage() {
 
   return (
     <QuizContentProvider quiz={session.quiz}>
+      <PhotoSourceProvider source={sessionPhotoSource}>
       <div className="mx-auto flex max-w-5xl gap-6">
         <aside className="w-56 shrink-0">
           <QuestionSidebar
@@ -115,6 +123,9 @@ export function TakeQuizPage() {
             order={session.order}
             currentIndex={session.currentIndex}
             answers={session.answers}
+            flagged={session.flagged}
+            submitted={revealAfterEach ? session.submitted : undefined}
+            selfMarks={session.selfMarks}
             onSelect={session.goTo}
           />
         </aside>
@@ -140,12 +151,18 @@ export function TakeQuizPage() {
               reveal={lockedForReveal}
               disabled={lockedForReveal}
               choiceOrder={session.choicesOrder[question.id]}
+              flagged={!!session.flagged[question.id]}
+              onToggleFlag={handleToggleFlag}
+              onEnter={handlePrimary}
             />
 
             {lockedForReveal && (
               <AnswerFeedback
-                correct={gradeQuestion(question, value)}
-                explanation={question.explanation}
+                question={question}
+                value={value}
+                selfMarking={session.config.selfMark}
+                selfMark={session.selfMarks[question.id]}
+                onSelfMark={(mark) => session.setSelfMark(question.id, mark)}
               />
             )}
 
@@ -161,7 +178,7 @@ export function TakeQuizPage() {
                 isFirst={isFirst}
                 isLast={isLast}
                 submitted={submitted}
-                canSubmit={hasAnswer(value)}
+                canSubmit={isAnswered(question ?? undefined, value)}
                 onPrevious={handlePrevious}
                 onNext={handleNext}
                 onSubmit={handleSubmitReveal}
@@ -180,6 +197,7 @@ export function TakeQuizPage() {
           </div>
         </div>
       </div>
+      </PhotoSourceProvider>
     </QuizContentProvider>
   );
 }

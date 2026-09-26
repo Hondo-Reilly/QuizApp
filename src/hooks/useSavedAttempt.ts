@@ -16,6 +16,7 @@ export function useSavedAttempt(
   attempt: QuizAttempt | null;
   loading: boolean;
   error: string | null;
+  setAttempt: (attempt: QuizAttempt) => void;
 } {
   const [quiz, setQuiz] = useState<Quiz | null>(() => rememberedQuiz(quizId));
   const [attempt, setAttempt] = useState<QuizAttempt | null>(() =>
@@ -68,5 +69,5 @@ export function useSavedAttempt(
     };
   }, [quizId, attemptId]);
 
-  return { quiz, attempt, loading, error };
+  return { quiz, attempt, loading, error, setAttempt };
 }

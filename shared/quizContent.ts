@@ -1,3 +1,4 @@
+import { isChoiceQuestion, isCodeQuestion, isOpenQuestion } from "./questionTypes";
 import type { Question, Quiz, TextFormat } from "./types";
 
 export const IMAGE_TYPES: Record<string, string> = {
@@ -58,8 +59,13 @@ export function markdownFields(quiz: Pick<Quiz, "scenarios" | "questions">): str
   for (const question of quiz.questions) {
     fields.push(question.prompt);
     if (question.explanation) fields.push(question.explanation);
-    if (question.type !== "true_false") {
+    if (isChoiceQuestion(question)) {
       for (const choice of question.choices) fields.push(choice.text);
+    }
+    // A code question's sample answer is code, not Markdown.
+    if (isOpenQuestion(question) && !isCodeQuestion(question)) {
+      if (question.sampleAnswer) fields.push(question.sampleAnswer);
+      for (const point of question.rubric ?? []) fields.push(point);
     }
   }
   return fields;
@@ -68,7 +74,7 @@ export function markdownFields(quiz: Pick<Quiz, "scenarios" | "questions">): str
 function structuredImages(question: Question): string[] {
   const out: string[] = [];
   if (question.image) out.push(question.image.src);
-  if (question.type !== "true_false") {
+  if (isChoiceQuestion(question)) {
     for (const choice of question.choices) {
       if (choice.image) out.push(choice.image.src);
     }
@@ -128,7 +134,16 @@ export function renameImageRefs<T extends Pick<Quiz, "textFormat" | "scenarios" 
         explanation: question.explanation === undefined ? undefined : text(question.explanation),
         image: image(question.image),
       };
-      if (question.type === "true_false") return base;
+      if (isOpenQuestion(question)) {
+        if (isCodeQuestion(question)) return base;
+        return {
+          ...base,
+          sampleAnswer:
+            question.sampleAnswer === undefined ? undefined : text(question.sampleAnswer),
+          rubric: question.rubric?.map(text),
+        };
+      }
+      if (!isChoiceQuestion(question)) return base;
       return {
         ...base,
         choices: question.choices.map((choice) => ({

@@ -19,6 +19,7 @@ Library, folders, quiz detail, setup, taking a quiz, grading, and review live in
 | --- | --- | --- |
 | Quizzes, folders, attempts | Files in `userData` | IndexedDB (`src/lib/browserQuizApi.ts`) |
 | Images from `.quiz` packages | `userData/quizzes/<id>.assets/`, served as `quizasset://` | IndexedDB records `asset:<id>:<path>` |
+| Photo answers of attempts | `userData/attempt-photos/<attemptId>/`, served as `quizasset://attempt/…` | IndexedDB records `attempt-photo:<attemptId>:<file>` |
 | Theme and setup choices | `localStorage` | `localStorage` (same keys) |
 
 A new library or attempt field needs a matching read and write in both stores. Theme and setup preferences stay in `localStorage` only. Do not copy them into IndexedDB.

@@ -198,3 +198,101 @@ body,
 .release-notes > :first-child {
   margin-top: 0;
 }
+
+/* Code answers: the textarea and its highlighted copy must line up exactly. */
+.code-font {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  tab-size: 4;
+  letter-spacing: normal;
+}
+.code-input {
+  color: transparent;
+  caret-color: rgb(15 23 42);
+}
+.dark .code-input {
+  caret-color: rgb(245 245 245);
+}
+.code-input::placeholder {
+  color: rgb(148 163 184);
+}
+.code-input::selection {
+  background: rgb(var(--brand-500) / 0.3);
+  color: transparent;
+}
+
+/* Syntax colors for highlight.js output in code answers. */
+.hljs-theme .hljs-keyword,
+.hljs-theme .hljs-selector-tag,
+.hljs-theme .hljs-literal,
+.hljs-theme .hljs-type {
+  color: #7c3aed;
+}
+.hljs-theme .hljs-string,
+.hljs-theme .hljs-regexp,
+.hljs-theme .hljs-template-string {
+  color: #15803d;
+}
+.hljs-theme .hljs-number,
+.hljs-theme .hljs-symbol,
+.hljs-theme .hljs-variable.constant_ {
+  color: #b45309;
+}
+.hljs-theme .hljs-comment,
+.hljs-theme .hljs-quote {
+  color: #64748b;
+  font-style: italic;
+}
+.hljs-theme .hljs-title,
+.hljs-theme .hljs-title.function_,
+.hljs-theme .hljs-section {
+  color: #1d4ed8;
+}
+.hljs-theme .hljs-built_in,
+.hljs-theme .hljs-attr,
+.hljs-theme .hljs-attribute,
+.hljs-theme .hljs-property {
+  color: #0e7490;
+}
+.hljs-theme .hljs-meta,
+.hljs-theme .hljs-tag,
+.hljs-theme .hljs-name {
+  color: #be185d;
+}
+.dark .hljs-theme .hljs-keyword,
+.dark .hljs-theme .hljs-selector-tag,
+.dark .hljs-theme .hljs-literal,
+.dark .hljs-theme .hljs-type {
+  color: #c4b5fd;
+}
+.dark .hljs-theme .hljs-string,
+.dark .hljs-theme .hljs-regexp,
+.dark .hljs-theme .hljs-template-string {
+  color: #86efac;
+}
+.dark .hljs-theme .hljs-number,
+.dark .hljs-theme .hljs-symbol,
+.dark .hljs-theme .hljs-variable.constant_ {
+  color: #fcd34d;
+}
+.dark .hljs-theme .hljs-comment,
+.dark .hljs-theme .hljs-quote {
+  color: #94a3b8;
+}
+.dark .hljs-theme .hljs-title,
+.dark .hljs-theme .hljs-title.function_,
+.dark .hljs-theme .hljs-section {
+  color: #93c5fd;
+}
+.dark .hljs-theme .hljs-built_in,
+.dark .hljs-theme .hljs-attr,
+.dark .hljs-theme .hljs-attribute,
+.dark .hljs-theme .hljs-property {
+  color: #67e8f9;
+}
+.dark .hljs-theme .hljs-meta,
+.dark .hljs-theme .hljs-tag,
+.dark .hljs-theme .hljs-name {
+  color: #f9a8d4;
+}

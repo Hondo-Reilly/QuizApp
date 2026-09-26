@@ -1,14 +1,23 @@
+import { FlagButton } from "@/components/quiz/FlagButton";
 import { QuestionResultCard, ResultBadge } from "@/components/quiz/QuestionResultCard";
 import { ChoiceContent } from "@/components/content/ChoiceContent";
 import { QuizImageView } from "@/components/content/QuizImageView";
 import { RichText } from "@/components/content/RichText";
-import type { Choice, Question, UserAnswer } from "@shared/types";
+import { OpenAnswerView, SampleAnswerView } from "@/components/quiz/OpenAnswer";
+import { SelfMarkControl } from "@/components/quiz/SelfMarkControl";
+import { isChoiceQuestion, isOpenQuestion } from "@shared/questionTypes";
+import type { Choice, Question, QuestionOutcome, SelfMark, UserAnswer } from "@shared/types";
 
 export interface ReviewItemProps {
   index: number;
   question: Question;
   userAnswer: UserAnswer;
-  correct: boolean;
+  outcome: QuestionOutcome;
+  flagged?: boolean;
+  selfMark?: SelfMark;
+  /** Shows the self-mark buttons on written and photo answers. */
+  onSelfMark?: (mark: SelfMark | null) => void;
+  onToggleFlag?: () => void;
 }
 
 type Shown = Pick<Choice, "text" | "image">;
@@ -17,9 +26,9 @@ const TRUE: Shown = { text: "True" };
 const FALSE: Shown = { text: "False" };
 
 function choicesById(question: Question): Map<string, Shown> {
-  return question.type === "true_false"
-    ? new Map()
-    : new Map(question.choices.map((c) => [c.id, c]));
+  return isChoiceQuestion(question)
+    ? new Map(question.choices.map((c) => [c.id, c]))
+    : new Map();
 }
 
 function describeAnswer(question: Question, answer: UserAnswer): Shown[] {
@@ -36,6 +45,8 @@ function describeAnswer(question: Question, answer: UserAnswer): Shown[] {
       const map = choicesById(question);
       return answer.map((id) => map.get(id) ?? { text: id });
     }
+    default:
+      return [];
   }
 }
 
@@ -49,6 +60,8 @@ function describeCorrect(question: Question): Shown[] {
       const map = choicesById(question);
       return question.answers.map((id) => map.get(id) ?? { text: id });
     }
+    default:
+      return [];
   }
 }
 
@@ -69,8 +82,13 @@ export function ReviewItem({
   index,
   question,
   userAnswer,
-  correct,
+  outcome,
+  flagged = false,
+  onToggleFlag,
+  selfMark,
+  onSelfMark,
 }: ReviewItemProps) {
+  const correct = outcome === "correct";
   return (
     <QuestionResultCard
       heading={
@@ -83,34 +101,52 @@ export function ReviewItem({
           <RichText text={question.prompt} className="min-w-0" />
         </div>
       }
-      status={<ResultBadge correct={correct} />}
+      status={
+        <div className="flex shrink-0 items-center gap-2">
+          {onToggleFlag && <FlagButton flagged={flagged} onToggle={onToggleFlag} />}
+          <ResultBadge outcome={outcome} selfMark={selfMark} />
+        </div>
+      }
       explanation={question.explanation}
     >
       {question.image && <QuizImageView image={question.image} size="small" />}
-      <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-        <div>
-          <dt className="text-xs uppercase tracking-wide text-slate-500 dark:text-neutral-400">
-            Your answer
-          </dt>
-          <dd
-            className={`font-medium ${
-              correct
-                ? "text-slate-800 dark:text-neutral-200"
-                : "text-red-700 dark:text-red-400"
-            }`}
-          >
-            <ShownChoices items={describeAnswer(question, userAnswer)} />
-          </dd>
+      {isOpenQuestion(question) ? (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-neutral-400">
+              Your answer
+            </div>
+            <OpenAnswerView question={question} answer={userAnswer} />
+          </div>
+          <SampleAnswerView question={question} />
+          {onSelfMark && <SelfMarkControl value={selfMark} onChange={onSelfMark} />}
         </div>
-        <div>
-          <dt className="text-xs uppercase tracking-wide text-slate-500 dark:text-neutral-400">
-            Correct answer
-          </dt>
-          <dd className="font-medium text-green-700 dark:text-green-400">
-            <ShownChoices items={describeCorrect(question)} />
-          </dd>
-        </div>
-      </dl>
+      ) : (
+        <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-slate-500 dark:text-neutral-400">
+              Your answer
+            </dt>
+            <dd
+              className={`font-medium ${
+                correct
+                  ? "text-slate-800 dark:text-neutral-200"
+                  : "text-red-700 dark:text-red-400"
+              }`}
+            >
+              <ShownChoices items={describeAnswer(question, userAnswer)} />
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-slate-500 dark:text-neutral-400">
+              Correct answer
+            </dt>
+            <dd className="font-medium text-green-700 dark:text-green-400">
+              <ShownChoices items={describeCorrect(question)} />
+            </dd>
+          </div>
+        </dl>
+      )}
 
     </QuestionResultCard>
   );

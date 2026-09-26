@@ -1,3 +1,5 @@
+import { isSafeAttemptId } from "./attemptRecord";
+import { isPhotoName } from "./questionTypes";
 import { isImagePath } from "./quizContent";
 import { isSafeStorageId } from "./storageId";
 
@@ -25,4 +27,27 @@ export function parseQuizAssetUrl(url: string): { quizId: string; path: string }
   }
   if (!isSafeStorageId(quizId) || !isImagePath(path)) return null;
   return { quizId, path };
+}
+
+/** Desktop URLs for attempt photos: quizasset://attempt/<attemptId>/<file>. */
+const ATTEMPT_PREFIX = `${QUIZ_ASSET_SCHEME}://attempt/`;
+
+export function attemptPhotoUrl(attemptId: string, name: string): string {
+  return `${ATTEMPT_PREFIX}${encodeURIComponent(attemptId)}/${encodeURIComponent(name)}`;
+}
+
+export function parseAttemptPhotoUrl(url: string): { attemptId: string; name: string } | null {
+  if (!url.startsWith(ATTEMPT_PREFIX)) return null;
+  const parts = url.slice(ATTEMPT_PREFIX.length).split("?")[0].split("#")[0].split("/");
+  if (parts.length !== 2) return null;
+  let attemptId: string;
+  let name: string;
+  try {
+    attemptId = decodeURIComponent(parts[0]);
+    name = decodeURIComponent(parts[1]);
+  } catch {
+    return null;
+  }
+  if (!isSafeAttemptId(attemptId) || !isPhotoName(name)) return null;
+  return { attemptId, name };
 }

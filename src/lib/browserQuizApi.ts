@@ -6,6 +6,8 @@ import {
   getBrowserAttempt,
   listBrowserAttempts,
   saveBrowserAttempt,
+  setBrowserAttemptFlags,
+  setBrowserAttemptSelfMarks,
 } from "./browserAttempts";
 import {
   createBrowserFolder,
@@ -19,7 +21,12 @@ import {
   updateBrowserFolder,
 } from "./browserLibrary";
 import { clearAppLocalStorage } from "./appStorage";
-import { browserAssetUrls, forgetBrowserAssetUrls } from "./browserAssetUrls";
+import {
+  browserAssetUrls,
+  browserAttemptPhotoUrls,
+  forgetBrowserAssetUrls,
+  forgetBrowserAttemptPhotoUrls,
+} from "./browserAssetUrls";
 import { downloadBytes, pickQuizFiles, printHtml } from "./browserLocal";
 import { slugifyTitle } from "@shared/storageId";
 import { deleteDatabase, run } from "./idbRecords";
@@ -90,7 +97,17 @@ export const browserQuizApi: QuizApi = {
   saveAttempt: (input) => run(() => saveBrowserAttempt(input)),
   listAttempts: (quizId) => run(() => listBrowserAttempts(quizId)),
   getAttempt: (id) => run(() => getBrowserAttempt(id)),
-  deleteAttempts: (ids) => run(() => deleteBrowserAttempts(ids)),
+  setAttemptFlags: (id, flagged) => run(() => setBrowserAttemptFlags(id, flagged)),
+  setAttemptSelfMarks: (id, selfMarks, score) =>
+    run(() => setBrowserAttemptSelfMarks(id, selfMarks, score)),
+  getAttemptPhotoUrls: (attemptId, names) =>
+    run(() => browserAttemptPhotoUrls(attemptId, names)),
+  getMobilePhoto: () => Promise.resolve(null),
+  deleteAttempts: (ids) =>
+    run(async () => {
+      await deleteBrowserAttempts(ids);
+      forgetBrowserAttemptPhotoUrls(ids);
+    }),
   deleteAllAppData: () =>
     run(async () => {
       await deleteDatabase();

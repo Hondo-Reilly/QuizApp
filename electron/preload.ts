@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import { IpcChannels } from "../shared/ipcChannels";
-import { quizAssetUrl } from "../shared/quizAssetUrl";
+import { attemptPhotoUrl, quizAssetUrl } from "../shared/quizAssetUrl";
 import type { MobilePatch, MobileSession, MobileSessionSeed } from "../shared/mobile";
 import type {
   CreateFolderPayload,
@@ -50,6 +50,16 @@ const quizApi: QuizApi = {
     ipcRenderer.invoke(IpcChannels.listAttempts, quizId),
   getAttempt: (id: string): Promise<QuizAttempt | null> =>
     ipcRenderer.invoke(IpcChannels.getAttempt, id),
+  setAttemptFlags: (id: string, flagged: string[]): Promise<QuizAttempt> =>
+    ipcRenderer.invoke(IpcChannels.setAttemptFlags, { id, flagged }),
+  setAttemptSelfMarks: (id, selfMarks, score): Promise<QuizAttempt> =>
+    ipcRenderer.invoke(IpcChannels.setAttemptSelfMarks, { id, selfMarks, score }),
+  getAttemptPhotoUrls: (attemptId: string, names: string[]) =>
+    Promise.resolve(
+      Object.fromEntries(names.map((name) => [name, attemptPhotoUrl(attemptId, name)])),
+    ),
+  getMobilePhoto: (name: string): Promise<Uint8Array | null> =>
+    ipcRenderer.invoke(IpcChannels.mobilePhoto, name),
   deleteAttempts: (ids: string[]): Promise<void> =>
     ipcRenderer.invoke(IpcChannels.deleteAttempts, ids),
   deleteAllAppData: (): Promise<void> =>

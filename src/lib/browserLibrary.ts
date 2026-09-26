@@ -7,10 +7,9 @@ import { base64ToBytes, rasterizeSvgInPage } from "@shared/svgRaster";
 import { allocateStorageId, slugifyTitle } from "@shared/storageId";
 import type { Folder, LibrarySnapshot, Quiz, QuizMetadata } from "@shared/types";
 import type { CreateFolderPayload, UpdateFolderPayload } from "@shared/quizApi";
-import { attemptsWithoutQuizzes } from "./browserAttempts";
+import { attemptChangesWithoutQuizzes } from "./browserAttempts";
 import {
   assetKey,
-  ATTEMPTS_KEY,
   changeRecords,
   LIBRARY_KEY,
   quizKey,
@@ -142,7 +141,7 @@ export async function getBrowserQuiz(id: string): Promise<Quiz | null> {
 
 export async function deleteBrowserQuiz(id: string): Promise<void> {
   const library = await readLibrary();
-  const nextAttempts = await attemptsWithoutQuizzes([id]);
+  const attemptChanges = await attemptChangesWithoutQuizzes([id]);
   const changes: RecordChange[] = [
     ...(await quizRecordDeletes(id)),
     {
@@ -153,7 +152,7 @@ export async function deleteBrowserQuiz(id: string): Promise<void> {
       },
     },
   ];
-  if (nextAttempts) changes.push({ key: ATTEMPTS_KEY, value: nextAttempts });
+  changes.push(...attemptChanges);
   await changeRecords(changes);
 }
 
@@ -254,7 +253,7 @@ export async function deleteBrowserFolder(
   if (!recursive && quizzesToDelete.length > 0) {
     throw new Error("Folder is not empty");
   }
-  const nextAttempts = await attemptsWithoutQuizzes(
+  const attemptChanges = await attemptChangesWithoutQuizzes(
     quizzesToDelete.map((quiz) => quiz.id),
   );
   const changes: RecordChange[] = [];
@@ -268,6 +267,6 @@ export async function deleteBrowserFolder(
       ),
     },
   });
-  if (nextAttempts) changes.push({ key: ATTEMPTS_KEY, value: nextAttempts });
+  changes.push(...attemptChanges);
   await changeRecords(changes);
 }

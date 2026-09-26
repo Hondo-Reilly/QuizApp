@@ -81,10 +81,11 @@ describe("grading and answer counts", () => {
       total: 3,
       correct: 1,
       percent: 33,
+      ungraded: 0,
       results: [
-        { questionId: "tf", userAnswer: false, correct: true },
-        { questionId: "single", userAnswer: "a", correct: false },
-        { questionId: "multi", userAnswer: null, correct: false },
+        { questionId: "tf", userAnswer: false, correct: true, outcome: "correct" },
+        { questionId: "single", userAnswer: "a", correct: false, outcome: "wrong" },
+        { questionId: "multi", userAnswer: null, correct: false, outcome: "wrong" },
       ],
     });
     expect(gradeQuiz([], {})).toMatchObject({ total: 0, percent: 0 });

@@ -1,14 +1,43 @@
 import { RichText } from "@/components/content/RichText";
+import { gradeQuestion } from "@shared/grading";
+import { isOpenQuestion } from "@shared/questionTypes";
+import type { Question, SelfMark, UserAnswer } from "@shared/types";
+import { SampleAnswerView } from "./OpenAnswer";
+import { SelfMarkControl } from "./SelfMarkControl";
 
 export interface AnswerFeedbackProps {
-  correct: boolean;
-  explanation?: string;
+  question: Question;
+  value: UserAnswer;
+  /** Show the self-mark buttons for written and photo answers. */
+  selfMarking?: boolean;
+  selfMark?: SelfMark;
+  onSelfMark?: (mark: SelfMark | null) => void;
 }
 
+/** What appears after submitting an answer in "after each question" mode. */
 export function AnswerFeedback({
-  correct,
-  explanation,
+  question,
+  value,
+  selfMarking = false,
+  selfMark,
+  onSelfMark,
 }: AnswerFeedbackProps) {
+  if (isOpenQuestion(question)) {
+    return (
+      <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-800 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200">
+        <div className="font-semibold">
+          {selfMarking ? "Submitted: compare your answer" : "Submitted: not graded"}
+        </div>
+        <SampleAnswerView question={question} />
+        {question.explanation && (
+          <RichText text={question.explanation} className="text-slate-700 dark:text-neutral-300" />
+        )}
+        {selfMarking && onSelfMark && <SelfMarkControl value={selfMark} onChange={onSelfMark} />}
+      </div>
+    );
+  }
+
+  const correct = gradeQuestion(question, value);
   return (
     <div
       className={`rounded-lg border p-3 text-sm ${
@@ -20,8 +49,8 @@ export function AnswerFeedback({
       <div className="font-semibold">
         {correct ? "Correct" : "Incorrect"}
       </div>
-      {explanation && (
-        <RichText text={explanation} className="mt-1 text-slate-700 dark:text-neutral-300" />
+      {question.explanation && (
+        <RichText text={question.explanation} className="mt-1 text-slate-700 dark:text-neutral-300" />
       )}
     </div>
   );

@@ -16,6 +16,9 @@ function seed() {
     currentIndex: 99,
     answers: {},
     submitted: {},
+    flagged: {},
+    selfMarks: {},
+    selfMarking: false,
     theme: "light" as const,
     deadlineAt: null,
   };

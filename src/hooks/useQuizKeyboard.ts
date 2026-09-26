@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import type { Question, UserAnswer } from "@shared/types";
 import { orderChoices } from "@/components/quiz/orderChoices";
 import { selectByIndex } from "@/components/quiz/selectChoice";
+import { isChoiceQuestion, isOpenQuestion } from "@shared/questionTypes";
 
 export interface UseQuizKeyboardArgs {
   question: Question | null;
@@ -11,6 +12,8 @@ export interface UseQuizKeyboardArgs {
   onPrimary: () => void;
   onPrevious: () => void;
   onNext: () => void;
+  /** Flags work even after an answer is revealed, so they ignore answerDisabled. */
+  onToggleFlag?: () => void;
   answerDisabled: boolean;
 }
 
@@ -46,6 +49,7 @@ export function useQuizKeyboard({
   onPrimary,
   onPrevious,
   onNext,
+  onToggleFlag,
   answerDisabled,
 }: UseQuizKeyboardArgs): void {
   useEffect(() => {
@@ -70,14 +74,21 @@ export function useQuizKeyboard({
         return;
       }
 
+      if (onToggleFlag && (e.key === "f" || e.key === "F")) {
+        e.preventDefault();
+        onToggleFlag();
+        return;
+      }
+
       if (!question || answerDisabled) return;
       const idx = digitIndex(e.key);
       if (idx === null) return;
 
-      const ordered =
-        question.type === "true_false"
-          ? null
-          : orderChoices(question.choices, choiceOrder);
+      // Number keys pick choices; written and photo answers have none.
+      if (isOpenQuestion(question)) return;
+      const ordered = isChoiceQuestion(question)
+        ? orderChoices(question.choices, choiceOrder)
+        : null;
       const next = selectByIndex(question, ordered, value, idx);
       if (next === null) return;
       e.preventDefault();
@@ -94,6 +105,7 @@ export function useQuizKeyboard({
     onPrimary,
     onPrevious,
     onNext,
+    onToggleFlag,
     answerDisabled,
   ]);
 }

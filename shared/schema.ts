@@ -5,6 +5,7 @@ import {
   markdownFields,
   markdownImageSources,
 } from "./quizContent";
+import { isOpenQuestion, MAX_IMAGES_LIMIT, MAX_TEXT_LENGTH } from "./questionTypes";
 import type { Quiz } from "./types";
 
 const imageSchema = z.object({
@@ -85,10 +86,62 @@ const multiAnswerSchema = baseQuestion
     path: ["answers"],
   });
 
+const openFields = {
+  sampleAnswer: z.string().min(1).optional(),
+  rubric: z.array(z.string().min(1)).min(1).optional(),
+};
+
+const lengthLimit = z.number().int().min(1).max(MAX_TEXT_LENGTH);
+
+const lengthsInOrder = (q: { minLength?: number; maxLength?: number }) =>
+  q.minLength === undefined || q.maxLength === undefined || q.minLength <= q.maxLength;
+
+const shortAnswerSchema = baseQuestion
+  .extend({
+    type: z.literal("short_answer"),
+    ...openFields,
+    minLength: lengthLimit.optional(),
+    maxLength: lengthLimit.optional(),
+  })
+  .refine(lengthsInOrder, {
+    message: "minLength must not be more than maxLength",
+    path: ["minLength"],
+  });
+
+const longAnswerSchema = baseQuestion
+  .extend({
+    type: z.literal("long_answer"),
+    ...openFields,
+    minLength: lengthLimit.optional(),
+    maxLength: lengthLimit.optional(),
+    code: z.boolean().optional(),
+    language: z
+      .string()
+      .regex(/^[A-Za-z0-9+#._-]{1,30}$/, "language must be a short name like python")
+      .optional(),
+  })
+  .refine(lengthsInOrder, {
+    message: "minLength must not be more than maxLength",
+    path: ["minLength"],
+  })
+  .refine((q) => q.language === undefined || q.code === true, {
+    message: "language only applies to a code answer (code: true)",
+    path: ["language"],
+  });
+
+const imageResponseSchema = baseQuestion.extend({
+  type: z.literal("image_response"),
+  ...openFields,
+  maxImages: z.number().int().min(1).max(MAX_IMAGES_LIMIT).optional(),
+});
+
 export const questionSchema = z.union([
   trueFalseSchema,
   multipleChoiceSchema,
   multiAnswerSchema,
+  shortAnswerSchema,
+  longAnswerSchema,
+  imageResponseSchema,
 ]);
 
 export const quizSchema = z
@@ -110,6 +163,13 @@ export const quizSchema = z
           code: z.ZodIssueCode.custom,
           message: "textFormat needs schemaVersion 2",
           path: ["textFormat"],
+        });
+      }
+      if (quiz.questions.some((question) => isOpenQuestion(question as Quiz["questions"][number]))) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Written and photo answer questions need schemaVersion 2",
+          path: ["schemaVersion"],
         });
       }
       if (imageRefs(quiz).length > 0) {

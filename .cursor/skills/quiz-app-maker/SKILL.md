@@ -1,6 +1,6 @@
 ---
 name: quiz-app-maker
-description: Generate quizzes for QuizApp as a JSON file, or as a .quiz package when the quiz has images. Supports Markdown with LaTeX math, code, and tables, plus images in prompts, choices, and scenarios. Use this skill whenever the user wants to create, write, generate, or build a quiz, test, trivia set, or set of practice questions — including true/false, multiple-choice, select-all-that-apply, and case-study or scenario-based questions — or asks for quiz questions on any topic, or references importing a quiz into QuizApp, a quiz `.json` file, or a `.quiz` package. Trigger even when the user doesn't say the word "quiz" but clearly wants graded questions with answers (e.g. "make me 10 questions to test my team on the new HR policy"). Do NOT use for ungraded discussion questions, flashcards, or surveys with no correct answer.
+description: Generate quizzes for QuizApp as a JSON file, or as a .quiz package when the quiz has images. Supports Markdown with LaTeX math, code, and tables, images in prompts, choices, and scenarios, and ungraded written, code, and photo answers. Use this skill whenever the user wants to create, write, generate, or build a quiz, test, trivia set, or set of practice questions — including true/false, multiple-choice, select-all-that-apply, short-answer, essay or written-response, coding, photo or show-your-work, and case-study or scenario-based questions — or asks for quiz questions on any topic, or references importing a quiz into QuizApp, a quiz `.json` file, or a `.quiz` package. Trigger even when the user doesn't say the word "quiz" but clearly wants graded questions with answers (e.g. "make me 10 questions to test my team on the new HR policy"). Do NOT use for ungraded discussion questions, flashcards, or surveys with no correct answer, or for reviewing results of a quiz the user already took (use quiz-attempt-reviewer for that).
 ---
 
 # Quiz App Maker
@@ -19,7 +19,7 @@ If the user gave source material (a document, notes, a URL), draw questions from
 
 **With images:** the quiz must be a `.quiz` package, a zip holding `quiz.json` and an `images/` folder. See [Images](#images) below.
 
-The full schema lives in `references/quiz-format.md`. Read it before generating so every field and constraint is correct. It matches QuizApp's `docs/QUIZ_FORMAT.md` and `shared/schema.ts`. Complete valid examples: `references/example-quiz.json` (plain, version 1) and `references/example-rich-quiz.json` (Markdown, math, images, and a scenario, version 2; it is the `quiz.json` of a package, so its image files are not included). Skim the one that fits. The essentials:
+The full schema lives in `references/quiz-format.md`. Read it before generating so every field and constraint is correct. It matches QuizApp's `docs/QUIZ_FORMAT.md` and `shared/schema.ts`. Complete valid examples: `references/example-quiz.json` (plain, version 1), `references/example-written-quiz.json` (written, code, and photo answers, version 2), and `references/example-rich-quiz.json` (Markdown, math, images, and a scenario, version 2; it is the `quiz.json` of a package, so its image files are not included). Skim the one that fits. The essentials:
 
 - Top level: `schemaVersion`, `title` (required), `questions` (1+). Optional: `id`, `description`, `author`, `tags`, `scenarios`, and in version 2 `textFormat`.
 - `schemaVersion` is `1` for plain-text quizzes. Use `2` only when the quiz uses Markdown (`"textFormat": "markdown"`) or images.
@@ -29,6 +29,22 @@ The full schema lives in `references/quiz-format.md`. Read it before generating 
 - `multiple_choice` → `choices[]` (2+, unique ids), single `answer` id that matches one choice.
 - `multi_answer` → `choices[]` (2+, unique ids), `answers[]` (non-empty, unique choice ids). Graded correct only on an exact-set match.
 - Version 2 only: `image` (`{ "src": "images/<file>", "alt": "..." }`) on a question, choice, or scenario. A choice with an image may have `"text": ""`.
+- Version 2 only, not auto-graded: `short_answer` and `long_answer` (text, with optional `minLength`/`maxLength`; `"code": true` plus optional `"language"` makes a code answer), and `image_response` (photos, with optional `maxImages`). Give each one a `sampleAnswer` and a `rubric`. See [Written, code, and photo answers](#written-code-and-photo-answers).
+
+## Written, code, and photo answers
+
+QuizApp can't grade these; the user compares their answer with your `sampleAnswer`, optionally marks it themselves, or has an AI review it against your `rubric`. So:
+
+- **Use them where recall or reasoning in the user's own words is the point:** definitions, explanations, "why" questions, derivations, writing code, sketches, diagrams, worked math on paper. Keep choice questions as the backbone. A quiz that is mostly written answers gets no score.
+- **Pick the right type:**
+  - `short_answer`: one term, number, or phrase. Set a tight `maxLength` (30–150).
+  - `long_answer`: an explanation or argument. Set `minLength` only when a real explanation needs length (e.g. 80–200), and a `maxLength` that fits the task (500–3000). Don't set `minLength` so high that padding is rewarded.
+  - `long_answer` with `"code": true`: a function, query, or snippet. Add `"language"` (`"python"`, `"javascript"`, `"sql"`, `"java"`, …).
+  - `image_response`: work that's naturally done by hand: sketches, labeled diagrams, handwritten derivations, a photo of a physical setup. Say exactly what to draw and photograph. Use `maxImages` above 1 only when several pages are expected.
+- **Always write a `sampleAnswer`:** a complete, correct model answer at the length you expect, not a vague hint. For code, working code in the stated language.
+- **Always write a `rubric`:** 2–5 short, checkable points that a correct answer must contain, and that distinguish it from common wrong answers. "Explains that axial tilt, not distance, causes seasons" beats "Mentions the key concept".
+- **Make the prompt answerable on its own terms:** state what's expected ("in 2–3 sentences", "return a string", "label all three sides"), so the user and a grader agree on what "complete" means.
+- `explanation` still works and is shown after submitting. Use it for the *why*, and the `sampleAnswer` for *what a good answer looks like*.
 
 ## Rich text: Markdown and math
 
@@ -122,6 +138,7 @@ Run the draft through this lens:
 - Do choice ids stay unique, and does every `answer` / `answers` entry point at one of those ids with no duplicates?
 - If you used Markdown: is `schemaVersion` 2 with `"textFormat": "markdown"`, is every LaTeX backslash doubled for JSON, and is formatting consistent across a question's choices?
 - If you used images: does every `src` point at a file you actually put in `images/`, and does no alt text reveal an answer?
+- If you used written, code, or photo answers: does each have a complete `sampleAnswer` and a checkable `rubric`, sensible length limits, and is the quiz still mostly auto-graded?
 - If you used scenarios: does every `scenarioId` match a scenario, and does each scenario question actually need the scenario to answer?
 
 ## Example transformation

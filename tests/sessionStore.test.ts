@@ -8,6 +8,7 @@ const config: SessionConfig = {
   revealMode: "at_end",
   questionCount: 0,
   timeLimitMinutes: null,
+  selfMark: false,
 };
 
 beforeEach(() => {

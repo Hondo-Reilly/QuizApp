@@ -14,6 +14,11 @@ export function assetKey(quizId: string, path: string): string {
   return `asset:${quizId}:${path}`;
 }
 
+/** A photo from an image-response answer, stored with its attempt. */
+export function attemptPhotoKey(attemptId: string, name: string): string {
+  return `attempt-photo:${attemptId}:${name}`;
+}
+
 let chain: Promise<unknown> = Promise.resolve();
 
 export function run<T>(task: () => Promise<T>): Promise<T> {

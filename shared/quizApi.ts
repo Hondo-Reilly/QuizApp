@@ -1,12 +1,14 @@
 import type { ImportFailure } from "./importBatch";
 import type { MobilePatch, MobileSession, MobileSessionSeed } from "./mobile";
 import type {
+  AttemptScore,
   Folder,
   LibrarySnapshot,
   Quiz,
   QuizAttempt,
   QuizMetadata,
   SaveAttemptInput,
+  SelfMark,
   UpdateCheck,
   UpdateProgress,
 } from "./types";
@@ -49,6 +51,18 @@ export interface QuizApi {
   listAttempts(quizId: string): Promise<QuizAttempt[]>;
   getAttempt(id: string): Promise<QuizAttempt | null>;
   deleteAttempts(ids: string[]): Promise<void>;
+  /** Replaces which questions of a saved attempt are flagged to study. */
+  setAttemptFlags(attemptId: string, flagged: string[]): Promise<QuizAttempt>;
+  /** Replaces the self-marks of an attempt that allows them, with its new score. */
+  setAttemptSelfMarks(
+    attemptId: string,
+    selfMarks: Record<string, SelfMark>,
+    score: AttemptScore,
+  ): Promise<QuizAttempt>;
+  /** Maps photo file names of a saved attempt to URLs an <img> can load. */
+  getAttemptPhotoUrls(attemptId: string, names: string[]): Promise<Record<string, string>>;
+  /** Desktop only: a photo the phone uploaded during mobile mode. */
+  getMobilePhoto(name: string): Promise<Uint8Array | null>;
   deleteAllAppData(): Promise<void>;
   checkForUpdate(): Promise<UpdateCheck>;
   downloadUpdate(): Promise<void>;

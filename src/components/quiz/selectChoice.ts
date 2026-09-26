@@ -11,6 +11,7 @@ export function selectByIndex(
     if (index === 1) return false;
     return null;
   }
+  if (question.type !== "multiple_choice" && question.type !== "multi_answer") return null;
   if (!orderedChoices || index >= orderedChoices.length) return null;
   const id = orderedChoices[index].id;
   if (question.type === "multiple_choice") return id;

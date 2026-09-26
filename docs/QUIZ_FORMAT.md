@@ -3,7 +3,7 @@
 A quiz is a single JSON file. A quiz with images is a **`.quiz` package**: a zip file that holds that JSON as `quiz.json` plus an `images/` folder (see [Images and .quiz packages](#images-and-quiz-packages)).
 
 - **Version 1** is plain text only. Every existing quiz keeps working unchanged.
-- **Version 2** adds optional Markdown with math (`textFormat`) and images. A version 2 quiz that uses neither looks exactly like version 1.
+- **Version 2** adds optional Markdown with math (`textFormat`), images, and written and photo answers. A version 2 quiz that uses neither looks exactly like version 1.
 
 The top-level object looks like this:
 
@@ -26,7 +26,7 @@ Every question has these common fields:
 | Field         | Type     | Required | Notes                                                                          |
 | ------------- | -------- | -------- | ------------------------------------------------------------------------------ |
 | `id`          | `string` | yes      | Stable identifier, unique within the quiz. Used to record answers.             |
-| `type`        | enum     | yes      | One of `"true_false"`, `"multiple_choice"`, `"multi_answer"`.                  |
+| `type`        | enum     | yes      | `"true_false"`, `"multiple_choice"`, `"multi_answer"`, or, in version 2, `"short_answer"`, `"long_answer"`, `"image_response"`. |
 | `scenarioId`  | `string` | no       | The `id` of a scenario to show above the prompt. Must match `scenarios[].id`.  |
 | `prompt`      | `string` | yes      | The question text shown to the user.                                           |
 | `image`       | `Image`  | no       | Version 2 only. An image shown below the prompt.                               |
@@ -121,6 +121,91 @@ Use a scenario when several questions depend on the same background: a case stud
 - `choices` must contain at least 2 entries with unique `id`s.
 - `answers` is a non-empty array of `choices[].id` values.
 - A response is graded correct only if the user's selected set exactly matches `answers`.
+
+## Written and photo answers (version 2)
+
+Three question types let the user answer in their own words, in code, or with a photo. **QuizApp does not grade them.** They are left out of the score, unless the user turns on **Mark my own answers** before starting the quiz. Then, after seeing the sample answer, they choose **I got it**, **I missed it**, or **I'm not sure**. "Got it" and "missed it" count toward the score; "not sure" stays ungraded and flags the question to study.
+
+These fields work on all three types, alongside the usual `id`, `prompt`, `scenarioId`, `image`, and `explanation`:
+
+| Field          | Type       | Required | Notes                                                                          |
+| -------------- | ---------- | -------- | ------------------------------------------------------------------------------ |
+| `sampleAnswer` | `string`   | no       | A model answer, shown after the user submits and on review screens. Strongly recommended. |
+| `rubric`       | `string[]` | no       | The points a good answer covers. Shown as "A good answer covers", and used by AI review to grade. |
+
+In a Markdown quiz, `sampleAnswer` and `rubric` items are Markdown too, except on a code question, where the sample answer is shown as code.
+
+### `short_answer`
+
+A one-line box. Enter moves on.
+
+```json
+{
+  "id": "q1",
+  "type": "short_answer",
+  "prompt": "Which gas do plants take in for photosynthesis?",
+  "maxLength": 60,
+  "sampleAnswer": "Carbon dioxide",
+  "rubric": ["Names carbon dioxide (CO₂)"]
+}
+```
+
+### `long_answer`
+
+A text area that grows as the user writes.
+
+```json
+{
+  "id": "q2",
+  "type": "long_answer",
+  "prompt": "Explain why Earth has seasons.",
+  "minLength": 80,
+  "maxLength": 1200,
+  "sampleAnswer": "Earth's axis is tilted about 23.5°…",
+  "rubric": ["Axial tilt is the cause", "Rejects the distance explanation"]
+}
+```
+
+Add `"code": true` for a **code answer**: a code editor with line numbers and syntax highlighting, where Tab indents. `"language"` (for example `"python"`, `"javascript"`, `"sql"`) picks the highlighting; without it the language is guessed.
+
+```json
+{
+  "id": "q3",
+  "type": "long_answer",
+  "code": true,
+  "language": "python",
+  "prompt": "Write `fizzbuzz(n)`…",
+  "sampleAnswer": "def fizzbuzz(n):\n    ..."
+}
+```
+
+**Character limits** (`short_answer` and `long_answer`):
+
+| Field       | Type      | Default                      | Notes                                                     |
+| ----------- | --------- | ---------------------------- | --------------------------------------------------------- |
+| `maxLength` | `integer` | 300 (short), 10,000 (long)   | A hard limit with a live counter. At most 50,000.         |
+| `minLength` | `integer` | none                         | The answer can't be submitted until it is this long. Must not be more than `maxLength`. |
+
+### `image_response`
+
+The user answers with photos: taken with a phone camera, chosen from files, dropped, or pasted. In mobile mode, photos taken on the phone are sent to the Mac.
+
+```json
+{
+  "id": "q4",
+  "type": "image_response",
+  "prompt": "Sketch the triangle, label its sides, and photograph your work.",
+  "maxImages": 2,
+  "sampleAnswer": "A right triangle with legs 3 cm and 4 cm and hypotenuse 5 cm…",
+  "rubric": ["Right angle marked", "Hypotenuse labeled 5 cm"]
+}
+```
+
+| Field       | Type      | Default | Notes                      |
+| ----------- | --------- | ------- | -------------------------- |
+| `maxImages` | `integer` | 1       | From 1 to 10.              |
+
+Photos are shrunk to at most 2048 pixels on the long side and saved as JPEG, which also removes location and other metadata. They are stored with the attempt. An attempt that has photos exports as an `.attempt` file (a zip of `attempt.json`, the photos under `responses/`, and the quiz's images) instead of plain JSON.
 
 ## Rich text (Markdown and math)
 

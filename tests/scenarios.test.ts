@@ -70,6 +70,7 @@ describe("scenarios", () => {
         revealMode: "at_end",
         questionCount: 0,
         timeLimitMinutes: null,
+        selfMark: false,
       });
       const order = useSessionStore.getState().order;
       expect(order.indexOf("multi") - order.indexOf("single")).toBe(1);

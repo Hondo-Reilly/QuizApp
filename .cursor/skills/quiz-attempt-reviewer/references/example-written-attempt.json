@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 2,
+  "id": "written-answers-demo",
+  "title": "Written and Photo Answers Demo",
+  "description": "Short answers, a written explanation, a code answer, and a photo answer, plus two auto-graded questions.",
+  "author": "QuizApp",
+  "tags": [
+    "sample",
+    "demo",
+    "written answers"
+  ],
+  "textFormat": "markdown",
+  "completedAt": "2026-09-26T16:41:55.000Z",
+  "correct": 3,
+  "wrong": 1,
+  "ungraded": 2,
+  "percent": 75,
+  "selfMarking": true,
+  "flaggedCount": 1,
+  "questions": [
+    {
+      "id": "capital",
+      "prompt": "What is the capital of Australia?",
+      "explanation": "Canberra was purpose-built as the capital as a compromise between Sydney and Melbourne.",
+      "type": "multiple_choice",
+      "choices": [
+        {
+          "id": "a",
+          "text": "Sydney"
+        },
+        {
+          "id": "b",
+          "text": "Canberra"
+        },
+        {
+          "id": "c",
+          "text": "Melbourne"
+        },
+        {
+          "id": "d",
+          "text": "Perth"
+        }
+      ],
+      "answer": "b",
+      "selected": "a",
+      "correct": false,
+      "outcome": "wrong",
+      "flagged": false
+    },
+    {
+      "id": "photosynthesis-gas",
+      "prompt": "Which gas do plants take in from the air for photosynthesis?",
+      "explanation": "Plants combine carbon dioxide and water, using light energy, to make glucose and release oxygen.",
+      "type": "short_answer",
+      "sampleAnswer": "Carbon dioxide ($\\mathrm{CO_2}$)",
+      "rubric": [
+        "Names carbon dioxide (CO₂)"
+      ],
+      "maxLength": 60,
+      "selected": "Oxygen",
+      "correct": null,
+      "outcome": "ungraded",
+      "flagged": false
+    },
+    {
+      "id": "seasons",
+      "prompt": "Explain why Earth has seasons. A common misconception is that it's about distance from the Sun. Address that in your answer.",
+      "type": "long_answer",
+      "sampleAnswer": "Earth's axis is tilted about 23.5° relative to its orbit. As Earth orbits, each hemisphere is tilted toward the Sun for part of the year, so sunlight hits it more directly and days are longer: summer. When it's tilted away, sunlight is spread over a larger area and days are shorter: winter. Distance isn't the cause; Earth is actually closest to the Sun in early January, during the northern winter.",
+      "rubric": [
+        "Axial tilt of about 23.5° is the cause",
+        "More direct sunlight and longer days when a hemisphere tilts toward the Sun",
+        "Rejects the distance explanation (Earth is closest in January)"
+      ],
+      "minLength": 80,
+      "maxLength": 1200,
+      "selected": "Because in summer the Earth is closer to the Sun and in winter it is further away, so it gets less heat.",
+      "correct": true,
+      "outcome": "correct",
+      "selfMark": "got",
+      "flagged": false
+    },
+    {
+      "id": "fizzbuzz",
+      "prompt": "Write a Python function `fizzbuzz(n)` that returns `\"Fizz\"` for multiples of 3, `\"Buzz\"` for multiples of 5, `\"FizzBuzz\"` for multiples of both, and the number as a string otherwise.",
+      "type": "long_answer",
+      "sampleAnswer": "def fizzbuzz(n):\n    if n % 15 == 0:\n        return \"FizzBuzz\"\n    if n % 3 == 0:\n        return \"Fizz\"\n    if n % 5 == 0:\n        return \"Buzz\"\n    return str(n)",
+      "rubric": [
+        "Checks divisibility by both 3 and 5 first (or by 15)",
+        "Returns strings in every case, including str(n)",
+        "Uses the modulo operator correctly"
+      ],
+      "maxLength": 2000,
+      "code": true,
+      "language": "python",
+      "selected": "def fizzbuzz(n):\n    if n % 3 == 0:\n        return \"Fizz\"\n    if n % 5 == 0:\n        return \"Buzz\"\n    if n % 15 == 0:\n        return \"FizzBuzz\"\n    return n",
+      "correct": null,
+      "outcome": "ungraded",
+      "selfMark": "unsure",
+      "flagged": true
+    },
+    {
+      "id": "triangle-sketch",
+      "prompt": "On paper, draw a right triangle with legs of 3 cm and 4 cm, label all three sides, and show how you'd find the hypotenuse. Take a photo of your work.",
+      "type": "image_response",
+      "sampleAnswer": "A right triangle with legs labeled 3 cm and 4 cm and the hypotenuse labeled 5 cm, with the working $c = \\sqrt{3^2 + 4^2} = \\sqrt{25} = 5$.",
+      "rubric": [
+        "Right angle marked between the 3 cm and 4 cm legs",
+        "Hypotenuse labeled 5 cm",
+        "Shows the Pythagorean calculation"
+      ],
+      "maxImages": 2,
+      "selected": {
+        "photos": [
+          "responses/Rb7tN2cVq0/triangle-sketch-4k2m9x1q.jpg"
+        ]
+      },
+      "correct": true,
+      "outcome": "correct",
+      "selfMark": "got",
+      "flagged": false
+    },
+    {
+      "id": "boiling",
+      "prompt": "Water boils at a lower temperature at high altitude.",
+      "explanation": "Lower air pressure at altitude lowers the boiling point.",
+      "type": "true_false",
+      "answer": true,
+      "selected": true,
+      "correct": true,
+      "outcome": "correct",
+      "flagged": false
+    }
+  ]
+}

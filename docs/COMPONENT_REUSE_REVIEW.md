@@ -66,7 +66,7 @@ Counts below are **consumer files / JSX sites**.
 | --- | ---: | --- |
 | [`AttemptList`](../src/components/library/AttemptList.tsx) | 1 / 1 | Quiz browse |
 | [`Breadcrumb`](../src/components/library/Breadcrumb.tsx) | 1 / 1 | App shell |
-| [`DownloadAiQuizButton`](../src/components/library/DownloadAiQuizButton.tsx) | 1 / 1 | App shell |
+| [`AiSkillsMenu`](../src/components/library/AiSkillsMenu.tsx) | 1 / 1 | App shell |
 | [`DownloadExampleButton`](../src/components/library/DownloadExampleButton.tsx) | 1 / 1 | App shell |
 | [`EmptyState`](../src/components/library/EmptyState.tsx) | 1 / 1 | Library |
 | [`FolderCard`](../src/components/library/FolderCard.tsx) | 1 / 1 | Library; rendered for each folder |

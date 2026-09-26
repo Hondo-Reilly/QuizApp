@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { QuizContentProvider } from "@/components/content/QuizContentContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSessionStore } from "@/state/sessionStore";
@@ -10,6 +10,12 @@ import { Button } from "@/components/ui/Button";
 import { ScoreSummary } from "@/components/review/ScoreSummary";
 import { ReviewItem } from "@/components/review/ReviewItem";
 import { ScenarioPanel } from "@/components/quiz/ScenarioPanel";
+import { ErrorNotice } from "@/components/ui/PageState";
+import { useAttemptFlags } from "@/hooks/useAttemptFlags";
+import { quizApi } from "@/api/quizApi";
+import { downloadAttemptExport } from "@/lib/exportAttempt";
+import { useAttemptSelfMarks, type SelfMarkState } from "@/hooks/useAttemptSelfMarks";
+import { PhotoSourceProvider, sessionPhotoSource } from "@/components/content/PhotoSource";
 
 export function ReviewPage() {
   const { id = "" } = useParams();
@@ -20,6 +26,12 @@ export function ReviewPage() {
   const startedAt = useSessionStore((s) => s.startedAt);
   const endedAt = useSessionStore((s) => s.endedAt);
   const reset = useSessionStore((s) => s.reset);
+  const flaggedMap = useSessionStore((s) => s.flagged);
+  const setFlags = useSessionStore((s) => s.setFlags);
+  const savedAttemptId = useSessionStore((s) => s.savedAttemptId);
+  const selfMarks = useSessionStore((s) => s.selfMarks);
+  const selfMarking = useSessionStore((s) => s.config.selfMark);
+  const setSelfMarks = useSessionStore((s) => s.setSelfMarks);
 
   useEffect(() => {
     if (!quiz || quiz.id !== id) {
@@ -35,14 +47,57 @@ export function ReviewPage() {
   }, [quiz, order]);
 
   const grade = useMemo(
-    () => gradeQuiz(orderedQuestions, answers),
-    [orderedQuestions, answers],
+    () => gradeQuiz(orderedQuestions, answers, selfMarking ? selfMarks : {}),
+    [orderedQuestions, answers, selfMarks, selfMarking],
   );
+
+  const flaggedList = useMemo(
+    () => order.filter((questionId) => flaggedMap[questionId]),
+    [order, flaggedMap],
+  );
+  const flags = useAttemptFlags(savedAttemptId, flaggedList, setFlags);
+  const applyMarks = useCallback(
+    (next: SelfMarkState) => {
+      setSelfMarks(next.selfMarks);
+      setFlags(next.flagged);
+    },
+    [setSelfMarks, setFlags],
+  );
+  const marks = useAttemptSelfMarks({
+    attemptId: savedAttemptId,
+    questions: orderedQuestions,
+    answers,
+    selfMarks,
+    flagged: flaggedList,
+    apply: applyMarks,
+  });
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const saveError = flags.error ?? marks.error ?? exportError;
+
+  // Export the saved record, read fresh so flag and mark changes made here are included.
+  const exportAttempt = async () => {
+    if (!quiz || !savedAttemptId) return;
+    setExporting(true);
+    setExportError(null);
+    try {
+      const attempt = await quizApi.getAttempt(savedAttemptId);
+      if (!attempt) throw new Error("The saved attempt was not found.");
+      await downloadAttemptExport(quiz, [attempt], true);
+    } catch (err) {
+      setExportError(
+        `Could not export this attempt. ${err instanceof Error ? err.message : ""}`.trim(),
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
 
   if (!quiz) return null;
 
   return (
     <QuizContentProvider quiz={quiz}>
+      <PhotoSourceProvider source={sessionPhotoSource}>
       <DetailPageLayout
         width="2xl"
         onBack={() => {
@@ -53,6 +108,13 @@ export function ReviewPage() {
         subtitle={quiz.title}
         actions={
           <>
+            <Button
+              variant="secondary"
+              disabled={!savedAttemptId || exporting}
+              onClick={() => void exportAttempt()}
+            >
+              {exporting ? "Exporting…" : "Export attempt"}
+            </Button>
             <Button
               variant="secondary"
               onClick={() => {
@@ -78,11 +140,18 @@ export function ReviewPage() {
             correct={grade.correct}
             total={grade.total}
             percent={grade.percent}
+            ungraded={grade.ungraded}
             timeTaken={
               startedAt && endedAt ? formatTimeTaken(startedAt, endedAt) : null
             }
           />
         </div>
+
+        {saveError && (
+          <div className="mb-3">
+            <ErrorNotice message={saveError} />
+          </div>
+        )}
 
         <div className="flex flex-col gap-3">
           {orderedQuestions.map((question, idx) => {
@@ -99,13 +168,20 @@ export function ReviewPage() {
                   index={idx}
                   question={question}
                   userAnswer={result?.userAnswer ?? null}
-                  correct={!!result?.correct}
+                  outcome={result?.outcome ?? "wrong"}
+                  flagged={!!flaggedMap[question.id]}
+                  onToggleFlag={() => flags.toggle(question.id)}
+                  selfMark={selfMarking ? selfMarks[question.id] : undefined}
+                  onSelfMark={
+                    selfMarking ? (mark) => marks.mark(question.id, mark) : undefined
+                  }
                 />
               </div>
             );
           })}
         </div>
       </DetailPageLayout>
+      </PhotoSourceProvider>
     </QuizContentProvider>
   );
 }
