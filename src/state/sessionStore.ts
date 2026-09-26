@@ -6,6 +6,7 @@ import type {
   UserAnswer,
 } from "@shared/types";
 import { shuffle } from "@shared/shuffle";
+import { scenarioBlocks } from "@shared/scenarios";
 
 export interface SessionConfig {
   shuffleQuestions: boolean;
@@ -64,6 +65,13 @@ const initialState = {
   submitted: {} as Record<string, boolean>,
 };
 
+// Questions that share a scenario stay together, in authored order.
+function shuffledIds(quiz: Quiz): string[] {
+  return shuffle(scenarioBlocks(quiz.questions)).flatMap((block) =>
+    block.map((q) => q.id),
+  );
+}
+
 function buildOrder(quiz: Quiz, config: SessionConfig): string[] {
   const allIds = quiz.questions.map((q) => q.id);
   const requested = Math.max(
@@ -72,10 +80,10 @@ function buildOrder(quiz: Quiz, config: SessionConfig): string[] {
   );
 
   if (requested >= allIds.length) {
-    return config.shuffleQuestions ? shuffle(allIds) : allIds;
+    return config.shuffleQuestions ? shuffledIds(quiz) : allIds;
   }
 
-  return shuffle(allIds).slice(0, requested);
+  return shuffledIds(quiz).slice(0, requested);
 }
 
 function buildChoicesOrder(

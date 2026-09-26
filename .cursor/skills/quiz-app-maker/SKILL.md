@@ -1,6 +1,6 @@
 ---
 name: quiz-app-maker
-description: Generate quizzes as a single JSON file in QuizApp's schemaVersion-1 format. Use this skill whenever the user wants to create, write, generate, or build a quiz, test, trivia set, or set of practice questions — including true/false, multiple-choice, and select-all-that-apply questions — or asks for quiz questions on any topic, or references importing a quiz into QuizApp or a quiz `.json` file. Trigger even when the user doesn't say the word "quiz" but clearly wants graded questions with answers (e.g. "make me 10 questions to test my team on the new HR policy"). Do NOT use for ungraded discussion questions, flashcards, or surveys with no correct answer.
+description: Generate quizzes as a single JSON file in QuizApp's schemaVersion-1 format. Use this skill whenever the user wants to create, write, generate, or build a quiz, test, trivia set, or set of practice questions — including true/false, multiple-choice, select-all-that-apply, and case-study or scenario-based questions — or asks for quiz questions on any topic, or references importing a quiz into QuizApp or a quiz `.json` file. Trigger even when the user doesn't say the word "quiz" but clearly wants graded questions with answers (e.g. "make me 10 questions to test my team on the new HR policy"). Do NOT use for ungraded discussion questions, flashcards, or surveys with no correct answer.
 ---
 
 # Quiz App Maker
@@ -19,8 +19,9 @@ Output **only** the JSON object — no commentary, no markdown code fence, nothi
 
 The full schema lives in `references/quiz-format.md`. Read it before generating so every field and constraint is correct. It matches QuizApp's `docs/QUIZ_FORMAT.md` and `shared/schema.ts` (`schemaVersion` 1). A complete valid example is in `references/example-quiz.json` — skim it to anchor on the shape. The essentials:
 
-- Top level: `schemaVersion` (always `1`), `title` (required), `questions` (1+). Optional: `id`, `description`, `author`, `tags`.
+- Top level: `schemaVersion` (always `1`), `title` (required), `questions` (1+). Optional: `id`, `description`, `author`, `tags`, `scenarios`.
 - Each question needs a unique `id`, a `type`, and a `prompt`.
+- Scenarios (optional) → top-level `scenarios[]` of `{ id, title?, text }`; a question sets `scenarioId` to show that scenario above its prompt. Every `scenarioId` must match a scenario id, and scenario ids must be unique.
 - `true_false` → boolean `answer`.
 - `multiple_choice` → `choices[]` (2+, unique ids), single `answer` id that matches one choice.
 - `multi_answer` → `choices[]` (2+, unique ids), `answers[]` (non-empty, unique choice ids). Graded correct only on an exact-set match.
@@ -57,6 +58,17 @@ A test-taker who knows nothing should not be able to score above chance by readi
 
 **For `true_false`, make the statement non-obvious.** A true/false that's trivially true or absurdly false measures nothing. The best ones hinge on a specific fact or a plausible-sounding misconception, so a knowledgeable person and a guesser diverge.
 
+### Scenario-based questions
+
+Use a scenario when the user asks for case studies, reading passages, or applied "what should the inspector/nurse/engineer do" questions, or when source material naturally supplies a situation to reason about. Don't force scenarios onto plain recall quizzes.
+
+- **Put the facts in the scenario, the question in the prompt.** The scenario holds everything the test-taker needs (conditions, measurements, what was observed). Each prompt asks one thing about it and should not repeat the scenario.
+- **Make every question depend on the scenario.** A question someone could answer without reading it doesn't belong to it. Good scenario questions require spotting which details matter, e.g. which readings are out of spec.
+- **Plant realistic details, including some that are fine.** If every detail is a problem, the task becomes "everything is wrong." Mix compliant and noncompliant details so the reader has to judge each one.
+- **Aim for 2–4 questions per scenario** that build on each other: diagnose, then decide, then choose the fix. Keep them adjacent in `questions` and in that order; the app keeps a scenario's questions together when shuffling.
+- **Give each scenario a short `title`** such as "Case Study 1: Validating a Fluorescent PT Examination".
+- **Explanations should cite the scenario:** name the specific detail that makes the answer right.
+
 ### A quick self-check before you output
 
 Run the draft through this lens:
@@ -67,6 +79,7 @@ Run the draft through this lens:
 - Does every explanation teach something, rather than restate the answer?
 - Is the difficulty consistent with what the user asked for (or moderate by default)?
 - Do choice ids stay unique, and does every `answer` / `answers` entry point at one of those ids with no duplicates?
+- If you used scenarios: does every `scenarioId` match a scenario, and does each scenario question actually need the scenario to answer?
 
 ## Example transformation
 

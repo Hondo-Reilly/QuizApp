@@ -133,7 +133,7 @@ export function QuizBrowsePage() {
             </>
           }
         />
-        <QuestionAnswerList questions={quiz.questions} />
+        <QuestionAnswerList questions={quiz.questions} scenarios={quiz.scenarios} />
       </section>
 
       <MoveQuizDialog

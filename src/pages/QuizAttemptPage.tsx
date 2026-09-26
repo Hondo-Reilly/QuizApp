@@ -99,7 +99,11 @@ export function QuizAttemptPage() {
           </Button>
         }
       />
-      <QuestionAnswerList questions={questions} answers={attempt.answers} />
+      <QuestionAnswerList
+        questions={questions}
+        scenarios={quiz.scenarios}
+        answers={attempt.answers}
+      />
     </DetailPageLayout>
   );
 }

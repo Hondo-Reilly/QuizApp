@@ -1,5 +1,11 @@
 export type QuestionType = "true_false" | "multiple_choice" | "multi_answer";
 
+export interface Scenario {
+  id: string;
+  title?: string;
+  text: string;
+}
+
 export interface Choice {
   id: string;
   text: string;
@@ -8,6 +14,7 @@ export interface Choice {
 export interface TrueFalseQuestion {
   id: string;
   type: "true_false";
+  scenarioId?: string;
   prompt: string;
   answer: boolean;
   explanation?: string;
@@ -16,6 +23,7 @@ export interface TrueFalseQuestion {
 export interface MultipleChoiceQuestion {
   id: string;
   type: "multiple_choice";
+  scenarioId?: string;
   prompt: string;
   choices: Choice[];
   answer: string;
@@ -25,6 +33,7 @@ export interface MultipleChoiceQuestion {
 export interface MultiAnswerQuestion {
   id: string;
   type: "multi_answer";
+  scenarioId?: string;
   prompt: string;
   choices: Choice[];
   answers: string[];
@@ -43,6 +52,7 @@ export interface Quiz {
   description?: string;
   author?: string;
   tags?: string[];
+  scenarios?: Scenario[];
   questions: Question[];
 }
 

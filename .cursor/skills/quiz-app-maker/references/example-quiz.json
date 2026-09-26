@@ -2,9 +2,16 @@
   "schemaVersion": 1,
   "id": "general-knowledge-sample",
   "title": "General Knowledge Sample",
-  "description": "A short demo quiz covering all three question types.",
+  "description": "A short demo quiz covering all three question types and a shared scenario.",
   "author": "QuizApp",
   "tags": ["sample", "demo"],
+  "scenarios": [
+    {
+      "id": "garden-trip",
+      "title": "Scenario: Planning a Garden",
+      "text": "Maya is planting a vegetable bed that gets about 3 hours of direct sun each morning and is shaded the rest of the day. The soil stays damp for days after rain. She wants a harvest within two months of planting."
+    }
+  ],
   "questions": [
     {
       "id": "q1",
@@ -59,6 +66,28 @@
       "prompt": "Sound travels faster in water than in air.",
       "answer": true,
       "explanation": "Sound travels about 4x faster in water (~1480 m/s) than in air (~343 m/s)."
+    },
+    {
+      "id": "q6",
+      "scenarioId": "garden-trip",
+      "type": "multiple_choice",
+      "prompt": "Which crop best suits Maya's bed?",
+      "choices": [
+        { "id": "a", "text": "Tomatoes, which need 6 to 8 hours of direct sun" },
+        { "id": "b", "text": "Watermelon, which needs about 90 warm, sunny days" },
+        { "id": "c", "text": "Leaf lettuce, which tolerates partial shade and matures quickly" },
+        { "id": "d", "text": "Rosemary, which prefers full sun and dry, fast-draining soil" }
+      ],
+      "answer": "c",
+      "explanation": "Only lettuce fits all three conditions: partial shade, damp soil, and a harvest inside two months."
+    },
+    {
+      "id": "q7",
+      "scenarioId": "garden-trip",
+      "type": "true_false",
+      "prompt": "Raising the bed a few inches would help with the soil condition described.",
+      "answer": true,
+      "explanation": "Soil that stays damp for days drains poorly. A raised bed lifts the roots above the wettest soil."
     }
   ]
 }

@@ -15,6 +15,7 @@ import { ErrorNotice } from "@/components/ui/PageState";
 import { Button } from "@/components/ui/Button";
 import { gradeQuestion } from "@shared/grading";
 import { countAnswered, hasAnswer } from "@shared/answers";
+import { scenarioFor } from "@shared/scenarios";
 import type { UserAnswer } from "@shared/types";
 
 export function TakeQuizPage() {
@@ -131,6 +132,7 @@ export function TakeQuizPage() {
         <div className="flex flex-col gap-4">
           <QuestionCard
             question={question}
+            scenario={scenarioFor(session.quiz, question)}
             value={value}
             onChange={handleSetAnswer}
             reveal={lockedForReveal}

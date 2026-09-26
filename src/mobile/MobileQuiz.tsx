@@ -6,6 +6,7 @@ import { QuizProgressHeader } from "@/components/quiz/QuizProgressHeader";
 import { QuestionCard } from "@/components/quiz/QuestionCard";
 import { countAnswered, hasAnswer } from "@shared/answers";
 import { gradeQuestion } from "@shared/grading";
+import { scenarioFor } from "@shared/scenarios";
 import type { MobilePatch, MobileSession } from "@shared/mobile";
 
 function withSessionToken(path: string): string {
@@ -130,6 +131,7 @@ export function MobileQuiz() {
       />
       <QuestionCard
         question={question}
+        scenario={scenarioFor(session.quiz, question)}
         value={value}
         onChange={(next) =>
           send({ type: "answer", questionId: question.id, answer: next })

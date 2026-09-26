@@ -1,5 +1,5 @@
 import { gradeQuestion } from "@shared/grading";
-import type { Question, Quiz, QuizAttempt, UserAnswer } from "@shared/types";
+import type { Question, Quiz, QuizAttempt, Scenario, UserAnswer } from "@shared/types";
 
 export type ExportedQuestion = Question & {
   selected: UserAnswer;
@@ -22,6 +22,7 @@ export interface AttemptExport {
   description?: string;
   author?: string;
   tags?: string[];
+  scenarios?: Scenario[];
   completedAt: string;
   correct: number;
   wrong: number;
@@ -36,6 +37,7 @@ export interface AllAttemptsExport {
   description?: string;
   author?: string;
   tags?: string[];
+  scenarios?: Scenario[];
   attempts: ExportedAttempt[];
 }
 
@@ -84,6 +86,7 @@ export function buildAttemptExport(
     description: quiz.description,
     author: quiz.author,
     tags: quiz.tags,
+    scenarios: quiz.scenarios,
     completedAt: exported.completedAt,
     correct: exported.correct,
     wrong: exported.wrong,
@@ -103,6 +106,7 @@ export function buildAllAttemptsExport(
     description: quiz.description,
     author: quiz.author,
     tags: quiz.tags,
+    scenarios: quiz.scenarios,
     attempts: attempts.map((attempt) =>
       exportAttempt(attempt, questionsForAttempt(quiz, attempt)),
     ),

@@ -6,11 +6,18 @@ const choiceSchema = z.object({
   text: z.string().min(1),
 });
 
+const scenarioSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1).optional(),
+  text: z.string().min(1),
+});
+
 const uniqueChoiceIds = (choices: { id: string }[]) =>
   new Set(choices.map((c) => c.id)).size === choices.length;
 
 const baseQuestion = z.object({
   id: z.string().min(1),
+  scenarioId: z.string().min(1).optional(),
   prompt: z.string().min(1),
   explanation: z.string().optional(),
 });
@@ -71,9 +78,31 @@ export const quizSchema = z
     description: z.string().optional(),
     author: z.string().optional(),
     tags: z.array(z.string()).optional(),
+    scenarios: z.array(scenarioSchema).optional(),
     questions: z.array(questionSchema).min(1),
   })
   .superRefine((quiz, ctx) => {
+    const scenarioIds = new Set<string>();
+    quiz.scenarios?.forEach((scenario, index) => {
+      if (scenarioIds.has(scenario.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Duplicate scenario id "${scenario.id}"`,
+          path: ["scenarios", index, "id"],
+        });
+      }
+      scenarioIds.add(scenario.id);
+    });
+    quiz.questions.forEach((question, index) => {
+      if (question.scenarioId && !scenarioIds.has(question.scenarioId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `scenarioId "${question.scenarioId}" does not match a scenario`,
+          path: ["questions", index, "scenarioId"],
+        });
+      }
+    });
+
     const seen = new Set<string>();
     quiz.questions.forEach((question, index) => {
       if (seen.has(question.id)) {

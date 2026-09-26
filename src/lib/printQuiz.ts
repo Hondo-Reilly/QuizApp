@@ -1,4 +1,5 @@
 import { quizApi } from "@/api/quizApi";
+import { scenarioFor, startsScenario } from "@shared/scenarios";
 import type { Question, Quiz } from "@shared/types";
 
 export interface PrintQuizOptions {
@@ -47,9 +48,20 @@ function questionHtml(question: Question, index: number, showAnswers: boolean): 
   return `<section class="question"><h2>${index + 1}. ${escapeHtml(question.prompt)}</h2><ol>${items}</ol></section>`;
 }
 
+function scenarioHtml(quiz: Quiz, index: number): string {
+  if (!startsScenario(quiz.questions, index)) return "";
+  const scenario = scenarioFor(quiz, quiz.questions[index]);
+  if (!scenario) return "";
+  const title = scenario.title ? `<h3>${escapeHtml(scenario.title)}</h3>` : "";
+  return `<section class="scenario">${title}<p>${escapeHtml(scenario.text)}</p></section>`;
+}
+
 function buildHtml(quiz: Quiz, options: PrintQuizOptions): string {
   const questions = quiz.questions
-    .map((question, index) => questionHtml(question, index, options.showAnswers))
+    .map(
+      (question, index) =>
+        scenarioHtml(quiz, index) + questionHtml(question, index, options.showAnswers),
+    )
     .join("");
   const key = options.includeKey
     ? `<h2 class="key-title">Answer key</h2><ol class="key">${quiz.questions
@@ -70,6 +82,9 @@ function buildHtml(quiz: Quiz, options: PrintQuizOptions): string {
     .description { color: #444; margin: 0 0 24px; }
     .question { break-inside: avoid; margin: 0 0 18px; }
     h2 { font-size: 15px; margin: 0 0 8px; }
+    .scenario { border-left: 3px solid #999; padding: 4px 0 4px 12px; margin: 24px 0 16px; break-inside: avoid; }
+    .scenario h3 { font-size: 15px; margin: 0 0 6px; }
+    .scenario p { margin: 0; white-space: pre-line; }
     ol { margin: 0; padding-left: 1.4em; }
     li { margin: 4px 0; }
     li.correct { font-weight: 700; }

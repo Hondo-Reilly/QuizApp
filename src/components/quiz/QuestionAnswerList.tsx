@@ -1,9 +1,12 @@
 import { QuestionResultCard, ResultBadge } from "./QuestionResultCard";
+import { ScenarioPanel } from "./ScenarioPanel";
 import { gradeQuestion } from "@shared/grading";
-import type { Choice, Question, UserAnswer } from "@shared/types";
+import { startsScenario } from "@shared/scenarios";
+import type { Choice, Question, Scenario, UserAnswer } from "@shared/types";
 
 export interface QuestionAnswerListProps {
   questions: Question[];
+  scenarios?: Scenario[];
   answers?: Record<string, UserAnswer>;
 }
 
@@ -110,17 +113,23 @@ function choicesFor(
 
 export function QuestionAnswerList({
   questions,
+  scenarios,
   answers,
 }: QuestionAnswerListProps) {
   const showSelections = answers !== undefined;
+  const scenarioById = new Map(scenarios?.map((scenario) => [scenario.id, scenario]));
 
   return (
     <ol className="flex flex-col gap-4">
       {questions.map((question, index) => {
         const answer = answers?.[question.id];
         const correct = showSelections ? gradeQuestion(question, answer ?? null) : false;
+        const scenario = startsScenario(questions, index)
+          ? scenarioById.get(question.scenarioId ?? "")
+          : undefined;
         return (
-          <li key={question.id}>
+          <li key={question.id} className="flex flex-col gap-4">
+            {scenario && <ScenarioPanel scenario={scenario} />}
             <QuestionResultCard
               heading={
                 <h2 className="text-base font-semibold text-slate-900 dark:text-neutral-100">

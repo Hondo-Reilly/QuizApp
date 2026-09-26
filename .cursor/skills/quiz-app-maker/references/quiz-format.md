@@ -10,6 +10,7 @@ A quiz is a single JSON file. The top-level object looks like this:
 | `description`   | `string`                              | no       | Short summary shown on the setup screen.                              |
 | `author`        | `string`                              | no       | Free-form attribution.                                                |
 | `tags`          | `string[]`                            | no       | Used for grouping/filtering in future versions.                       |
+| `scenarios`     | `Scenario[]`                          | no       | Shared case studies or passages that questions can point at.          |
 | `questions`     | `Question[]` (1+ items)               | yes      | At least one question is required.                                    |
 
 ## Question types
@@ -20,8 +21,41 @@ Every question has these common fields:
 | ------------- | -------- | -------- | ------------------------------------------------------------------------------ |
 | `id`          | `string` | yes      | Stable identifier, unique within the quiz. Used to record answers.             |
 | `type`        | enum     | yes      | One of `"true_false"`, `"multiple_choice"`, `"multi_answer"`.                  |
+| `scenarioId`  | `string` | no       | The `id` of a scenario to show above the prompt. Must match `scenarios[].id`.  |
 | `prompt`      | `string` | yes      | The question text shown to the user.                                           |
 | `explanation` | `string` | no       | Optional explanation shown after reveal / in the review screen.                |
+
+## Scenarios
+
+Use a scenario when several questions depend on the same background: a case study, a passage, a data table described in text, or a setup. Write it once in the top-level `scenarios` array and set `scenarioId` on each question that uses it.
+
+| Field   | Type     | Required | Notes                                                       |
+| ------- | -------- | -------- | ----------------------------------------------------------- |
+| `id`    | `string` | yes      | Unique within `scenarios`. Questions reference it.          |
+| `title` | `string` | no       | Heading shown above the text, e.g. `"Case Study 1: ..."`.   |
+| `text`  | `string` | yes      | The shared details. Use `\n` for line breaks.               |
+
+```json
+{
+  "schemaVersion": 1,
+  "title": "Penetrant Testing",
+  "scenarios": [
+    {
+      "id": "case-1",
+      "title": "Case Study 1: Validating a Fluorescent PT Examination",
+      "text": "Inspection goal: detect fine surface-breaking fatigue cracks in a nickel-alloy bracket. ..."
+    }
+  ],
+  "questions": [
+    { "id": "q1", "scenarioId": "case-1", "type": "multiple_choice", "prompt": "What should the inspector do with the current result?", "...": "..." },
+    { "id": "q2", "scenarioId": "case-1", "type": "multiple_choice", "prompt": "Which setup should be used for the repeat examination?", "...": "..." }
+  ]
+}
+```
+
+- The scenario is shown above the prompt on every question that references it.
+- Questions that share a scenario stay together, in file order, when questions are shuffled. Keep them adjacent in `questions`.
+- Questions without `scenarioId` work as before, so a quiz can mix both.
 
 ### `true_false`
 

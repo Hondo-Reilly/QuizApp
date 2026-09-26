@@ -2,11 +2,13 @@ import { useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSessionStore } from "@/state/sessionStore";
 import { gradeQuiz } from "@shared/grading";
+import { scenarioFor, startsScenario } from "@shared/scenarios";
 import { formatTimeTaken } from "@/lib/formatDuration";
 import { DetailPageLayout } from "@/components/ui/DetailPageLayout";
 import { Button } from "@/components/ui/Button";
 import { ScoreSummary } from "@/components/review/ScoreSummary";
 import { ReviewItem } from "@/components/review/ReviewItem";
+import { ScenarioPanel } from "@/components/quiz/ScenarioPanel";
 
 export function ReviewPage() {
   const { id = "" } = useParams();
@@ -85,14 +87,19 @@ export function ReviewPage() {
           const result = grade.results.find(
             (r) => r.questionId === question.id,
           );
+          const scenario = startsScenario(orderedQuestions, idx)
+            ? scenarioFor(quiz, question)
+            : undefined;
           return (
-            <ReviewItem
-              key={question.id}
-              index={idx}
-              question={question}
-              userAnswer={result?.userAnswer ?? null}
-              correct={!!result?.correct}
-            />
+            <div key={question.id} className="flex flex-col gap-3">
+              {scenario && <ScenarioPanel scenario={scenario} />}
+              <ReviewItem
+                index={idx}
+                question={question}
+                userAnswer={result?.userAnswer ?? null}
+                correct={!!result?.correct}
+              />
+            </div>
           );
         })}
       </div>

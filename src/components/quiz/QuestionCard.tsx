@@ -1,11 +1,13 @@
-import type { Question, UserAnswer } from "@shared/types";
+import type { Question, Scenario, UserAnswer } from "@shared/types";
 import { Card } from "@/components/ui/Card";
 import { TrueFalseInput } from "./TrueFalseInput";
 import { MultipleChoiceInput } from "./MultipleChoiceInput";
 import { MultiAnswerInput } from "./MultiAnswerInput";
+import { ScenarioPanel } from "./ScenarioPanel";
 
 export interface QuestionCardProps {
   question: Question;
+  scenario?: Scenario;
   value: UserAnswer;
   onChange: (value: UserAnswer) => void;
   reveal: boolean;
@@ -15,6 +17,7 @@ export interface QuestionCardProps {
 
 export function QuestionCard({
   question,
+  scenario,
   value,
   onChange,
   reveal,
@@ -23,6 +26,8 @@ export function QuestionCard({
 }: QuestionCardProps) {
   return (
     <Card className="flex flex-col gap-4">
+      {scenario && <ScenarioPanel scenario={scenario} />}
+
       <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100">
         {question.prompt}
       </h2>
