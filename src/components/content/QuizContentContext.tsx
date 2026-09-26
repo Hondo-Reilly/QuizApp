@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { quizApi } from "@/api/quizApi";
-import type { renderMarkdown } from "@/lib/markdown";
+import { useMarkdownRenderer, type RenderMarkdown } from "@/lib/markdownLoader";
 import { imageRefs, textFormatOf } from "@shared/quizContent";
 import type { Quiz, TextFormat } from "@shared/types";
 
@@ -13,7 +13,7 @@ interface QuizContent {
   format: TextFormat;
   imageUrl: (src: string) => string | undefined;
   /** Loaded on demand for Markdown quizzes; null until it arrives. */
-  render: typeof renderMarkdown | null;
+  render: RenderMarkdown | null;
 }
 
 const QuizContentContext = createContext<QuizContent>({
@@ -21,14 +21,6 @@ const QuizContentContext = createContext<QuizContent>({
   imageUrl: () => undefined,
   render: null,
 });
-
-// The Markdown and KaTeX code is large, so plain quizzes never load it.
-let rendererLoad: Promise<typeof renderMarkdown> | null = null;
-
-function loadRenderer(): Promise<typeof renderMarkdown> {
-  rendererLoad ??= import("@/lib/markdown").then((mod) => mod.renderMarkdown);
-  return rendererLoad;
-}
 
 export function useQuizContent(): QuizContent {
   return useContext(QuizContentContext);
@@ -48,19 +40,9 @@ export function QuizContentProvider({
   children: ReactNode;
 }) {
   const [urls, setUrls] = useState<Record<string, string>>({});
-  const [render, setRender] = useState<typeof renderMarkdown | null>(null);
   const format = textFormatOf(quiz);
-
-  useEffect(() => {
-    if (format !== "markdown") return;
-    let cancelled = false;
-    void loadRenderer().then((loaded) => {
-      if (!cancelled) setRender(() => loaded);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [format]);
+  // Plain quizzes never load the Markdown and KaTeX code.
+  const render = useMarkdownRenderer(format === "markdown");
   const refsKey = useMemo(() => imageRefs(quiz).join("\n"), [quiz]);
 
   useEffect(() => {

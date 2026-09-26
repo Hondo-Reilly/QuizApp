@@ -187,3 +187,14 @@ body,
 .dark .rich-text a {
   color: rgb(var(--brand-300));
 }
+
+/* Release notes in the update dialog use the same Markdown styles, with small headings. */
+.release-notes h1,
+.release-notes h2,
+.release-notes h3 {
+  font-size: 1em;
+  margin-top: 0.9em;
+}
+.release-notes > :first-child {
+  margin-top: 0;
+}
