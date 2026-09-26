@@ -1,17 +1,19 @@
-# v0.3.0
+# v0.4.0
 
 ## New
 
-- Scenario questions: a quiz can define shared case studies or passages, and each question can show one above its prompt. Questions that share a scenario stay together when shuffled. Existing quiz files import unchanged.
-- The Ai Quiz Skill download and the example quiz now cover scenario questions.
-- Settings now include an accent color and **Delete All App Data**, which removes quizzes, attempts, and saved settings after confirmation.
+- Rich text: quizzes can opt into Markdown with bold and italic, lists, code blocks, tables, links, and LaTeX math. Quizzes that don't opt in look exactly as before.
+- Images: questions, choices, and scenarios can show images, including image-only answer choices. Click an image to see it full size.
+- .quiz packages: a quiz with images is a single `.quiz` file (a zip of `quiz.json` and an `images/` folder). Import accepts `.quiz` and `.json` files.
+- SVG diagrams in a `.quiz` package are converted to sharp PNG images when the quiz is imported.
+- Images and math also appear in phone mode, on the review screen, and in Save to PDF.
+- A launch screen shows while your library loads, and the Mac window no longer flashes empty on launch.
+- The Ai Quiz Skill download now explains Markdown, math, images, SVG diagrams, and how to package a `.quiz` file.
 
-## Fixes
+## Compatibility
 
-- A failed attempt save now stays on the quiz so it can be retried.
-- Desktop library writes run one at a time, and related browser writes share a single transaction.
-- Imports that only partly succeed now report which files failed.
-- Mobile mode checks answers sent from the phone, and keyboard focus stays inside open dialogs.
+- Quizzes that use Markdown or images use `"schemaVersion": 2`. QuizApp v0.3.0 and earlier reject these quizzes with an error, so anyone you share them with needs v0.4.0.
+- All existing quizzes, attempts, and settings keep working without changes.
 
 ## Installation note
 
