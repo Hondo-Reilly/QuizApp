@@ -18,6 +18,7 @@ Library, folders, quiz detail, setup, taking a quiz, grading, and review live in
 | Data | Electron | Web |
 | --- | --- | --- |
 | Quizzes, folders, attempts | Files in `userData` | IndexedDB (`src/lib/browserQuizApi.ts`) |
+| Images from `.quiz` packages | `userData/quizzes/<id>.assets/`, served as `quizasset://` | IndexedDB records `asset:<id>:<path>` |
 | Theme and setup choices | `localStorage` | `localStorage` (same keys) |
 
 A new library or attempt field needs a matching read and write in both stores. Theme and setup preferences stay in `localStorage` only. Do not copy them into IndexedDB.

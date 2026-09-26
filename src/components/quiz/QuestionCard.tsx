@@ -4,6 +4,8 @@ import { TrueFalseInput } from "./TrueFalseInput";
 import { MultipleChoiceInput } from "./MultipleChoiceInput";
 import { MultiAnswerInput } from "./MultiAnswerInput";
 import { ScenarioPanel } from "./ScenarioPanel";
+import { QuizImageView } from "@/components/content/QuizImageView";
+import { RichText } from "@/components/content/RichText";
 
 export interface QuestionCardProps {
   question: Question;
@@ -28,9 +30,15 @@ export function QuestionCard({
     <Card className="flex flex-col gap-4">
       {scenario && <ScenarioPanel scenario={scenario} />}
 
-      <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100">
-        {question.prompt}
-      </h2>
+      <div
+        role="heading"
+        aria-level={2}
+        className="text-lg font-semibold text-slate-900 dark:text-neutral-100"
+      >
+        <RichText text={question.prompt} />
+      </div>
+
+      {question.image && <QuizImageView image={question.image} />}
 
       {question.type === "true_false" && (
         <TrueFalseInput

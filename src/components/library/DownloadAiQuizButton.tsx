@@ -1,6 +1,7 @@
 import skillText from "../../../.cursor/skills/quiz-app-maker/SKILL.md?raw";
 import formatText from "../../../.cursor/skills/quiz-app-maker/references/quiz-format.md?raw";
 import exampleText from "../../../.cursor/skills/quiz-app-maker/references/example-quiz.json?raw";
+import richExampleText from "../../../.cursor/skills/quiz-app-maker/references/example-rich-quiz.json?raw";
 import { Button } from "@/components/ui/Button";
 import { zipStore } from "@/lib/zipStore";
 
@@ -11,6 +12,7 @@ function triggerDownload(): void {
     { name: "quiz-app-maker/SKILL.md", text: skillText },
     { name: "quiz-app-maker/references/quiz-format.md", text: formatText },
     { name: "quiz-app-maker/references/example-quiz.json", text: exampleText },
+    { name: "quiz-app-maker/references/example-rich-quiz.json", text: richExampleText },
   ]);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

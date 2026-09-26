@@ -1,6 +1,6 @@
 ---
 name: quiz-app-maker
-description: Generate quizzes as a single JSON file in QuizApp's schemaVersion-1 format. Use this skill whenever the user wants to create, write, generate, or build a quiz, test, trivia set, or set of practice questions — including true/false, multiple-choice, select-all-that-apply, and case-study or scenario-based questions — or asks for quiz questions on any topic, or references importing a quiz into QuizApp or a quiz `.json` file. Trigger even when the user doesn't say the word "quiz" but clearly wants graded questions with answers (e.g. "make me 10 questions to test my team on the new HR policy"). Do NOT use for ungraded discussion questions, flashcards, or surveys with no correct answer.
+description: Generate quizzes for QuizApp as a JSON file, or as a .quiz package when the quiz has images. Supports Markdown with LaTeX math, code, and tables, plus images in prompts, choices, and scenarios. Use this skill whenever the user wants to create, write, generate, or build a quiz, test, trivia set, or set of practice questions — including true/false, multiple-choice, select-all-that-apply, and case-study or scenario-based questions — or asks for quiz questions on any topic, or references importing a quiz into QuizApp, a quiz `.json` file, or a `.quiz` package. Trigger even when the user doesn't say the word "quiz" but clearly wants graded questions with answers (e.g. "make me 10 questions to test my team on the new HR policy"). Do NOT use for ungraded discussion questions, flashcards, or surveys with no correct answer.
 ---
 
 # Quiz App Maker
@@ -15,16 +15,57 @@ If the user gave source material (a document, notes, a URL), draw questions from
 
 ## Output contract
 
-Output **only** the JSON object — no commentary, no markdown code fence, nothing before or after — so it can be saved directly to a `.json` file. When working with files, save it as `<slug>.json`.
+**Without images:** output **only** the JSON object — no commentary, no markdown code fence, nothing before or after — so it can be saved directly to a `.json` file. When working with files, save it as `<slug>.json`.
 
-The full schema lives in `references/quiz-format.md`. Read it before generating so every field and constraint is correct. It matches QuizApp's `docs/QUIZ_FORMAT.md` and `shared/schema.ts` (`schemaVersion` 1). A complete valid example is in `references/example-quiz.json` — skim it to anchor on the shape. The essentials:
+**With images:** the quiz must be a `.quiz` package, a zip holding `quiz.json` and an `images/` folder. See [Images](#images) below.
 
-- Top level: `schemaVersion` (always `1`), `title` (required), `questions` (1+). Optional: `id`, `description`, `author`, `tags`, `scenarios`.
+The full schema lives in `references/quiz-format.md`. Read it before generating so every field and constraint is correct. It matches QuizApp's `docs/QUIZ_FORMAT.md` and `shared/schema.ts`. Complete valid examples: `references/example-quiz.json` (plain, version 1) and `references/example-rich-quiz.json` (Markdown, math, images, and a scenario, version 2; it is the `quiz.json` of a package, so its image files are not included). Skim the one that fits. The essentials:
+
+- Top level: `schemaVersion`, `title` (required), `questions` (1+). Optional: `id`, `description`, `author`, `tags`, `scenarios`, and in version 2 `textFormat`.
+- `schemaVersion` is `1` for plain-text quizzes. Use `2` only when the quiz uses Markdown (`"textFormat": "markdown"`) or images.
 - Each question needs a unique `id`, a `type`, and a `prompt`.
 - Scenarios (optional) → top-level `scenarios[]` of `{ id, title?, text }`; a question sets `scenarioId` to show that scenario above its prompt. Every `scenarioId` must match a scenario id, and scenario ids must be unique.
 - `true_false` → boolean `answer`.
 - `multiple_choice` → `choices[]` (2+, unique ids), single `answer` id that matches one choice.
 - `multi_answer` → `choices[]` (2+, unique ids), `answers[]` (non-empty, unique choice ids). Graded correct only on an exact-set match.
+- Version 2 only: `image` (`{ "src": "images/<file>", "alt": "..." }`) on a question, choice, or scenario. A choice with an image may have `"text": ""`.
+
+## Rich text: Markdown and math
+
+Markdown is optional. Turn it on (`"schemaVersion": 2, "textFormat": "markdown"`) when the subject benefits from it:
+
+- **Math and science:** formulas, units with exponents, and equations as LaTeX (`$v = \frac{d}{t}$` inline, `$$...$$` on its own line).
+- **Programming:** inline `` `code` `` and fenced code blocks with a language.
+- **Data:** a small Markdown table the question asks about.
+- **Emphasis:** `**bold**` for words a question hinges on, such as **not** or **most**.
+
+For plain recall topics such as history, vocabulary, or policy, stay on version 1 plain text.
+
+Markdown applies to prompts, choice text, explanations, and scenario text. Keep these rules in mind:
+
+- **Escape for JSON.** Every LaTeX backslash is written twice in the file (`"$\\sqrt{2}$"`), and line breaks are `\n`. A code block or table needs `\n` between its lines, and a blank line (`\n\n`) before it.
+- **Watch dollar signs.** Prices like `$5 and $10` stay plain text, but a price and inline math in the same field can pair up as a formula (`$5 and $x$`). In a field that has math, write amounts as "5 dollars" or "USD 5".
+- **Keep formatting parallel across choices.** If one choice uses math or code formatting, format the others the same way. Otherwise the odd one out is a giveaway, just like a longer option.
+- Raw HTML is not rendered, so don't use it.
+
+## Images
+
+Only use images you actually have: files the user gave you, or images you create as real files, for example an SVG diagram you write or a chart drawn with code. Never reference an image you have not put in the package, and never invent file names.
+
+- Put every image in `images/` (subfolders allowed) as `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, or `.svg`. Remote URLs are rejected. Keep each image under 10 MB.
+- **SVG is the easiest way to draw your own diagrams**, such as geometry figures, graphs, circuits, flowcharts, and labeled parts. QuizApp converts each SVG to a PNG when the quiz is imported. Make it self-contained: set a `viewBox` (and ideally `width`/`height`), give it a white background `<rect>` so it reads well in dark mode, use common fonts (`Helvetica, Arial, sans-serif`), and keep text at 16px or larger at the SVG's own size. Don't use scripts, `foreignObject`, web fonts, or links to other files; they are removed before rendering.
+- Check a diagram the way you check options: labels must not give away the answer, and the figure must match the numbers in the question.
+- Reference images with `image` fields, or inside Markdown text as `![alt](images/file.png)` when the quiz uses `"textFormat": "markdown"`.
+- **Write alt text that doesn't give away the answer.** Alt text shows if an image fails to load and is read aloud by screen readers. For image choices where recognizing the image *is* the test, use neutral alt text like "Graph A".
+- Images must earn their place: the question should need the image (read the graph, identify the part, interpret the diagram), not just decorate it.
+
+To package it, write `quiz.json` next to an `images/` folder, then zip both at the top level of the archive and name it `<slug>.quiz`:
+
+```
+cd <slug> && zip -r ../<slug>.quiz quiz.json images
+```
+
+If you cannot create files, output the JSON and tell the user which image files to put in `images/` and how to zip them.
 
 ## Defaults (when the user doesn't specify)
 
@@ -79,6 +120,8 @@ Run the draft through this lens:
 - Does every explanation teach something, rather than restate the answer?
 - Is the difficulty consistent with what the user asked for (or moderate by default)?
 - Do choice ids stay unique, and does every `answer` / `answers` entry point at one of those ids with no duplicates?
+- If you used Markdown: is `schemaVersion` 2 with `"textFormat": "markdown"`, is every LaTeX backslash doubled for JSON, and is formatting consistent across a question's choices?
+- If you used images: does every `src` point at a file you actually put in `images/`, and does no alt text reveal an answer?
 - If you used scenarios: does every `scenarioId` match a scenario, and does each scenario question actually need the scenario to answer?
 
 ## Example transformation

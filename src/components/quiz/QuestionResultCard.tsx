@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
+import { RichText } from "@/components/content/RichText";
 
 export interface QuestionResultCardProps {
   heading: ReactNode;
@@ -36,9 +37,10 @@ export function QuestionResultCard({
       </div>
       {children}
       {explanation && (
-        <p className="rounded-md bg-slate-50 p-3 text-sm text-slate-700 dark:bg-neutral-800 dark:text-neutral-300">
-          {explanation}
-        </p>
+        <RichText
+          text={explanation}
+          className="rounded-md bg-slate-50 p-3 text-sm text-slate-700 dark:bg-neutral-800 dark:text-neutral-300"
+        />
       )}
     </Card>
   );

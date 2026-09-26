@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "tsc -p tsconfig.json --noEmit"
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "pack-quiz": "vite-node --config vitest.config.ts scripts/pack-quiz.ts --"
   },
   "build": {
     "appId": "com.quizapp.app",
@@ -61,6 +62,10 @@
     }
   },
   "dependencies": {
+    "fflate": "^0.8.3",
+    "katex": "^0.18.9",
+    "markdown-it": "^15.0.2",
+    "markdown-it-texmath": "^1.0.0",
     "nanoid": "^5.0.7",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
@@ -71,6 +76,7 @@
   },
   "devDependencies": {
     "@electron/asar": "3.4.1",
+    "@types/markdown-it": "^14.2.0",
     "@types/node": "^20.16.5",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.5",

@@ -1,11 +1,15 @@
 import { nanoid } from "nanoid";
 import { collectDescendantFolderIds, toMetadata } from "@shared/library";
 import { parseQuiz } from "@shared/schema";
+import { imageContentType, imageRefs } from "@shared/quizContent";
+import { convertSvgImages, readQuizFile, writeQuizPackage } from "@shared/quizPackage";
+import { base64ToBytes, rasterizeSvgInPage } from "@shared/svgRaster";
 import { allocateStorageId, slugifyTitle } from "@shared/storageId";
 import type { Folder, LibrarySnapshot, Quiz, QuizMetadata } from "@shared/types";
 import type { CreateFolderPayload, UpdateFolderPayload } from "@shared/quizApi";
 import { attemptsWithoutQuizzes } from "./browserAttempts";
 import {
+  assetKey,
   ATTEMPTS_KEY,
   changeRecords,
   LIBRARY_KEY,
@@ -42,20 +46,16 @@ export async function librarySnapshot(): Promise<LibrarySnapshot> {
   };
 }
 
-export async function importQuizText(
-  raw: string,
+export async function importQuizBytes(
+  bytes: Uint8Array,
   folderId: string | null,
   sourceName: string,
 ): Promise<QuizMetadata> {
-  let data: unknown;
+  let parsed: ReturnType<typeof readQuizFile>;
   try {
-    data = JSON.parse(raw);
-  } catch {
-    throw new Error(`Failed to import ${sourceName}: that file is not valid JSON.`);
-  }
-  let parsed: ReturnType<typeof parseQuiz>;
-  try {
-    parsed = parseQuiz(data);
+    parsed = await convertSvgImages(readQuizFile(bytes), async (svg) =>
+      base64ToBytes(await rasterizeSvgInPage(svg)),
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     throw new Error(`Failed to import ${sourceName}: ${message}`);
@@ -64,12 +64,12 @@ export async function importQuizText(
   const library = await readLibrary();
   const existingIds = new Set(library.quizzes.map((quiz) => quiz.id));
   const id = allocateStorageId(
-    parsed.id,
-    parsed.title,
+    parsed.quiz.id,
+    parsed.quiz.title,
     existingIds,
     () => nanoid(6),
   );
-  const quiz = { ...parsed, id } as Quiz;
+  const quiz = { ...parsed.quiz, id } as Quiz;
   const folderExists =
     folderId === null || library.folders.some((folder) => folder.id === folderId);
   const meta = toMetadata(
@@ -77,7 +77,12 @@ export async function importQuizText(
     new Date().toISOString(),
     folderExists ? folderId : null,
   );
+  const assetChanges: RecordChange[] = [...parsed.assets].map(([path, data]) => ({
+    key: assetKey(id, path),
+    value: { type: imageContentType(path), data },
+  }));
   await changeRecords([
+    ...assetChanges,
     { key: quizKey(id), value: quiz },
     {
       key: LIBRARY_KEY,
@@ -88,6 +93,44 @@ export async function importQuizText(
     },
   ]);
   return meta;
+}
+
+/** Deletes for a quiz record and every image it references. */
+async function quizRecordDeletes(id: string): Promise<RecordChange[]> {
+  const stored = await readRecord<Quiz>(quizKey(id));
+  const paths = stored ? imageRefs(stored) : [];
+  return [
+    { key: quizKey(id), delete: true },
+    ...paths.map((path) => ({ key: assetKey(id, path), delete: true as const })),
+  ];
+}
+
+interface StoredAsset {
+  type: string;
+  data: Uint8Array;
+}
+
+export async function readBrowserAssets(
+  quizId: string,
+  paths: readonly string[],
+): Promise<Map<string, StoredAsset>> {
+  const out = new Map<string, StoredAsset>();
+  for (const path of paths) {
+    const asset = await readRecord<StoredAsset>(assetKey(quizId, path));
+    if (asset) out.set(path, asset);
+  }
+  return out;
+}
+
+/** Builds a .quiz package from a stored quiz and its images. */
+export async function exportBrowserQuiz(
+  id: string,
+): Promise<{ title: string; bytes: Uint8Array } | null> {
+  const quiz = await getBrowserQuiz(id);
+  if (!quiz) return null;
+  const stored = await readBrowserAssets(id, imageRefs(quiz));
+  const assets = new Map([...stored].map(([path, asset]) => [path, asset.data]));
+  return { title: quiz.title, bytes: writeQuizPackage(quiz, assets) };
 }
 
 export async function getBrowserQuiz(id: string): Promise<Quiz | null> {
@@ -101,7 +144,7 @@ export async function deleteBrowserQuiz(id: string): Promise<void> {
   const library = await readLibrary();
   const nextAttempts = await attemptsWithoutQuizzes([id]);
   const changes: RecordChange[] = [
-    { key: quizKey(id), delete: true },
+    ...(await quizRecordDeletes(id)),
     {
       key: LIBRARY_KEY,
       value: {
@@ -214,10 +257,8 @@ export async function deleteBrowserFolder(
   const nextAttempts = await attemptsWithoutQuizzes(
     quizzesToDelete.map((quiz) => quiz.id),
   );
-  const changes: RecordChange[] = quizzesToDelete.map((quiz) => ({
-    key: quizKey(quiz.id),
-    delete: true as const,
-  }));
+  const changes: RecordChange[] = [];
+  for (const quiz of quizzesToDelete) changes.push(...(await quizRecordDeletes(quiz.id)));
   changes.push({
     key: LIBRARY_KEY,
     value: {

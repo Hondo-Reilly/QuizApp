@@ -1,7 +1,16 @@
 import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { nanoid } from "nanoid";
+import path from "node:path";
 import { parseQuiz } from "../../shared/schema";
+import { imageRefs } from "../../shared/quizContent";
+import {
+  convertSvgImages,
+  readQuizFile,
+  writeQuizPackage,
+  type SvgRasterizer,
+} from "../../shared/quizPackage";
+import { withSvgRasterizer } from "./svgRaster";
 import { collectDescendantFolderIds, toMetadata } from "../../shared/library";
 import { allocateStorageId, slugifyTitle } from "../../shared/storageId";
 import { DamagedStoreError, readJsonIfPresent, writeJsonAtomic } from "./durableJson";
@@ -13,7 +22,7 @@ import type {
 } from "../../shared/types";
 import { deleteAttemptsForQuizzes } from "./attemptStore";
 import { createMutationQueue } from "./mutationQueue";
-import { indexFile, quizFile, quizzesDir } from "./paths";
+import { indexFile, quizAssetFile, quizAssetsDir, quizFile, quizzesDir } from "./paths";
 
 const libraryWrites = createMutationQueue();
 
@@ -120,6 +129,7 @@ async function removeQuiz(id: string): Promise<void> {
     return;
   }
   if (existsSync(path)) await fs.unlink(path);
+  await removeQuizAssets(id);
   const index = await readIndex();
   await writeIndex({
     ...index,
@@ -131,17 +141,36 @@ async function removeQuiz(id: string): Promise<void> {
 export function importQuizFromFile(
   sourcePath: string,
   folderId: string | null = null,
+  withRasterizer: typeof withSvgRasterizer = withSvgRasterizer,
 ): Promise<QuizMetadata> {
-  return libraryWrites.enqueue(() => importQuizFile(sourcePath, folderId));
+  return libraryWrites.enqueue(() =>
+    withRasterizer((rasterize) => importQuizFile(sourcePath, folderId, rasterize)),
+  );
+}
+
+async function removeQuizAssets(id: string): Promise<void> {
+  await fs.rm(quizAssetsDir(id), { recursive: true, force: true });
+}
+
+async function writeQuizAssets(
+  id: string,
+  assets: ReadonlyMap<string, Uint8Array>,
+): Promise<void> {
+  await removeQuizAssets(id);
+  for (const [rel, data] of assets) {
+    const file = quizAssetFile(id, rel);
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(file, data);
+  }
 }
 
 async function importQuizFile(
   sourcePath: string,
-  folderId: string | null = null,
+  folderId: string | null,
+  rasterize: SvgRasterizer,
 ): Promise<QuizMetadata> {
-  const raw = await fs.readFile(sourcePath, "utf-8");
-  const data = JSON.parse(raw);
-  const parsed = parseQuiz(data);
+  const bytes = new Uint8Array(await fs.readFile(sourcePath));
+  const { quiz: parsed, assets } = await convertSvgImages(readQuizFile(bytes), rasterize);
 
   const index = await readIndex();
   const existingIds = new Set(index.quizzes.map((q) => q.id));
@@ -155,7 +184,13 @@ async function importQuizFile(
 
   const quiz: Quiz = { ...parsed, id } as Quiz;
   await ensureDir();
-  await fs.writeFile(quizFile(id), JSON.stringify(quiz, null, 2), "utf-8");
+  try {
+    await writeQuizAssets(id, assets);
+    await fs.writeFile(quizFile(id), JSON.stringify(quiz, null, 2), "utf-8");
+  } catch (err) {
+    await removeQuizAssets(id);
+    throw err;
+  }
 
   const folderExists =
     folderId === null || index.folders.some((f) => f.id === folderId);
@@ -167,6 +202,19 @@ async function importQuizFile(
     quizzes: [...index.quizzes.filter((q) => q.id !== id), meta],
   });
   return meta;
+}
+
+/** Builds a .quiz package from a stored quiz and its images. */
+export async function exportQuizPackage(
+  id: string,
+): Promise<{ title: string; bytes: Uint8Array } | null> {
+  const quiz = await getQuiz(id);
+  if (!quiz) return null;
+  const assets = new Map<string, Uint8Array>();
+  for (const rel of imageRefs(quiz)) {
+    assets.set(rel, new Uint8Array(await fs.readFile(quizAssetFile(id, rel))));
+  }
+  return { title: quiz.title, bytes: writeQuizPackage(quiz, assets) };
 }
 
 export interface CreateFolderInput {
@@ -265,6 +313,7 @@ async function removeFolder(
       continue;
     }
     if (existsSync(path)) await fs.unlink(path);
+    await removeQuizAssets(q.id);
   }
 
   await writeIndex({

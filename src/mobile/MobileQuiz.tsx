@@ -4,6 +4,10 @@ import { AfterEachNav } from "@/components/quiz/AfterEachNav";
 import { AtEndNav } from "@/components/quiz/AtEndNav";
 import { QuizProgressHeader } from "@/components/quiz/QuizProgressHeader";
 import { QuestionCard } from "@/components/quiz/QuestionCard";
+import {
+  QuizContentProvider,
+  type LoadAssetUrls,
+} from "@/components/content/QuizContentContext";
 import { countAnswered, hasAnswer } from "@shared/answers";
 import { gradeQuestion } from "@shared/grading";
 import { scenarioFor } from "@shared/scenarios";
@@ -14,6 +18,17 @@ function withSessionToken(path: string): string {
   const join = path.includes("?") ? "&" : "?";
   return `${path}${join}token=${encodeURIComponent(token)}`;
 }
+
+// The Mac serves the running quiz's images at /asset/<path>, behind the same token.
+const loadMobileAssetUrls: LoadAssetUrls = (_quizId, paths) =>
+  Promise.resolve(
+    Object.fromEntries(
+      paths.map((path) => [
+        path,
+        withSessionToken(`/asset/${path.split("/").map(encodeURIComponent).join("/")}`),
+      ]),
+    ),
+  );
 
 export function MobileQuiz() {
   const [session, setSession] = useState<MobileSession | null>(null);
@@ -118,59 +133,61 @@ export function MobileQuiz() {
   };
 
   return (
-    <main className="mx-auto flex min-h-full w-full max-w-lg flex-col gap-4 px-4 py-6">
-      <h1 className="text-xl font-semibold text-slate-900 dark:text-neutral-100">
-        {session.quiz.title}
-      </h1>
-      <QuizProgressHeader
-        current={session.currentIndex + 1}
-        total={session.order.length}
-        answered={answeredCount}
-        deadlineAt={session.deadlineAt}
-        onExpire={() => send({ type: "finish" })}
-      />
-      <QuestionCard
-        question={question}
-        scenario={scenarioFor(session.quiz, question)}
-        value={value}
-        onChange={(next) =>
-          send({ type: "answer", questionId: question.id, answer: next })
-        }
-        reveal={locked}
-        disabled={locked}
-        choiceOrder={session.choicesOrder[question.id]}
-      />
-      {locked && (
-        <AnswerFeedback
-          correct={gradeQuestion(question, value)}
-          explanation={question.explanation}
+    <QuizContentProvider quiz={session.quiz} loadAssetUrls={loadMobileAssetUrls}>
+      <main className="mx-auto flex min-h-full w-full max-w-lg flex-col gap-4 px-4 py-6">
+        <h1 className="text-xl font-semibold text-slate-900 dark:text-neutral-100">
+          {session.quiz.title}
+        </h1>
+        <QuizProgressHeader
+          current={session.currentIndex + 1}
+          total={session.order.length}
+          answered={answeredCount}
+          deadlineAt={session.deadlineAt}
+          onExpire={() => send({ type: "finish" })}
         />
-      )}
-      {error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-      )}
-      {revealAfterEach ? (
-        <AfterEachNav
-          isFirst={isFirst}
-          isLast={isLast}
-          submitted={submitted}
-          canSubmit={hasAnswer(value)}
-          onPrevious={() => send({ type: "index", currentIndex: session.currentIndex - 1 })}
-          onNext={() => send({ type: "index", currentIndex: session.currentIndex + 1 })}
-          onSubmit={() => send({ type: "submit", questionId: question.id })}
-          onFinish={() => send({ type: "finish" })}
+        <QuestionCard
+          question={question}
+          scenario={scenarioFor(session.quiz, question)}
+          value={value}
+          onChange={(next) =>
+            send({ type: "answer", questionId: question.id, answer: next })
+          }
+          reveal={locked}
+          disabled={locked}
+          choiceOrder={session.choicesOrder[question.id]}
         />
-      ) : (
-        <AtEndNav
-          isFirst={isFirst}
-          isLast={isLast}
-          showSubmit={allAnswered || isLast}
-          onPrevious={() => send({ type: "index", currentIndex: session.currentIndex - 1 })}
-          onNext={() => send({ type: "index", currentIndex: session.currentIndex + 1 })}
-          onSubmit={() => send({ type: "finish" })}
-        />
-      )}
-    </main>
+        {locked && (
+          <AnswerFeedback
+            correct={gradeQuestion(question, value)}
+            explanation={question.explanation}
+          />
+        )}
+        {error && (
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        )}
+        {revealAfterEach ? (
+          <AfterEachNav
+            isFirst={isFirst}
+            isLast={isLast}
+            submitted={submitted}
+            canSubmit={hasAnswer(value)}
+            onPrevious={() => send({ type: "index", currentIndex: session.currentIndex - 1 })}
+            onNext={() => send({ type: "index", currentIndex: session.currentIndex + 1 })}
+            onSubmit={() => send({ type: "submit", questionId: question.id })}
+            onFinish={() => send({ type: "finish" })}
+          />
+        ) : (
+          <AtEndNav
+            isFirst={isFirst}
+            isLast={isLast}
+            showSubmit={allAnswered || isLast}
+            onPrevious={() => send({ type: "index", currentIndex: session.currentIndex - 1 })}
+            onNext={() => send({ type: "index", currentIndex: session.currentIndex + 1 })}
+            onSubmit={() => send({ type: "finish" })}
+          />
+        )}
+      </main>
+    </QuizContentProvider>
   );
 }
 

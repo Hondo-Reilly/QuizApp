@@ -1,6 +1,6 @@
 import { app } from "electron";
 import path from "node:path";
-import { quizFileInDir } from "./quizPath";
+import { quizAssetFileInDir, quizAssetsDirInDir, quizFileInDir } from "./quizPath";
 
 export function quizzesDir(): string {
   return path.join(app.getPath("userData"), "quizzes");
@@ -12,6 +12,14 @@ export function indexFile(): string {
 
 export function quizFile(id: string): string {
   return quizFileInDir(quizzesDir(), id);
+}
+
+export function quizAssetsDir(id: string): string {
+  return quizAssetsDirInDir(quizzesDir(), id);
+}
+
+export function quizAssetFile(id: string, rel: string): string {
+  return quizAssetFileInDir(quizzesDir(), id, rel);
 }
 
 export function attemptsFile(): string {

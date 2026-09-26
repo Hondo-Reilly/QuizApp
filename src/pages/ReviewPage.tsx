@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { QuizContentProvider } from "@/components/content/QuizContentContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSessionStore } from "@/state/sessionStore";
 import { gradeQuiz } from "@shared/grading";
@@ -41,68 +42,70 @@ export function ReviewPage() {
   if (!quiz) return null;
 
   return (
-    <DetailPageLayout
-      width="2xl"
-      onBack={() => {
-        reset();
-        navigate(`/quiz/${id}`);
-      }}
-      title="Review"
-      subtitle={quiz.title}
-      actions={
-        <>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              reset();
-              navigate(`/quiz/${id}/setup`);
-            }}
-          >
-            Retake
-          </Button>
-          <Button
-            onClick={() => {
-              reset();
-              navigate("/");
-            }}
-          >
-            Back to library
-          </Button>
-        </>
-      }
-    >
-      <div className="mb-6">
-        <ScoreSummary
-          correct={grade.correct}
-          total={grade.total}
-          percent={grade.percent}
-          timeTaken={
-            startedAt && endedAt ? formatTimeTaken(startedAt, endedAt) : null
-          }
-        />
-      </div>
+    <QuizContentProvider quiz={quiz}>
+      <DetailPageLayout
+        width="2xl"
+        onBack={() => {
+          reset();
+          navigate(`/quiz/${id}`);
+        }}
+        title="Review"
+        subtitle={quiz.title}
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                reset();
+                navigate(`/quiz/${id}/setup`);
+              }}
+            >
+              Retake
+            </Button>
+            <Button
+              onClick={() => {
+                reset();
+                navigate("/");
+              }}
+            >
+              Back to library
+            </Button>
+          </>
+        }
+      >
+        <div className="mb-6">
+          <ScoreSummary
+            correct={grade.correct}
+            total={grade.total}
+            percent={grade.percent}
+            timeTaken={
+              startedAt && endedAt ? formatTimeTaken(startedAt, endedAt) : null
+            }
+          />
+        </div>
 
-      <div className="flex flex-col gap-3">
-        {orderedQuestions.map((question, idx) => {
-          const result = grade.results.find(
-            (r) => r.questionId === question.id,
-          );
-          const scenario = startsScenario(orderedQuestions, idx)
-            ? scenarioFor(quiz, question)
-            : undefined;
-          return (
-            <div key={question.id} className="flex flex-col gap-3">
-              {scenario && <ScenarioPanel scenario={scenario} />}
-              <ReviewItem
-                index={idx}
-                question={question}
-                userAnswer={result?.userAnswer ?? null}
-                correct={!!result?.correct}
-              />
-            </div>
-          );
-        })}
-      </div>
-    </DetailPageLayout>
+        <div className="flex flex-col gap-3">
+          {orderedQuestions.map((question, idx) => {
+            const result = grade.results.find(
+              (r) => r.questionId === question.id,
+            );
+            const scenario = startsScenario(orderedQuestions, idx)
+              ? scenarioFor(quiz, question)
+              : undefined;
+            return (
+              <div key={question.id} className="flex flex-col gap-3">
+                {scenario && <ScenarioPanel scenario={scenario} />}
+                <ReviewItem
+                  index={idx}
+                  question={question}
+                  userAnswer={result?.userAnswer ?? null}
+                  correct={!!result?.correct}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </DetailPageLayout>
+    </QuizContentProvider>
   );
 }

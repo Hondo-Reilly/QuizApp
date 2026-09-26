@@ -82,7 +82,7 @@ export function LibraryPage() {
   const title = currentFolder ? currentFolder.name : "Quiz Library";
   const subtitle = currentFolder
     ? currentFolder.description ?? "Folder contents"
-    : "Import JSON quizzes and start an attempt.";
+    : "Import quizzes and start an attempt.";
 
   const headerActions = (
     <div className="flex items-center gap-2">

@@ -2,7 +2,7 @@ export function pickQuizFiles(): Promise<File[] | null> {
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".json,application/json";
+    input.accept = ".quiz,.json,application/json";
     input.multiple = true;
     let settled = false;
     const finish = (files: File[] | null) => {
@@ -23,6 +23,18 @@ export function pickQuizFiles(): Promise<File[] | null> {
     );
     input.click();
   });
+}
+
+export function downloadBytes(bytes: Uint8Array, filename: string): void {
+  const blob = new Blob([bytes as BlobPart], { type: "application/zip" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 export function printHtml(html: string): Promise<boolean> {

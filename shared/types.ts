@@ -1,14 +1,25 @@
 export type QuestionType = "true_false" | "multiple_choice" | "multi_answer";
 
+export type TextFormat = "plain" | "markdown";
+
+export interface QuizImage {
+  /** Path inside the .quiz package, e.g. "images/diagram.png". */
+  src: string;
+  alt?: string;
+}
+
 export interface Scenario {
   id: string;
   title?: string;
   text: string;
+  image?: QuizImage;
 }
 
 export interface Choice {
   id: string;
+  /** May be empty when the choice has an image. */
   text: string;
+  image?: QuizImage;
 }
 
 export interface TrueFalseQuestion {
@@ -16,6 +27,7 @@ export interface TrueFalseQuestion {
   type: "true_false";
   scenarioId?: string;
   prompt: string;
+  image?: QuizImage;
   answer: boolean;
   explanation?: string;
 }
@@ -25,6 +37,7 @@ export interface MultipleChoiceQuestion {
   type: "multiple_choice";
   scenarioId?: string;
   prompt: string;
+  image?: QuizImage;
   choices: Choice[];
   answer: string;
   explanation?: string;
@@ -35,6 +48,7 @@ export interface MultiAnswerQuestion {
   type: "multi_answer";
   scenarioId?: string;
   prompt: string;
+  image?: QuizImage;
   choices: Choice[];
   answers: string[];
   explanation?: string;
@@ -46,7 +60,9 @@ export type Question =
   | MultiAnswerQuestion;
 
 export interface Quiz {
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
+  /** Version 2 only. Defaults to "plain". */
+  textFormat?: TextFormat;
   id: string;
   title: string;
   description?: string;

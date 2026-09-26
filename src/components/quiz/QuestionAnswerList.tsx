@@ -1,8 +1,11 @@
 import { QuestionResultCard, ResultBadge } from "./QuestionResultCard";
 import { ScenarioPanel } from "./ScenarioPanel";
+import { ChoiceContent } from "@/components/content/ChoiceContent";
+import { QuizImageView } from "@/components/content/QuizImageView";
+import { RichText } from "@/components/content/RichText";
 import { gradeQuestion } from "@shared/grading";
 import { startsScenario } from "@shared/scenarios";
-import type { Choice, Question, Scenario, UserAnswer } from "@shared/types";
+import type { Choice, Question, QuizImage, Scenario, UserAnswer } from "@shared/types";
 
 export interface QuestionAnswerListProps {
   questions: Question[];
@@ -44,7 +47,15 @@ function isSelected(
   return Array.isArray(answer) && answer.includes(choiceId);
 }
 
-function ChoiceRow({ text, mark }: { text: string; mark: ChoiceMark }) {
+function ChoiceRow({
+  text,
+  image,
+  mark,
+}: {
+  text: string;
+  image?: QuizImage;
+  mark: ChoiceMark;
+}) {
   const wrong = mark === "missed";
   const right = mark === "correct" || mark === "picked";
   const selected = mark === "picked" || mark === "missed";
@@ -71,7 +82,9 @@ function ChoiceRow({ text, mark }: { text: string; mark: ChoiceMark }) {
       >
         {wrong ? "\u2715" : right ? "\u2713" : ""}
       </span>
-      <span className="min-w-0 flex-1">{text}</span>
+      <span className="min-w-0 flex-1">
+        <ChoiceContent choice={{ text, image }} />
+      </span>
       {selected && (
         <span className="shrink-0 text-xs font-medium uppercase tracking-wide">
           Selected
@@ -85,29 +98,35 @@ function choicesFor(
   question: Question,
   answer: UserAnswer | undefined,
   showSelections: boolean,
-): { id: string; text: string; mark: ChoiceMark }[] {
+): { id: string; text: string; image?: QuizImage; mark: ChoiceMark }[] {
   const raw =
     question.type === "true_false"
       ? [
-          { id: "true", text: "True", correct: question.answer === true },
-          { id: "false", text: "False", correct: question.answer === false },
+          { id: "true", text: "True", image: undefined, correct: question.answer === true },
+          { id: "false", text: "False", image: undefined, correct: question.answer === false },
         ]
       : question.choices.map((choice) => ({
           id: choice.id,
           text: choice.text,
+          image: choice.image,
           correct: isCorrectChoice(question, choice),
         }));
 
   return raw.map((choice) => {
     if (!showSelections) {
-      return { id: choice.id, text: choice.text, mark: choice.correct ? "correct" : "neutral" };
+      return {
+        id: choice.id,
+        text: choice.text,
+        image: choice.image,
+        mark: choice.correct ? "correct" : "neutral",
+      };
     }
     const selected = isSelected(question, choice.id, answer);
     let mark: ChoiceMark = "neutral";
     if (selected && choice.correct) mark = "picked";
     else if (selected) mark = "missed";
     else if (choice.correct) mark = "correct";
-    return { id: choice.id, text: choice.text, mark };
+    return { id: choice.id, text: choice.text, image: choice.image, mark };
   });
 }
 
@@ -132,9 +151,14 @@ export function QuestionAnswerList({
             {scenario && <ScenarioPanel scenario={scenario} />}
             <QuestionResultCard
               heading={
-                <h2 className="text-base font-semibold text-slate-900 dark:text-neutral-100">
-                  {index + 1}. {question.prompt}
-                </h2>
+                <div
+                  role="heading"
+                  aria-level={2}
+                  className="flex min-w-0 gap-1 text-base font-semibold text-slate-900 dark:text-neutral-100"
+                >
+                  <span className="shrink-0">{index + 1}.</span>
+                  <RichText text={question.prompt} className="min-w-0" />
+                </div>
               }
               status={
                 showSelections ? (
@@ -147,9 +171,15 @@ export function QuestionAnswerList({
               }
               explanation={question.explanation}
             >
+              {question.image && <QuizImageView image={question.image} />}
               <ul className="flex flex-col gap-2">
                 {choicesFor(question, answer, showSelections).map((choice) => (
-                  <ChoiceRow key={choice.id} text={choice.text} mark={choice.mark} />
+                  <ChoiceRow
+                    key={choice.id}
+                    text={choice.text}
+                    image={choice.image}
+                    mark={choice.mark}
+                  />
                 ))}
               </ul>
             </QuestionResultCard>

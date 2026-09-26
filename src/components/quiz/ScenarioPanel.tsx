@@ -1,4 +1,6 @@
 import type { Scenario } from "@shared/types";
+import { QuizImageView } from "@/components/content/QuizImageView";
+import { RichText } from "@/components/content/RichText";
 
 export interface ScenarioPanelProps {
   scenario: Scenario;
@@ -16,9 +18,12 @@ export function ScenarioPanel({ scenario, className = "" }: ScenarioPanelProps) 
           {scenario.title}
         </h3>
       )}
-      <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700 dark:text-neutral-300">
-        {scenario.text}
-      </p>
+      <RichText
+        text={scenario.text}
+        preserveLines
+        className="text-sm leading-relaxed text-slate-700 dark:text-neutral-300"
+      />
+      {scenario.image && <QuizImageView image={scenario.image} />}
     </section>
   );
 }

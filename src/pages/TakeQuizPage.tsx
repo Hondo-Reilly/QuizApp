@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { QuizContentProvider } from "@/components/content/QuizContentContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMobileSync } from "@/hooks/useMobileSync";
 import { useQuizFinish } from "@/hooks/useQuizFinish";
@@ -106,77 +107,79 @@ export function TakeQuizPage() {
   if (!session.quiz || !question) return null;
 
   return (
-    <div className="mx-auto flex max-w-5xl gap-6">
-      <aside className="w-56 shrink-0">
-        <QuestionSidebar
-          questions={session.quiz.questions}
-          order={session.order}
-          currentIndex={session.currentIndex}
-          answers={session.answers}
-          onSelect={session.goTo}
-        />
-      </aside>
+    <QuizContentProvider quiz={session.quiz}>
+      <div className="mx-auto flex max-w-5xl gap-6">
+        <aside className="w-56 shrink-0">
+          <QuestionSidebar
+            questions={session.quiz.questions}
+            order={session.order}
+            currentIndex={session.currentIndex}
+            answers={session.answers}
+            onSelect={session.goTo}
+          />
+        </aside>
 
-      <div className="min-w-0 flex-1">
-        <PageHeader title={session.quiz.title} />
+        <div className="min-w-0 flex-1">
+          <PageHeader title={session.quiz.title} />
 
-        <QuizProgressHeader
-          className="mb-4"
-          current={session.currentIndex + 1}
-          total={session.order.length}
-          answered={answeredCount}
-          deadlineAt={session.deadlineAt}
-          onExpire={handleFinish}
-        />
-
-        <div className="flex flex-col gap-4">
-          <QuestionCard
-            question={question}
-            scenario={scenarioFor(session.quiz, question)}
-            value={value}
-            onChange={handleSetAnswer}
-            reveal={lockedForReveal}
-            disabled={lockedForReveal}
-            choiceOrder={session.choicesOrder[question.id]}
+          <QuizProgressHeader
+            className="mb-4"
+            current={session.currentIndex + 1}
+            total={session.order.length}
+            answered={answeredCount}
+            deadlineAt={session.deadlineAt}
+            onExpire={handleFinish}
           />
 
-          {lockedForReveal && (
-            <AnswerFeedback
-              correct={gradeQuestion(question, value)}
-              explanation={question.explanation}
+          <div className="flex flex-col gap-4">
+            <QuestionCard
+              question={question}
+              scenario={scenarioFor(session.quiz, question)}
+              value={value}
+              onChange={handleSetAnswer}
+              reveal={lockedForReveal}
+              disabled={lockedForReveal}
+              choiceOrder={session.choicesOrder[question.id]}
             />
-          )}
 
-          {saveError && (
-            <div className="flex flex-col items-start gap-3">
-              <ErrorNotice message={saveError} />
-              <Button onClick={handleFinish}>Retry save</Button>
-            </div>
-          )}
+            {lockedForReveal && (
+              <AnswerFeedback
+                correct={gradeQuestion(question, value)}
+                explanation={question.explanation}
+              />
+            )}
 
-          {revealAfterEach ? (
-            <AfterEachNav
-              isFirst={isFirst}
-              isLast={isLast}
-              submitted={submitted}
-              canSubmit={hasAnswer(value)}
-              onPrevious={handlePrevious}
-              onNext={handleNext}
-              onSubmit={handleSubmitReveal}
-              onFinish={handleFinish}
-            />
-          ) : (
-            <AtEndNav
-              isFirst={isFirst}
-              isLast={isLast}
-              showSubmit={allAnswered || isLast}
-              onPrevious={handlePrevious}
-              onNext={handleNext}
-              onSubmit={handleFinish}
-            />
-          )}
+            {saveError && (
+              <div className="flex flex-col items-start gap-3">
+                <ErrorNotice message={saveError} />
+                <Button onClick={handleFinish}>Retry save</Button>
+              </div>
+            )}
+
+            {revealAfterEach ? (
+              <AfterEachNav
+                isFirst={isFirst}
+                isLast={isLast}
+                submitted={submitted}
+                canSubmit={hasAnswer(value)}
+                onPrevious={handlePrevious}
+                onNext={handleNext}
+                onSubmit={handleSubmitReveal}
+                onFinish={handleFinish}
+              />
+            ) : (
+              <AtEndNav
+                isFirst={isFirst}
+                isLast={isLast}
+                showSubmit={allAnswered || isLast}
+                onPrevious={handlePrevious}
+                onNext={handleNext}
+                onSubmit={handleFinish}
+              />
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </QuizContentProvider>
   );
 }

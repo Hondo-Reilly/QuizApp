@@ -12,13 +12,16 @@ import {
   deleteBrowserFolder,
   deleteBrowserQuiz,
   getBrowserQuiz,
-  importQuizText,
+  exportBrowserQuiz,
+  importQuizBytes,
   librarySnapshot,
   moveBrowserQuiz,
   updateBrowserFolder,
 } from "./browserLibrary";
 import { clearAppLocalStorage } from "./appStorage";
-import { pickQuizFiles, printHtml } from "./browserLocal";
+import { browserAssetUrls, forgetBrowserAssetUrls } from "./browserAssetUrls";
+import { downloadBytes, pickQuizFiles, printHtml } from "./browserLocal";
+import { slugifyTitle } from "@shared/storageId";
 import { deleteDatabase, run } from "./idbRecords";
 
 const noUpdate: UpdateCheck = {
@@ -38,7 +41,13 @@ export const browserQuizApi: QuizApi = {
       const failures: ImportFailure[] = [];
       for (const file of files) {
         try {
-          imported.push(await importQuizText(await file.text(), folderId, file.name));
+          imported.push(
+            await importQuizBytes(
+              new Uint8Array(await file.arrayBuffer()),
+              folderId,
+              file.name,
+            ),
+          );
         } catch (err) {
           failures.push({
             name: file.name,
@@ -56,12 +65,28 @@ export const browserQuizApi: QuizApi = {
       return snap.quizzes;
     }),
   getQuiz: (id) => run(() => getBrowserQuiz(id)),
-  deleteQuiz: (id) => run(() => deleteBrowserQuiz(id)),
+  exportQuiz: (id) =>
+    run(async () => {
+      const exported = await exportBrowserQuiz(id);
+      if (!exported) throw new Error("Quiz not found");
+      downloadBytes(exported.bytes, `${slugifyTitle(exported.title)}.quiz`);
+      return true;
+    }),
+  getQuizAssetUrls: (quizId, paths) => run(() => browserAssetUrls(quizId, paths)),
+  deleteQuiz: (id) =>
+    run(async () => {
+      await deleteBrowserQuiz(id);
+      forgetBrowserAssetUrls(id);
+    }),
   moveQuiz: (id, folderId) => run(() => moveBrowserQuiz(id, folderId)),
   librarySnapshot: () => run(librarySnapshot),
   createFolder: (payload) => run(() => createBrowserFolder(payload)),
   updateFolder: (payload) => run(() => updateBrowserFolder(payload)),
-  deleteFolder: (id, recursive = true) => run(() => deleteBrowserFolder(id, recursive)),
+  deleteFolder: (id, recursive = true) =>
+    run(async () => {
+      await deleteBrowserFolder(id, recursive);
+      forgetBrowserAssetUrls();
+    }),
   saveAttempt: (input) => run(() => saveBrowserAttempt(input)),
   listAttempts: (quizId) => run(() => listBrowserAttempts(quizId)),
   getAttempt: (id) => run(() => getBrowserAttempt(id)),
@@ -69,6 +94,7 @@ export const browserQuizApi: QuizApi = {
   deleteAllAppData: () =>
     run(async () => {
       await deleteDatabase();
+      forgetBrowserAssetUrls();
       clearAppLocalStorage(window.localStorage);
     }),
   checkForUpdate: () => Promise.resolve(noUpdate),

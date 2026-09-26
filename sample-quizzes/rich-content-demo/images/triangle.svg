@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
+  <rect width="600" height="400" fill="#ffffff"/>
+  <polygon points="100,320 500,320 100,80" fill="#dbeafe" stroke="#1e3a8a" stroke-width="4"/>
+  <rect x="100" y="290" width="30" height="30" fill="none" stroke="#1e3a8a" stroke-width="3"/>
+  <text x="300" y="360" font-family="Helvetica" font-size="32" text-anchor="middle" fill="#111">8 cm</text>
+  <text x="60" y="210" font-family="Helvetica" font-size="32" text-anchor="middle" fill="#111">6 cm</text>
+  <text x="330" y="185" font-family="Helvetica" font-size="36" font-style="italic" text-anchor="middle" fill="#b91c1c">c</text>
+</svg>

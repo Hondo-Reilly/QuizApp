@@ -76,3 +76,114 @@ body,
 .titlebar-no-drag {
   -webkit-app-region: no-drag;
 }
+
+/* Markdown quiz text (textFormat "markdown"). Sizes follow the surrounding text. */
+.rich-text p,
+.rich-text ul,
+.rich-text ol,
+.rich-text pre,
+.rich-text table,
+.rich-text blockquote,
+.rich-text section {
+  margin: 0 0 0.5em;
+}
+.rich-text > :last-child {
+  margin-bottom: 0;
+}
+.rich-text ul {
+  list-style: disc;
+  padding-left: 1.4em;
+}
+.rich-text ol {
+  list-style: decimal;
+  padding-left: 1.4em;
+}
+.rich-text strong {
+  font-weight: 700;
+}
+.rich-text em {
+  font-style: italic;
+}
+.rich-text a {
+  color: rgb(var(--brand-600));
+  text-decoration: underline;
+}
+.rich-text h1,
+.rich-text h2,
+.rich-text h3,
+.rich-text h4 {
+  font-weight: 700;
+  margin: 0 0 0.4em;
+}
+.rich-text code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.88em;
+  font-weight: 400;
+  border-radius: 0.25rem;
+  background: rgb(15 23 42 / 0.07);
+  padding: 0.1em 0.3em;
+}
+.rich-text pre {
+  overflow-x: auto;
+  border-radius: 0.375rem;
+  background: rgb(15 23 42 / 0.07);
+  padding: 0.6em 0.8em;
+}
+.rich-text pre code {
+  background: none;
+  padding: 0;
+}
+.rich-text blockquote {
+  border-left: 3px solid rgb(148 163 184);
+  padding-left: 0.75em;
+  opacity: 0.9;
+}
+.rich-text table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-weight: 400;
+  font-size: 0.9em;
+}
+.rich-text th,
+.rich-text td {
+  border: 1px solid rgb(203 213 225);
+  padding: 0.25em 0.6em;
+  text-align: left;
+}
+.rich-text th {
+  font-weight: 600;
+}
+.rich-text .rich-image {
+  display: block;
+  max-width: 100%;
+  max-height: 20rem;
+  margin: 0.25em 0;
+  border-radius: 0.375rem;
+  background: white;
+}
+.rich-text .rich-missing-image {
+  font-style: italic;
+  opacity: 0.7;
+}
+.rich-text math {
+  font-size: 1.1em;
+}
+.rich-text eqn {
+  display: block;
+  overflow-x: auto;
+  text-align: center;
+  margin: 0.4em 0;
+}
+.dark .rich-text code,
+.dark .rich-text pre {
+  background: rgb(255 255 255 / 0.08);
+}
+.dark .rich-text th,
+.dark .rich-text td {
+  border-color: rgb(64 64 64);
+}
+.dark .rich-text a {
+  color: rgb(var(--brand-300));
+}

@@ -1,4 +1,5 @@
 import type { MultiAnswerQuestion } from "@shared/types";
+import { ChoiceContent } from "@/components/content/ChoiceContent";
 import { optionClasses } from "./answerStyles";
 import { orderChoices } from "./orderChoices";
 
@@ -60,7 +61,7 @@ export function MultiAnswerInput({
             >
               {selected ? "\u2713" : ""}
             </span>
-            <span>{choice.text}</span>
+            <ChoiceContent choice={choice} />
           </button>
         );
       })}

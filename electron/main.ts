@@ -1,8 +1,10 @@
-import { app, BrowserWindow, nativeImage } from "electron";
+import { app, BrowserWindow, nativeImage, protocol, shell } from "electron";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { registerIpcHandlers } from "./ipc/handlers";
 import { installAppDataMenu } from "./lib/appDataMenu";
+import { handleQuizAssetRequest } from "./lib/quizAssets";
+import { QUIZ_ASSET_SCHEME } from "../shared/quizAssetUrl";
 import { stopMobileServer } from "./lib/mobileServer";
 import { simulatedUpdateEnabled } from "./lib/updates";
 
@@ -25,6 +27,13 @@ function applyDockIcon(): void {
 }
 
 const isDev = !!process.env.VITE_DEV_SERVER_URL;
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: QUIZ_ASSET_SCHEME,
+    privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
+  },
+]);
 
 function enableDevTools(win: BrowserWindow): void {
   win.webContents.on("before-input-event", (_event, input) => {
@@ -73,6 +82,18 @@ function createWindow(): void {
     win.on("focus", showWindowButtons);
   }
 
+  // Markdown links open in the default browser, never in an app window.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https?:\/\//i.test(url)) void shell.openExternal(url);
+    return { action: "deny" };
+  });
+  win.webContents.on("will-navigate", (event, url) => {
+    if (url === win.webContents.getURL() || !/^https?:\/\//i.test(url)) return;
+    if (isDev && url.startsWith(process.env.VITE_DEV_SERVER_URL!)) return;
+    event.preventDefault();
+    void shell.openExternal(url);
+  });
+
   if (isDev) {
     enableDevTools(win);
     win.loadURL(process.env.VITE_DEV_SERVER_URL!);
@@ -88,6 +109,7 @@ app.whenReady().then(() => {
     );
   }
   applyDockIcon();
+  protocol.handle(QUIZ_ASSET_SCHEME, handleQuizAssetRequest);
   registerIpcHandlers();
   createWindow();
   installAppDataMenu();

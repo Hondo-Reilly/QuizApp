@@ -1,3 +1,5 @@
+import { RichText } from "@/components/content/RichText";
+
 export interface AnswerFeedbackProps {
   correct: boolean;
   explanation?: string;
@@ -19,7 +21,7 @@ export function AnswerFeedback({
         {correct ? "Correct" : "Incorrect"}
       </div>
       {explanation && (
-        <p className="mt-1 text-slate-700 dark:text-neutral-300">{explanation}</p>
+        <RichText text={explanation} className="mt-1 text-slate-700 dark:text-neutral-300" />
       )}
     </div>
   );

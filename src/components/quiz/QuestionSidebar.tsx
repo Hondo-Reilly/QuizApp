@@ -1,5 +1,7 @@
 import type { Question, UserAnswer } from "@shared/types";
 import { hasAnswer } from "@shared/answers";
+import { useQuizContent } from "@/components/content/QuizContentContext";
+import { markdownPreview } from "@/lib/markdownPreview";
 
 export interface QuestionSidebarProps {
   questions: Question[];
@@ -31,7 +33,13 @@ export function QuestionSidebar({
   answers,
   onSelect,
 }: QuestionSidebarProps) {
-  const promptById = new Map(questions.map((q) => [q.id, q.prompt]));
+  const { format } = useQuizContent();
+  const promptById = new Map(
+    questions.map((q) => [
+      q.id,
+      format === "markdown" ? markdownPreview(q.prompt) : q.prompt,
+    ]),
+  );
   const answeredCount = order.reduce(
     (n, id) => (hasAnswer(answers[id] ?? null) ? n + 1 : n),
     0,

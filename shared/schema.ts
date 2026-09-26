@@ -1,15 +1,35 @@
 import { z } from "zod";
+import {
+  imageRefs,
+  isPackageImagePath,
+  markdownFields,
+  markdownImageSources,
+} from "./quizContent";
 import type { Quiz } from "./types";
 
-const choiceSchema = z.object({
-  id: z.string().min(1),
-  text: z.string().min(1),
+const imageSchema = z.object({
+  src: z.string().refine(isPackageImagePath, {
+    message: "src must be a png, jpg, gif, webp, or svg file inside images/",
+  }),
+  alt: z.string().optional(),
 });
+
+const choiceSchema = z
+  .object({
+    id: z.string().min(1),
+    text: z.string(),
+    image: imageSchema.optional(),
+  })
+  .refine((c) => c.text.trim().length > 0 || !!c.image, {
+    message: "A choice needs text or an image",
+    path: ["text"],
+  });
 
 const scenarioSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1).optional(),
   text: z.string().min(1),
+  image: imageSchema.optional(),
 });
 
 const uniqueChoiceIds = (choices: { id: string }[]) =>
@@ -19,6 +39,7 @@ const baseQuestion = z.object({
   id: z.string().min(1),
   scenarioId: z.string().min(1).optional(),
   prompt: z.string().min(1),
+  image: imageSchema.optional(),
   explanation: z.string().optional(),
 });
 
@@ -72,7 +93,8 @@ export const questionSchema = z.union([
 
 export const quizSchema = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.union([z.literal(1), z.literal(2)]),
+    textFormat: z.enum(["plain", "markdown"]).optional(),
     id: z.string().min(1).optional(),
     title: z.string().min(1),
     description: z.string().optional(),
@@ -82,6 +104,36 @@ export const quizSchema = z
     questions: z.array(questionSchema).min(1),
   })
   .superRefine((quiz, ctx) => {
+    if (quiz.schemaVersion === 1) {
+      if (quiz.textFormat !== undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "textFormat needs schemaVersion 2",
+          path: ["textFormat"],
+        });
+      }
+      if (imageRefs(quiz).length > 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Images need schemaVersion 2",
+          path: ["schemaVersion"],
+        });
+      }
+    }
+    if (quiz.textFormat === "markdown") {
+      for (const text of markdownFields(quiz)) {
+        for (const src of markdownImageSources(text)) {
+          if (!isPackageImagePath(src)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: `Image "${src}" must be a png, jpg, gif, webp, or svg file inside images/`,
+              path: ["questions"],
+            });
+          }
+        }
+      }
+    }
+
     const scenarioIds = new Set<string>();
     quiz.scenarios?.forEach((scenario, index) => {
       if (scenarioIds.has(scenario.id)) {

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { QuizContentProvider } from "@/components/content/QuizContentContext";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { DetailPageLayout } from "@/components/ui/DetailPageLayout";
@@ -76,34 +77,36 @@ export function QuizAttemptPage() {
   }
 
   return (
-    <DetailPageLayout
-      width="3xl"
-      onBack={back}
-      title={quiz.title}
-      subtitle={attemptSubtitle(attempt)}
-    >
-      <SectionHeader
-        title="Questions"
-        actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() =>
-              downloadJson(
-                buildAttemptExport(quiz, attempt, questions),
-                attemptExportFilename(quiz.title, attempt.completedAt),
-              )
-            }
-          >
-            Export attempt
-          </Button>
-        }
-      />
-      <QuestionAnswerList
-        questions={questions}
-        scenarios={quiz.scenarios}
-        answers={attempt.answers}
-      />
-    </DetailPageLayout>
+    <QuizContentProvider quiz={quiz}>
+      <DetailPageLayout
+        width="3xl"
+        onBack={back}
+        title={quiz.title}
+        subtitle={attemptSubtitle(attempt)}
+      >
+        <SectionHeader
+          title="Questions"
+          actions={
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                downloadJson(
+                  buildAttemptExport(quiz, attempt, questions),
+                  attemptExportFilename(quiz.title, attempt.completedAt),
+                )
+              }
+            >
+              Export attempt
+            </Button>
+          }
+        />
+        <QuestionAnswerList
+          questions={questions}
+          scenarios={quiz.scenarios}
+          answers={attempt.answers}
+        />
+      </DetailPageLayout>
+    </QuizContentProvider>
   );
 }

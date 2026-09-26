@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { QuizContentProvider } from "@/components/content/QuizContentContext";
 import {
   useLocation,
   useNavigate,
@@ -71,78 +72,80 @@ export function QuizBrowsePage() {
   };
 
   return (
-    <DetailPageLayout
-      width="3xl"
-      onBack={back}
-      title={quiz.title}
-      subtitle={
-        quiz.description ??
-        `${total} ${total === 1 ? "question" : "questions"}`
-      }
-      headerSpacing="roomy"
-    >
-      <PrintQuizDialog
-        open={printOpen}
-        quiz={quiz}
-        onClose={() => setPrintOpen(false)}
-      />
-
-      <section className="mb-8">
-        <SectionHeader title="Previous attempts" />
-        <AttemptList
+    <QuizContentProvider quiz={quiz}>
+      <DetailPageLayout
+        width="3xl"
+        onBack={back}
+        title={quiz.title}
+        subtitle={
+          quiz.description ??
+          `${total} ${total === 1 ? "question" : "questions"}`
+        }
+        headerSpacing="roomy"
+      >
+        <PrintQuizDialog
+          open={printOpen}
           quiz={quiz}
-          attempts={attempts}
-          onOpen={(attempt) =>
-            navigate(`/quiz/${id}/attempt/${attempt.id}`, {
-              state: { folderId },
-            })
-          }
-          onDelete={removeAttempts}
+          onClose={() => setPrintOpen(false)}
         />
-      </section>
 
-      <section>
-        <SectionHeader
-          title="Questions"
-          actions={
-            <>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setPrintOpen(true)}
-              >
-                Save to PDF
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setMoveOpen(true)}
-              >
-                Move
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => void handleDelete()}
-              >
-                Delete
-              </Button>
-              <Button size="sm" onClick={() => navigate(`/quiz/${id}/setup`)}>
-                Start quiz
-              </Button>
-            </>
-          }
+        <section className="mb-8">
+          <SectionHeader title="Previous attempts" />
+          <AttemptList
+            quiz={quiz}
+            attempts={attempts}
+            onOpen={(attempt) =>
+              navigate(`/quiz/${id}/attempt/${attempt.id}`, {
+                state: { folderId },
+              })
+            }
+            onDelete={removeAttempts}
+          />
+        </section>
+
+        <section>
+          <SectionHeader
+            title="Questions"
+            actions={
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setPrintOpen(true)}
+                >
+                  Save to PDF
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setMoveOpen(true)}
+                >
+                  Move
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void handleDelete()}
+                >
+                  Delete
+                </Button>
+                <Button size="sm" onClick={() => navigate(`/quiz/${id}/setup`)}>
+                  Start quiz
+                </Button>
+              </>
+            }
+          />
+          <QuestionAnswerList questions={quiz.questions} scenarios={quiz.scenarios} />
+        </section>
+
+        <MoveQuizDialog
+          open={moveOpen}
+          quiz={moveTarget}
+          folders={library.folders}
+          onClose={() => setMoveOpen(false)}
+          onMove={(nextFolderId) => library.moveQuiz(quiz.id, nextFolderId)}
         />
-        <QuestionAnswerList questions={quiz.questions} scenarios={quiz.scenarios} />
-      </section>
-
-      <MoveQuizDialog
-        open={moveOpen}
-        quiz={moveTarget}
-        folders={library.folders}
-        onClose={() => setMoveOpen(false)}
-        onMove={(nextFolderId) => library.moveQuiz(quiz.id, nextFolderId)}
-      />
-    </DetailPageLayout>
+      </DetailPageLayout>
+    </QuizContentProvider>
   );
 }

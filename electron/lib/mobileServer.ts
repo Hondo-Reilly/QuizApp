@@ -1,4 +1,6 @@
 import { randomBytes } from "node:crypto";
+import { imageContentType, imageRefs } from "../../shared/quizContent";
+import { readQuizAsset } from "./quizAssets";
 import { app, BrowserWindow } from "electron";
 import fs from "node:fs/promises";
 import http from "node:http";
@@ -190,6 +192,10 @@ async function handleRequest(
     req.on("close", () => clients.delete(res));
     return;
   }
+  if (req.method === "GET" && url.pathname.startsWith("/asset/")) {
+    await serveQuizAsset(req, res, url);
+    return;
+  }
   if (req.method === "POST" && url.pathname === "/session") {
     if (!session) {
       sendJson(res, 404, { error: "Mobile mode is not running." });
@@ -226,6 +232,40 @@ async function handleRequest(
     return;
   }
   sendJson(res, 405, { error: "Method not allowed." });
+}
+
+async function serveQuizAsset(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  url: URL,
+): Promise<void> {
+  if (!allowMobileRequest(req, url) || !session) {
+    sendJson(res, 401, { error: "Mobile session was not authorized." });
+    return;
+  }
+  let rel: string;
+  try {
+    rel = url.pathname.slice("/asset/".length).split("/").map(decodeURIComponent).join("/");
+  } catch {
+    sendJson(res, 400, { error: "Invalid image path." });
+    return;
+  }
+  // Only images the running quiz references are served.
+  if (!imageRefs(session.quiz).includes(rel)) {
+    sendJson(res, 404, { error: "Not found." });
+    return;
+  }
+  const data = await readQuizAsset(session.quiz.id, rel);
+  if (!data) {
+    sendJson(res, 404, { error: "Not found." });
+    return;
+  }
+  res.writeHead(200, {
+    "Content-Type": imageContentType(rel),
+    "Content-Length": data.length,
+    "Cache-Control": "no-store",
+  });
+  res.end(data);
 }
 
 async function servePage(

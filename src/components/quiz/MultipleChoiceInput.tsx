@@ -1,4 +1,5 @@
 import type { MultipleChoiceQuestion } from "@shared/types";
+import { ChoiceContent } from "@/components/content/ChoiceContent";
 import { optionClasses } from "./answerStyles";
 import { orderChoices } from "./orderChoices";
 
@@ -39,7 +40,7 @@ export function MultipleChoiceInput({
               disabled,
             })}
           >
-            <span>{choice.text}</span>
+            <ChoiceContent choice={choice} />
           </button>
         );
       })}

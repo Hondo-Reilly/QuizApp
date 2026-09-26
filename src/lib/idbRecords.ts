@@ -9,6 +9,11 @@ export function quizKey(id: string): string {
   return `quiz:${id}`;
 }
 
+/** A package image stored for a quiz, e.g. assetKey("q", "images/a.png"). */
+export function assetKey(quizId: string, path: string): string {
+  return `asset:${quizId}:${path}`;
+}
+
 let chain: Promise<unknown> = Promise.resolve();
 
 export function run<T>(task: () => Promise<T>): Promise<T> {

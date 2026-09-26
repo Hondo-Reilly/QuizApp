@@ -35,6 +35,10 @@ export interface QuizApi {
   importQuiz(folderId?: string | null): Promise<ImportResult>;
   listQuizzes(): Promise<QuizMetadata[]>;
   getQuiz(id: string): Promise<Quiz | null>;
+  /** Saves a quiz and its images as a .quiz package. Resolves false if cancelled. */
+  exportQuiz(id: string): Promise<boolean>;
+  /** Maps each images/ path of a quiz to a URL an <img> can load. */
+  getQuizAssetUrls(quizId: string, paths: string[]): Promise<Record<string, string>>;
   deleteQuiz(id: string): Promise<void>;
   moveQuiz(id: string, folderId: string | null): Promise<void>;
   librarySnapshot(): Promise<LibrarySnapshot>;

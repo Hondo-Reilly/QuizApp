@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import { IpcChannels } from "../shared/ipcChannels";
+import { quizAssetUrl } from "../shared/quizAssetUrl";
 import type { MobilePatch, MobileSession, MobileSessionSeed } from "../shared/mobile";
 import type {
   CreateFolderPayload,
@@ -25,6 +26,12 @@ const quizApi: QuizApi = {
     ipcRenderer.invoke(IpcChannels.listQuizzes),
   getQuiz: (id: string): Promise<Quiz | null> =>
     ipcRenderer.invoke(IpcChannels.getQuiz, id),
+  exportQuiz: (id: string): Promise<boolean> =>
+    ipcRenderer.invoke(IpcChannels.exportQuiz, id),
+  getQuizAssetUrls: (quizId: string, paths: string[]) =>
+    Promise.resolve(
+      Object.fromEntries(paths.map((rel) => [rel, quizAssetUrl(quizId, rel)])),
+    ),
   deleteQuiz: (id: string): Promise<void> =>
     ipcRenderer.invoke(IpcChannels.deleteQuiz, id),
   moveQuiz: (id: string, folderId: string | null): Promise<void> =>
