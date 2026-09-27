@@ -1,19 +1,16 @@
-# v0.5.0
+# v0.6.0
 
 ## New
 
-- **Written and photo answers.** Quizzes can ask for a short answer, a longer written answer, a code answer with line numbers and syntax highlighting, or a photo of your work. Quiz authors can add a sample answer and the key points a good answer covers.
-- **Mark your own answers.** QuizApp doesn't grade written or photo answers. Turn on **Mark my own answers** before a quiz to compare each one with the sample answer and choose **I got it**, **I missed it**, or **I'm not sure**. "Not sure" answers are flagged to study.
-- **Photos:** take one on your phone, pick a file, drop it, or paste it. Photos are resized and have location data removed before they're saved. In mobile mode, photos taken on the phone are sent to your Mac.
-- **Flag questions to study** with the Flag button or the `F` key, during a quiz, on the review screen, or on any past attempt, even when you got the question right.
-- **Answer status in the question list:** in "after each question" mode, answered questions turn green, red, or violet (not graded) once submitted.
-- **Export from the review screen.** Attempts with photo answers export as an `.attempt` file that includes the photos and the quiz's images.
-- **Two Claude skills** in the new **AI Skills** menu: the quiz maker now writes written, code, and photo questions, and the new attempt reviewer grades your written answers and builds a study plan from an exported attempt, including flagged questions.
+- **Phone layout for the web app.** QuizApp in a phone browser now fits the screen instead of zooming out. The header's extra buttons move into a **More** (⋯) menu, and the folder path gets its own row.
+- **Taking a quiz on a phone:** the question list opens from the bottom of the screen, and the Previous, Next, and Submit buttons stay pinned to the bottom edge. In "after each question" mode, Submit turns into **Next** once your answer is revealed.
+- **Show live grade.** Turn it on in **Settings** to see your score so far next to the progress bar in "after each question" quizzes. It counts only revealed questions, and written or photo answers once you've marked them. It works in mobile mode too.
+- Text boxes on phones use a larger font, so iOS no longer zooms in when you tap one.
 
 ## Compatibility
 
-- Quizzes with written or photo questions need QuizApp v0.5.0; older versions reject them with an error.
-- Existing quizzes, attempts, and settings keep working. Attempts from earlier versions have no flags.
+- The Mac app keeps its desktop layout at every window size.
+- Existing quizzes, attempts, and settings keep working. Show live grade is off until you turn it on.
 
 ## Installation note
 
