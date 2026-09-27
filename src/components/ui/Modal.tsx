@@ -8,6 +8,8 @@ export interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   width?: string;
+  /** "sheet" rises from the bottom edge on phones and is a normal dialog on wider screens. */
+  placement?: "center" | "sheet";
 }
 
 const FOCUSABLE = [
@@ -32,7 +34,9 @@ export function Modal({
   children,
   footer,
   width = "max-w-md",
+  placement = "center",
 }: ModalProps) {
+  const sheet = placement === "sheet";
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
@@ -112,7 +116,7 @@ export function Modal({
     <div
       role="presentation"
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className={`fixed inset-0 z-50 flex justify-center bg-black/40 ${sheet ? "items-end pt-12 sm:items-center sm:p-4" : "items-center p-4"}`}
     >
       <div
         ref={dialogRef}
@@ -121,7 +125,7 @@ export function Modal({
         aria-labelledby={titleId}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className={`flex max-h-full w-full ${width} flex-col gap-4 overflow-y-auto rounded-xl border border-slate-200 bg-white p-5 shadow-xl outline-none dark:border-neutral-800 dark:bg-neutral-900`}
+        className={`flex max-h-full w-full ${width} flex-col gap-4 overflow-y-auto border border-slate-200 bg-white p-5 shadow-xl ${sheet ? "rounded-t-2xl pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:rounded-xl sm:pb-5" : "rounded-xl"} outline-none dark:border-neutral-800 dark:bg-neutral-900`}
       >
         <div className="flex items-start justify-between gap-3">
           <h2

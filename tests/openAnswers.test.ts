@@ -61,6 +61,7 @@ function seed(overrides: Partial<MobileSessionSeed> = {}): MobileSessionSeed {
     selfMarks: {},
     selfMarking: true,
     theme: "light",
+    liveGrade: false,
     deadlineAt: null,
     ...overrides,
   };

@@ -69,6 +69,18 @@ body,
   height: 100%;
 }
 
+/* Side padding for the header and pages. It grows past the notch on phones held sideways. */
+.page-gutter {
+  --gutter: 1rem;
+  padding-left: max(var(--gutter), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), env(safe-area-inset-right));
+}
+@media (min-width: 640px) {
+  .page-gutter {
+    --gutter: 1.5rem;
+  }
+}
+
 .titlebar-drag {
   -webkit-app-region: drag;
 }
@@ -199,13 +211,19 @@ body,
   margin-top: 0;
 }
 
-/* Code answers: the textarea and its highlighted copy must line up exactly. */
+/* Code answers: the textarea and its highlighted copy must line up exactly.
+   Phones use 16px, because iOS zooms into any text box smaller than that. */
 .code-font {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1.6;
   tab-size: 4;
   letter-spacing: normal;
+}
+@media (min-width: 640px) {
+  .code-font {
+    font-size: 13px;
+  }
 }
 .code-input {
   color: transparent;

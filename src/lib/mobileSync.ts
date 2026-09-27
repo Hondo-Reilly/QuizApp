@@ -1,5 +1,6 @@
 import { quizApi } from "@/api/quizApi";
 import { currentTheme, withTheme } from "@/lib/theme";
+import { liveGradeOn } from "@/lib/liveGrade";
 import { useMobileStore } from "@/state/mobileStore";
 import { useSessionStore } from "@/state/sessionStore";
 import {
@@ -120,6 +121,7 @@ function seedFromStore(): MobileSessionSeed | null {
     selfMarks: state.selfMarks,
     selfMarking: state.config.selfMark,
     theme: currentTheme(),
+    liveGrade: liveGradeOn(),
     deadlineAt: state.deadlineAt,
   };
 }

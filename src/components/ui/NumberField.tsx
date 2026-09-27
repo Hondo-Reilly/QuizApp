@@ -58,7 +58,7 @@ export function NumberField({
           setEditing(false);
         }}
         onChange={handleChange}
-        className="w-20 rounded-md border border-slate-300 bg-white px-2 py-1 text-sm tabular-nums text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-slate-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:disabled:bg-neutral-800"
+        className="w-20 rounded-md border border-slate-300 bg-white px-2 py-1 text-base tabular-nums sm:text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-slate-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:disabled:bg-neutral-800"
       />
       {suffix && (
         <span className="text-sm text-slate-600 dark:text-neutral-400">

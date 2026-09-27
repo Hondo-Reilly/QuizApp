@@ -105,6 +105,7 @@ describe("flags in a quiz session", () => {
       selfMarks: {},
       selfMarking: false,
       theme: "light",
+      liveGrade: false,
       deadlineAt: null,
     });
     const patch = { type: "flag", questionId: "tf", flagged: true } as const;

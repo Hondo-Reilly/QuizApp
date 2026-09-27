@@ -3,6 +3,8 @@ import { AnswerFeedback } from "@/components/quiz/AnswerFeedback";
 import { AfterEachNav } from "@/components/quiz/AfterEachNav";
 import { AtEndNav } from "@/components/quiz/AtEndNav";
 import { QuizProgressHeader } from "@/components/quiz/QuizProgressHeader";
+import { LiveGrade } from "@/components/quiz/LiveGrade";
+import { gradeSoFar } from "@shared/grading";
 import { QuestionCard } from "@/components/quiz/QuestionCard";
 import {
   QuizContentProvider,
@@ -168,6 +170,18 @@ export function MobileQuiz() {
           answered={answeredCount}
           deadlineAt={session.deadlineAt}
           onExpire={() => send({ type: "finish" })}
+          extra={
+            revealAfterEach && session.liveGrade ? (
+              <LiveGrade
+                {...gradeSoFar(
+                  session.quiz.questions,
+                  session.answers,
+                  session.submitted,
+                  session.selfMarks,
+                )}
+              />
+            ) : undefined
+          }
         />
         <QuestionCard
           question={question}

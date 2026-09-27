@@ -21,9 +21,14 @@ export interface QuestionSidebarProps {
   onSelect: (index: number) => void;
 }
 
+export interface QuestionListProps extends QuestionSidebarProps {
+  /** Hides the "Questions" heading when a surrounding dialog already has one. */
+  showHeading?: boolean;
+}
+
 function rowClasses(isCurrent: boolean): string {
   const base =
-    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors";
+    "flex w-full items-center gap-2 rounded-md px-2 py-2.5 text-left transition-colors sm:py-1.5";
   if (isCurrent)
     return `${base} bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300`;
   return `${base} text-slate-700 hover:bg-slate-100 dark:text-neutral-300 dark:hover:bg-neutral-800`;
@@ -55,7 +60,17 @@ function indicatorClasses(status: QuestionStatus): string {
   }
 }
 
-export function QuestionSidebar({
+/** The sticky question list beside the quiz on wider screens. */
+export function QuestionSidebar(props: QuestionSidebarProps) {
+  return (
+    <div className="sticky top-[4.75rem] self-start max-h-[calc(100vh-6.75rem)] overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+      <QuestionList {...props} />
+    </div>
+  );
+}
+
+export function QuestionList({
+  showHeading = true,
   questions,
   order,
   currentIndex,
@@ -64,7 +79,7 @@ export function QuestionSidebar({
   submitted = {},
   selfMarks = {},
   onSelect,
-}: QuestionSidebarProps) {
+}: QuestionListProps) {
   const questionById = new Map(questions.map((q) => [q.id, q]));
   const statusOf = (qid: string): QuestionStatus => {
     const answer = answers[qid] ?? null;
@@ -86,15 +101,17 @@ export function QuestionSidebar({
   );
 
   return (
-    <div className="sticky top-[4.75rem] self-start max-h-[calc(100vh-6.75rem)] overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="flex items-baseline justify-between px-2 pb-2 pt-1">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
-          Questions
-        </h3>
-        <span className="text-xs text-slate-400 dark:text-neutral-500">
-          {answeredCount}/{order.length}
-        </span>
-      </div>
+    <>
+      {showHeading && (
+        <div className="flex items-baseline justify-between px-2 pb-2 pt-1">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
+            Questions
+          </h3>
+          <span className="text-xs text-slate-400 dark:text-neutral-500">
+            {answeredCount}/{order.length}
+          </span>
+        </div>
+      )}
       <ol className="flex flex-col gap-0.5">
         {order.map((qid, idx) => {
           const status = statusOf(qid);
@@ -126,6 +143,6 @@ export function QuestionSidebar({
           );
         })}
       </ol>
-    </div>
+    </>
   );
 }

@@ -88,6 +88,7 @@ describe("desktop quiz images", () => {
         selfMarks: {},
         selfMarking: false,
         theme: "dark",
+        liveGrade: false,
         deadlineAt: null,
       }),
     );

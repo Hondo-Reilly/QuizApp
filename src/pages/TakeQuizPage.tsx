@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { QuizContentProvider } from "@/components/content/QuizContentContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMobileSync } from "@/hooks/useMobileSync";
@@ -8,9 +8,13 @@ import { useQuizKeyboard } from "@/hooks/useQuizKeyboard";
 import { QuestionCard } from "@/components/quiz/QuestionCard";
 import { AnswerFeedback } from "@/components/quiz/AnswerFeedback";
 import { QuizProgressHeader } from "@/components/quiz/QuizProgressHeader";
+import { LiveGrade } from "@/components/quiz/LiveGrade";
+import { useLiveGrade } from "@/lib/liveGrade";
+import { gradeSoFar } from "@shared/grading";
 import { AfterEachNav } from "@/components/quiz/AfterEachNav";
 import { AtEndNav } from "@/components/quiz/AtEndNav";
-import { QuestionSidebar } from "@/components/quiz/QuestionSidebar";
+import { QuestionList, QuestionSidebar } from "@/components/quiz/QuestionSidebar";
+import { Modal } from "@/components/ui/Modal";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ErrorNotice } from "@/components/ui/PageState";
 import { Button } from "@/components/ui/Button";
@@ -47,6 +51,8 @@ export function TakeQuizPage() {
   const lockedForReveal = revealAfterEach && submitted;
   const answeredCount = countAnswered(session.order, session.answers);
   const allAnswered = answeredCount === session.order.length;
+  const [listOpen, setListOpen] = useState(false);
+  const showLiveGrade = useLiveGrade() && revealAfterEach;
 
   const handlePrevious = useCallback(
     () => session.goTo(session.currentIndex - 1),
@@ -113,22 +119,65 @@ export function TakeQuizPage() {
 
   if (!session.quiz || !question) return null;
 
+  const questionListProps = {
+    questions: session.quiz.questions,
+    order: session.order,
+    currentIndex: session.currentIndex,
+    answers: session.answers,
+    flagged: session.flagged,
+    submitted: revealAfterEach ? session.submitted : undefined,
+    selfMarks: session.selfMarks,
+  };
+
+  // Phones open the question list from the pinned bar instead of a sidebar.
+  const listButton = (
+    <Button
+      variant="secondary"
+      className="px-3 sm:hidden"
+      aria-haspopup="dialog"
+      aria-label={`Questions, ${session.currentIndex + 1} of ${session.order.length}`}
+      onClick={() => setListOpen(true)}
+    >
+      <svg
+        viewBox="0 0 16 16"
+        aria-hidden="true"
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      >
+        <path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01" />
+      </svg>
+      <span className="tabular-nums">
+        {session.currentIndex + 1}/{session.order.length}
+      </span>
+    </Button>
+  );
+
   return (
     <QuizContentProvider quiz={session.quiz}>
       <PhotoSourceProvider source={sessionPhotoSource}>
-      <div className="mx-auto flex max-w-5xl gap-6">
-        <aside className="w-56 shrink-0">
-          <QuestionSidebar
-            questions={session.quiz.questions}
-            order={session.order}
-            currentIndex={session.currentIndex}
-            answers={session.answers}
-            flagged={session.flagged}
-            submitted={revealAfterEach ? session.submitted : undefined}
-            selfMarks={session.selfMarks}
-            onSelect={session.goTo}
-          />
+      <div className="mx-auto flex max-w-5xl gap-6 pb-20 sm:pb-0">
+        <aside className="hidden w-56 shrink-0 sm:block">
+          <QuestionSidebar {...questionListProps} onSelect={session.goTo} />
         </aside>
+
+        <Modal
+          open={listOpen}
+          title="Questions"
+          placement="sheet"
+          onClose={() => setListOpen(false)}
+        >
+          <QuestionList
+            {...questionListProps}
+            showHeading={false}
+            onSelect={(index) => {
+              session.goTo(index);
+              setListOpen(false);
+            }}
+          />
+        </Modal>
 
         <div className="min-w-0 flex-1">
           <PageHeader title={session.quiz.title} />
@@ -140,6 +189,18 @@ export function TakeQuizPage() {
             answered={answeredCount}
             deadlineAt={session.deadlineAt}
             onExpire={handleFinish}
+            extra={
+              showLiveGrade ? (
+                <LiveGrade
+                  {...gradeSoFar(
+                    session.quiz.questions,
+                    session.answers,
+                    session.submitted,
+                    session.selfMarks,
+                  )}
+                />
+              ) : undefined
+            }
           />
 
           <div className="flex flex-col gap-4">
@@ -173,27 +234,32 @@ export function TakeQuizPage() {
               </div>
             )}
 
-            {revealAfterEach ? (
-              <AfterEachNav
-                isFirst={isFirst}
-                isLast={isLast}
-                submitted={submitted}
-                canSubmit={isAnswered(question ?? undefined, value)}
-                onPrevious={handlePrevious}
-                onNext={handleNext}
-                onSubmit={handleSubmitReveal}
-                onFinish={handleFinish}
-              />
-            ) : (
-              <AtEndNav
-                isFirst={isFirst}
-                isLast={isLast}
-                showSubmit={allAnswered || isLast}
-                onPrevious={handlePrevious}
-                onNext={handleNext}
-                onSubmit={handleFinish}
-              />
-            )}
+            {/* Pinned to the bottom edge on phones, inline after the question elsewhere. */}
+            <div className="page-gutter fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95 sm:static sm:z-auto sm:border-0 sm:bg-transparent sm:!p-0 sm:backdrop-blur-none sm:dark:bg-transparent">
+              {revealAfterEach ? (
+                <AfterEachNav
+                  extra={listButton}
+                  isFirst={isFirst}
+                  isLast={isLast}
+                  submitted={submitted}
+                  canSubmit={isAnswered(question ?? undefined, value)}
+                  onPrevious={handlePrevious}
+                  onNext={handleNext}
+                  onSubmit={handleSubmitReveal}
+                  onFinish={handleFinish}
+                />
+              ) : (
+                <AtEndNav
+                  extra={listButton}
+                  isFirst={isFirst}
+                  isLast={isLast}
+                  showSubmit={allAnswered || isLast}
+                  onPrevious={handlePrevious}
+                  onNext={handleNext}
+                  onSubmit={handleFinish}
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>

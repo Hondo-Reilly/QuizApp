@@ -17,10 +17,10 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <Tag
-      className={`${spacing === "roomy" ? "mb-8" : "mb-6"} flex items-start justify-between gap-4`}
+      className={`${spacing === "roomy" ? "mb-6 sm:mb-8" : "mb-5 sm:mb-6"} flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4`}
     >
       <div className="min-w-0 flex-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-neutral-100">
+        <h1 className="break-words text-xl font-semibold sm:text-2xl tracking-tight text-slate-900 dark:text-neutral-100">
           {title}
         </h1>
         {subtitle && (
@@ -32,7 +32,9 @@ export function PageHeader({
         )}
       </div>
       {actions && (
-        <div className="flex shrink-0 items-center gap-2">{actions}</div>
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:flex-nowrap">
+          {actions}
+        </div>
       )}
     </Tag>
   );

@@ -27,6 +27,8 @@ export interface MobileSessionSeed {
   /** Whether this attempt lets the user mark their own open answers. */
   selfMarking: boolean;
   theme: MobileTheme;
+  /** Show the score so far beside the progress bar, in "after each question" quizzes. */
+  liveGrade: boolean;
   deadlineAt: string | null;
 }
 
@@ -42,6 +44,7 @@ export type MobilePatch =
   | { type: "flag"; questionId: string; flagged: boolean }
   | { type: "mark"; questionId: string; mark: SelfMark | null }
   | { type: "theme"; theme: MobileTheme }
+  | { type: "liveGrade"; liveGrade: boolean }
   | { type: "finish" };
 
 export function sameAnswer(
@@ -76,6 +79,11 @@ export function applyMobilePatch(
     if (patch.theme !== "light" && patch.theme !== "dark") return session;
     if (session.theme === patch.theme) return session;
     return { ...session, theme: patch.theme, rev: session.rev + 1 };
+  }
+
+  if (patch.type === "liveGrade") {
+    if (session.liveGrade === patch.liveGrade) return session;
+    return { ...session, liveGrade: patch.liveGrade, rev: session.rev + 1 };
   }
 
   if (session.finished) return session;
@@ -136,6 +144,7 @@ function clampIndex(index: number, length: number): number {
 const PATCH_KEYS: Record<MobilePatch["type"], readonly string[]> = {
   finish: ["type"],
   theme: ["type", "theme"],
+  liveGrade: ["type", "liveGrade"],
   index: ["type", "currentIndex"],
   submit: ["type", "questionId"],
   flag: ["type", "questionId", "flagged"],
@@ -180,6 +189,7 @@ export function isMobilePatch(value: unknown): value is MobilePatch {
   if (typeof patch.type !== "string" || !exactPatchKeys(value, patch.type)) return false;
   if (patch.type === "finish") return true;
   if (patch.type === "theme") return patch.theme === "light" || patch.theme === "dark";
+  if (patch.type === "liveGrade") return typeof patch.liveGrade === "boolean";
   if (patch.type === "index") return Number.isFinite(patch.currentIndex);
   if (patch.type === "submit") return isQuestionId(patch.questionId);
   if (patch.type === "flag") {
@@ -198,7 +208,12 @@ export function mobilePatchIssue(
   session: MobileSession,
   patch: MobilePatch,
 ): string | null {
-  if (patch.type === "theme" || patch.type === "finish" || patch.type === "index") {
+  if (
+    patch.type === "theme" ||
+    patch.type === "liveGrade" ||
+    patch.type === "finish" ||
+    patch.type === "index"
+  ) {
     return null;
   }
   if (!session.order.includes(patch.questionId)) {

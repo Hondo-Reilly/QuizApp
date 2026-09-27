@@ -1,4 +1,10 @@
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
+import {
+  NextQuestionButton,
+  PreviousQuestionButton,
+  QuestionStepArrows,
+} from "./QuizNavButtons";
 
 export interface AtEndNavProps {
   isFirst: boolean;
@@ -7,6 +13,8 @@ export interface AtEndNavProps {
   onPrevious: () => void;
   onNext: () => void;
   onSubmit: () => void;
+  /** Shown at the start of the row, beside Previous on wider screens. */
+  extra?: ReactNode;
 }
 
 export function AtEndNav({
@@ -16,20 +24,22 @@ export function AtEndNav({
   onPrevious,
   onNext,
   onSubmit,
+  extra,
 }: AtEndNavProps) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <Button
-        variant="secondary"
-        onClick={onPrevious}
-        disabled={isFirst}
-      >
-        Previous question
-      </Button>
       <div className="flex items-center gap-2">
-        <Button variant="secondary" onClick={onNext} disabled={isLast}>
-          Next question
-        </Button>
+        <PreviousQuestionButton onClick={onPrevious} disabled={isFirst} />
+        {extra}
+      </div>
+      <div className="flex items-center gap-2">
+        <NextQuestionButton onClick={onNext} disabled={isLast} />
+        <QuestionStepArrows
+          isFirst={isFirst}
+          isLast={isLast}
+          onPrevious={onPrevious}
+          onNext={onNext}
+        />
         {showSubmit && <Button onClick={onSubmit}>Submit quiz</Button>}
       </div>
     </div>

@@ -85,7 +85,7 @@ export function AttemptList({ quiz, attempts, onOpen, onDelete }: AttemptListPro
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="flex items-center border-b border-slate-200 dark:border-neutral-800">
+      <div className="flex flex-wrap items-center border-b border-slate-200 dark:border-neutral-800">
         <label className="flex shrink-0 cursor-pointer items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-neutral-200">
           <input
             ref={selectAllRef}
@@ -117,7 +117,9 @@ export function AttemptList({ quiz, attempts, onOpen, onDelete }: AttemptListPro
               );
             }}
           >
-            Export selected
+            <span>
+              Export<span className="hidden sm:inline"> selected</span>
+            </span>
           </Button>
           <Button
             variant="danger"
@@ -126,7 +128,9 @@ export function AttemptList({ quiz, attempts, onOpen, onDelete }: AttemptListPro
             disabled={deleting || selectedIds.length === 0}
             className="disabled:!bg-slate-100 disabled:!text-slate-400 dark:disabled:!bg-neutral-800 dark:disabled:!text-neutral-500"
           >
-            Delete selected
+            <span>
+              Delete<span className="hidden sm:inline"> selected</span>
+            </span>
           </Button>
         </div>
       </div>
@@ -153,12 +157,15 @@ export function AttemptList({ quiz, attempts, onOpen, onDelete }: AttemptListPro
             <button
               type="button"
               onClick={() => onOpen(attempt)}
-              className="flex min-w-0 flex-1 items-center justify-between gap-4 py-3 pr-4 text-left text-sm"
+              className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-4 gap-y-1 py-3 pr-4 text-left text-sm sm:flex-nowrap"
             >
-              <span className="text-slate-700 dark:text-neutral-200">
+              {/* Phones put the date on its own line and the results under it. */}
+              <span className="basis-full text-slate-700 dark:text-neutral-200 sm:basis-auto">
                 {formatDate(attempt.completedAt)}
               </span>
-              <span className="ml-auto flex shrink-0 items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
+              <span
+                className={`${(attempt.flagged?.length ?? 0) > 0 ? "flex" : "hidden sm:flex"} shrink-0 items-center gap-1 text-xs text-amber-700 dark:text-amber-400 sm:ml-auto`}
+              >
                 {(attempt.flagged?.length ?? 0) > 0 && (
                   <>
                     <FlagIcon filled />
@@ -174,7 +181,7 @@ export function AttemptList({ quiz, attempts, onOpen, onDelete }: AttemptListPro
               <span className="shrink-0 tabular-nums text-slate-600 dark:text-neutral-300">
                 {attempt.correct}/{attempt.total} correct
               </span>
-              <span className="w-14 shrink-0 text-right font-semibold tabular-nums text-slate-900 dark:text-neutral-100">
+              <span className="ml-auto w-14 shrink-0 text-right font-semibold sm:ml-0 tabular-nums text-slate-900 dark:text-neutral-100">
                 {attempt.total > 0 ? `${attempt.percent}%` : "—"}
               </span>
             </button>

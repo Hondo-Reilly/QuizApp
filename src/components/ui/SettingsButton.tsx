@@ -4,6 +4,10 @@ import { useAccent } from "@/hooks/useAccent";
 import { ACCENTS } from "@/lib/accent";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { Toggle } from "@/components/ui/Toggle";
+import { setLiveGrade, useLiveGrade } from "@/lib/liveGrade";
+import { sendMobilePatch } from "@/lib/mobileSync";
+import { useMobileStore } from "@/state/mobileStore";
 
 function GearIcon() {
   return (
@@ -30,6 +34,7 @@ export function SettingsButton() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { accent, setAccent } = useAccent();
+  const liveGrade = useLiveGrade();
 
   const close = () => {
     if (busy) return;
@@ -134,6 +139,23 @@ export function SettingsButton() {
                   );
                 })}
               </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-neutral-400">
+                Taking quizzes
+              </span>
+              <Toggle
+                checked={liveGrade}
+                onChange={(on) => {
+                  setLiveGrade(on);
+                  // A phone in mobile mode follows the Mac's setting.
+                  if (useMobileStore.getState().active) {
+                    void sendMobilePatch({ type: "liveGrade", liveGrade: on }).catch(() => undefined);
+                  }
+                }}
+                label="Show live grade"
+                description="When answers are revealed after each question, show your score so far next to the progress bar."
+              />
             </div>
             <div className="border-t border-slate-200 pt-4 dark:border-neutral-800">
               <Button type="button" variant="danger" onClick={() => setConfirming(true)}>

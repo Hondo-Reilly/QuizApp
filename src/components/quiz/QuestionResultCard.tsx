@@ -44,7 +44,8 @@ export function QuestionResultCard({
 }: QuestionResultCardProps) {
   return (
     <Card className="flex flex-col gap-3">
-      <div className="flex items-start justify-between gap-3">
+      {/* Phones put the result under the prompt, so the prompt keeps the full width. */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         {heading}
         {status}
       </div>

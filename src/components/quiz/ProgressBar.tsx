@@ -8,7 +8,7 @@ export function ProgressBar({ current, total, answered }: ProgressBarProps) {
   const pct = total === 0 ? 0 : Math.round((answered / total) * 100);
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-neutral-400">
+      <div className="flex flex-wrap items-center justify-between gap-x-2 text-xs text-slate-500 dark:text-neutral-400">
         <span>
           Question {current} of {total}
         </span>

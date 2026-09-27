@@ -66,6 +66,28 @@ export function gradeQuiz(
   return { total, correct, percent, ungraded, results };
 }
 
+/**
+ * The score so far in an "after each question" quiz: revealed questions only,
+ * leaving out open answers that have no result yet.
+ */
+export function gradeSoFar(
+  questions: readonly Question[],
+  answers: Record<string, UserAnswer>,
+  submitted: Record<string, boolean>,
+  selfMarks: Record<string, SelfMark> = {},
+): { correct: number; graded: number } {
+  let correct = 0;
+  let graded = 0;
+  for (const q of questions) {
+    if (!submitted[q.id]) continue;
+    const outcome = questionOutcome(q, answers[q.id] ?? null, selfMarks[q.id]);
+    if (outcome === "ungraded") continue;
+    graded += 1;
+    if (outcome === "correct") correct += 1;
+  }
+  return { correct, graded };
+}
+
 export function scoreOf(grade: QuizGrade): AttemptScore {
   return {
     correct: grade.correct,

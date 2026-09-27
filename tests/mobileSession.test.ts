@@ -5,6 +5,7 @@ import {
   isMobilePatch,
   mobilePatchIssue,
 } from "@shared/mobile";
+import { gradeSoFar } from "@shared/grading";
 import { makeQuiz } from "./fixtures/quiz";
 
 function seed() {
@@ -20,6 +21,7 @@ function seed() {
     selfMarks: {},
     selfMarking: false,
     theme: "light" as const,
+    liveGrade: false,
     deadlineAt: null,
   };
 }
@@ -78,6 +80,26 @@ describe("mobile session state", () => {
     const themed = applyMobilePatch(finished, { type: "theme", theme: "dark" });
     expect(themed.theme).toBe("dark");
     expect(themed.rev).toBe(finished.rev + 1);
+  });
+
+  it("syncs the live grade setting, even after the quiz is finished", () => {
+    const finished = applyMobilePatch(createMobileSession(seed()), { type: "finish" });
+    const on = applyMobilePatch(finished, { type: "liveGrade", liveGrade: true });
+    expect(on.liveGrade).toBe(true);
+    expect(on.rev).toBe(finished.rev + 1);
+    expect(applyMobilePatch(on, { type: "liveGrade", liveGrade: true })).toBe(on);
+    expect(isMobilePatch({ type: "liveGrade", liveGrade: "yes" })).toBe(false);
+    expect(isMobilePatch({ type: "liveGrade", liveGrade: false, extra: 1 })).toBe(false);
+  });
+
+  it("scores only revealed questions for the live grade", () => {
+    const quiz = makeQuiz();
+    const answers = { tf: false, single: "a", multi: ["a", "c"] };
+    expect(gradeSoFar(quiz.questions, answers, {})).toEqual({ correct: 0, graded: 0 });
+    expect(gradeSoFar(quiz.questions, answers, { tf: true, single: true })).toEqual({
+      correct: 1,
+      graded: 2,
+    });
   });
 
   it("rejects unrecognized patch shapes", () => {

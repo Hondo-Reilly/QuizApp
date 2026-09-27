@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/Button";
 
 const FILENAME = "example_quiz.json";
 
-function triggerDownload(): void {
+export function downloadExampleQuiz(): void {
   const blob = new Blob([exampleQuizText], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -17,7 +17,7 @@ function triggerDownload(): void {
 
 export function DownloadExampleButton() {
   return (
-    <Button size="sm" variant="secondary" onClick={triggerDownload}>
+    <Button size="sm" variant="secondary" onClick={downloadExampleQuiz}>
       Download Example Quiz
     </Button>
   );
