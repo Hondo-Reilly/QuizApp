@@ -1,6 +1,8 @@
 ---
 name: quiz-attempt-reviewer
 description: Review QuizApp quiz results and tell the user what to study. Use this skill whenever the user shares or mentions a QuizApp attempt export (JSON with `questions` holding `selected`, `correct`, and `flagged`, or an `attempts` array, or an `.attempt` file with photo answers), or asks to grade written, code, or photo answers from a quiz, or asks to go over a quiz or test they took, find their weak spots, explain their mistakes, make a study plan, or build a follow-up practice quiz from their results. Trigger even without the word "QuizApp" when the user pastes graded quiz results and wants feedback. Do NOT use for writing a brand-new quiz with no results to review; that is the quiz-app-maker skill's job.
+metadata:
+  version: "0.7.0"
 ---
 
 # Quiz Attempt Reviewer

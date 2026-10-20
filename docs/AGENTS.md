@@ -38,7 +38,7 @@ Adding a `quizApi` method means implementing it in `electron/preload.ts` and in 
 
 ## Release checklist
 
-1. Bump the version in `package.json` and `package-lock.json`. Keep the web and Mac builds on the same commit.
+1. Bump the version in `package.json` and `package-lock.json`, and set the same `metadata.version` in each `.cursor/skills/*/SKILL.md`. Keep the web and Mac builds on the same commit.
 2. Run `npm test`, `npm run lint`, `npm run build:web`, and `npm run build:mac`. The Mac build must pass both asset checks: one on `dist/` and one inside the packaged `app.asar`. Packaging must not publish automatically.
 3. Push the commit and wait for the **Verify builds** GitHub workflow to pass. Its Mac job packages the same Apple Silicon target used for the release.
 4. Open the newly built app from `release/mac-arm64/QuizApp.app` or its DMG on a Mac and confirm the Library renders. Use a copy of user data when checking migrations or older records. Do not treat successful builds or asset checks as a substitute for this launch check.

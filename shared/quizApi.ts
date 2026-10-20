@@ -39,6 +39,8 @@ export interface QuizApi {
   getQuiz(id: string): Promise<Quiz | null>;
   /** Saves a quiz and its images as a .quiz package. Resolves false if cancelled. */
   exportQuiz(id: string): Promise<boolean>;
+  /** Shows the stored quiz file in Finder. Desktop only; the web build rejects. */
+  revealQuiz(id: string): Promise<void>;
   /** Maps each images/ path of a quiz to a URL an <img> can load. */
   getQuizAssetUrls(quizId: string, paths: string[]): Promise<Record<string, string>>;
   deleteQuiz(id: string): Promise<void>;

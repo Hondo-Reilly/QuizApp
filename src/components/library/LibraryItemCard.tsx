@@ -1,4 +1,4 @@
-import type { DragEvent, DragEventHandler, ReactNode } from "react";
+import type { DragEvent, DragEventHandler, MouseEventHandler, ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
 
 export interface LibraryItemCardProps {
@@ -17,6 +17,7 @@ export interface LibraryItemCardProps {
   onDragOver?: (event: DragEvent<HTMLElement>) => void;
   onDragLeave?: (event: DragEvent<HTMLElement>) => void;
   onDrop?: (event: DragEvent<HTMLElement>) => void;
+  onContextMenu?: MouseEventHandler<HTMLDivElement>;
 }
 
 export function LibraryItemCard({
@@ -35,6 +36,7 @@ export function LibraryItemCard({
   onDragOver,
   onDragLeave,
   onDrop,
+  onContextMenu,
 }: LibraryItemCardProps) {
   const heading = (
     <h3 className="text-lg font-semibold text-slate-900 dark:text-neutral-100">
@@ -44,6 +46,7 @@ export function LibraryItemCard({
 
   return (
     <Card
+      onContextMenu={onContextMenu}
       draggable={draggable}
       onDragStart={(event) => {
         const target = event.target;

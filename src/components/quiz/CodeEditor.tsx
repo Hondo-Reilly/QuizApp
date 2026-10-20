@@ -9,11 +9,11 @@ const INDENT = "    ";
 const MIN_LINES = 8;
 const MAX_LINES = 28;
 
-function LineNumbers({ count }: { count: number }) {
+function LineNumbers({ count, className = "" }: { count: number; className?: string }) {
   return (
     <div
       aria-hidden="true"
-      className="code-font select-none border-r border-slate-200 bg-slate-50 px-3 py-3 text-right text-slate-400 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-600"
+      className={`code-font select-none border-r border-slate-200 bg-slate-50 px-3 py-3 text-right text-slate-400 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-600 ${className}`}
     >
       {Array.from({ length: count }, (_, i) => (
         <div key={i}>{i + 1}</div>
@@ -60,6 +60,11 @@ export function CodeEditor({ question, value: saved, onChange, disabled }: CodeE
 
   const lineCount = Math.max(1, value.split("\n").length);
   const rows = Math.min(MAX_LINES, Math.max(MIN_LINES, lineCount));
+  // The textarea, the highlighted layer, and the gutter must be exactly this
+  // tall, measured in the code font, or they scroll by different amounts. The
+  // layer and gutter get extra end padding so they can still follow the
+  // textarea when its scrollbars take up room.
+  const height = `calc(${rows} * 1.6em + 1.5rem)`;
   // The trailing newline keeps the highlighted layer as tall as the textarea.
   const html = useMemo(
     () => `${highlight ? highlight(value) : escapeCode(value)}\n`,
@@ -94,11 +99,19 @@ export function CodeEditor({ question, value: saved, onChange, disabled }: CodeE
     }
     const leaving = escaped.current;
     escaped.current = false;
-    if (event.key !== "Tab" || leaving || event.metaKey || event.ctrlKey || event.altKey) return;
-    event.preventDefault();
+    if (event.metaKey || event.ctrlKey || event.altKey || event.nativeEvent.isComposing) return;
     const area = event.currentTarget;
     const { selectionStart: start, selectionEnd: end } = area;
     const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+    if (event.key === "Enter" && !event.shiftKey) {
+      // Start the new line at the same indent as the one before the caret.
+      event.preventDefault();
+      const indent = value.slice(lineStart, start).match(/^[ \t]*/)?.[0] ?? "";
+      replaceSelection(area, start, end, `\n${indent}`, start + 1 + indent.length);
+      return;
+    }
+    if (event.key !== "Tab" || leaving) return;
+    event.preventDefault();
     if (event.shiftKey) {
       const removable = value.slice(lineStart, lineStart + INDENT.length).match(/^ {1,4}/)?.[0] ?? "";
       if (!removable) return;
@@ -115,14 +128,14 @@ export function CodeEditor({ question, value: saved, onChange, disabled }: CodeE
           disabled ? "border-slate-200 dark:border-neutral-800" : "border-slate-300 dark:border-neutral-700"
         }`}
       >
-        <div ref={gutterRef} className="overflow-hidden" style={{ maxHeight: `calc(${rows} * 1.6em + 1.5rem)` }}>
-          <LineNumbers count={Math.max(lineCount, rows)} />
+        <div ref={gutterRef} className="code-font overflow-hidden" style={{ height }}>
+          <LineNumbers count={Math.max(lineCount, rows)} className="pb-10" />
         </div>
         <div className="relative min-w-0 flex-1">
           <pre
             ref={layerRef}
             aria-hidden="true"
-            className="code-font hljs-theme pointer-events-none absolute inset-0 m-0 overflow-hidden whitespace-pre px-3 py-3 text-slate-800 dark:text-neutral-200"
+            className="code-font hljs-theme pointer-events-none absolute inset-0 m-0 overflow-hidden whitespace-pre px-3 pb-10 pr-10 pt-3 text-slate-800 dark:text-neutral-200"
           >
             <code dangerouslySetInnerHTML={{ __html: html }} />
           </pre>
@@ -133,6 +146,7 @@ export function CodeEditor({ question, value: saved, onChange, disabled }: CodeE
             maxLength={maxLength}
             disabled={disabled}
             rows={rows}
+            style={{ height }}
             wrap="off"
             spellCheck={false}
             autoCapitalize="off"

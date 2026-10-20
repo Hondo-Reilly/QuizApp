@@ -1,4 +1,5 @@
-import { BrowserWindow, dialog, ipcMain } from "electron";
+import { BrowserWindow, dialog, ipcMain, shell } from "electron";
+import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { slugifyTitle } from "../../shared/storageId";
@@ -19,6 +20,7 @@ import {
   type CreateFolderInput,
   type UpdateFolderInput,
 } from "../lib/fileStore";
+import { quizFile } from "../lib/paths";
 
 async function handleImport(
   event: Electron.IpcMainInvokeEvent,
@@ -68,8 +70,17 @@ async function handleExport(
   return true;
 }
 
+/** Selects the stored quiz file in a Finder window. */
+function handleReveal(id: unknown): void {
+  if (typeof id !== "string") throw new Error("Quiz not found");
+  const file = quizFile(id);
+  if (!existsSync(file)) throw new Error("The quiz file could not be found.");
+  shell.showItemInFolder(file);
+}
+
 export function registerQuizLibraryHandlers(): void {
   ipcMain.handle(IpcChannels.exportQuiz, (event, id: string) => handleExport(event, id));
+  ipcMain.handle(IpcChannels.revealQuiz, (_e, id: unknown) => handleReveal(id));
   ipcMain.handle(
     IpcChannels.importQuiz,
     (event, folderId: string | null = null) => handleImport(event, folderId),

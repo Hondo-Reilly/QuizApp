@@ -79,6 +79,8 @@ export const browserQuizApi: QuizApi = {
       downloadBytes(exported.bytes, `${slugifyTitle(exported.title)}.quiz`);
       return true;
     }),
+  revealQuiz: () =>
+    Promise.reject(new Error("Show in Finder is only available in the desktop app.")),
   getQuizAssetUrls: (quizId, paths) => run(() => browserAssetUrls(quizId, paths)),
   deleteQuiz: (id) =>
     run(async () => {

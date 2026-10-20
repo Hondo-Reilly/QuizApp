@@ -220,6 +220,9 @@ body,
   tab-size: 4;
   letter-spacing: normal;
 }
+.code-font code {
+  font: inherit;
+}
 @media (min-width: 640px) {
   .code-font {
     font-size: 13px;

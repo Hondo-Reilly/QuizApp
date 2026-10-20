@@ -28,6 +28,8 @@ const quizApi: QuizApi = {
     ipcRenderer.invoke(IpcChannels.getQuiz, id),
   exportQuiz: (id: string): Promise<boolean> =>
     ipcRenderer.invoke(IpcChannels.exportQuiz, id),
+  revealQuiz: (id: string): Promise<void> =>
+    ipcRenderer.invoke(IpcChannels.revealQuiz, id),
   getQuizAssetUrls: (quizId: string, paths: string[]) =>
     Promise.resolve(
       Object.fromEntries(paths.map((rel) => [rel, quizAssetUrl(quizId, rel)])),

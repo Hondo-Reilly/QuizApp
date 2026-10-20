@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { quizApi } from "@/api/quizApi";
 import { Button } from "@/components/ui/Button";
+import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
+import { isElectronApp } from "@/lib/runtime";
 import { writeQuizDrag } from "@/lib/quizDrag";
 import { LibraryItemCard } from "./LibraryItemCard";
 import type { QuizMetadata } from "@shared/types";
@@ -26,60 +29,92 @@ function formatDate(iso: string): string {
 export function QuizCard({ quiz, onDelete, onMove }: QuizCardProps) {
   const navigate = useNavigate();
   const [dragging, setDragging] = useState(false);
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
+  const closeMenu = useCallback(() => setMenuAt(null), []);
+
+  const report = (action: string) => (err: unknown) =>
+    alert(`Could not ${action}. ${err instanceof Error ? err.message : ""}`.trim());
+
+  const menuItems: ContextMenuItem[] = [
+    ...(isElectronApp()
+      ? [
+          {
+            label: "Show in Finder",
+            onSelect: () => void quizApi.revealQuiz(quiz.id).catch(report("show the quiz in Finder")),
+          },
+        ]
+      : []),
+    {
+      label: "Download quiz",
+      onSelect: () => void quizApi.exportQuiz(quiz.id).catch(report("download the quiz")),
+    },
+  ];
 
   return (
-    <LibraryItemCard
-      variant="quiz"
-      title={quiz.title}
-      description={quiz.description}
-      draggable
-      dragging={dragging}
-      onDragStart={(event) => {
-        writeQuizDrag(event.dataTransfer, {
-          id: quiz.id,
-          folderId: quiz.folderId,
-        });
-        setDragging(true);
-      }}
-      onDragEnd={() => setDragging(false)}
-      onOpen={() =>
-        navigate(`/quiz/${quiz.id}`, { state: { folderId: quiz.folderId } })
-      }
-      metadata={
-        <>
-          <span>
-            {quiz.questionCount}{" "}
-            {quiz.questionCount === 1 ? "question" : "questions"}
-          </span>
-          <span>·</span>
-          <span>Imported {formatDate(quiz.importedAt)}</span>
-          {quiz.author && (
-            <>
-              <span>·</span>
-              <span>by {quiz.author}</span>
-            </>
-          )}
-        </>
-      }
-      actions={
-        <>
-          <Button variant="ghost" size="sm" onClick={() => onMove(quiz)}>
-            Move
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              if (confirm(`Delete "${quiz.title}"?`)) onDelete(quiz.id);
-            }}
-          >
-            Delete
-          </Button>
-          <Button size="sm" onClick={() => navigate(`/quiz/${quiz.id}/setup`)}>
-            Start
-          </Button>
-        </>
-      }
-    />
+    <>
+      <LibraryItemCard
+        variant="quiz"
+        title={quiz.title}
+        description={quiz.description}
+        draggable
+        dragging={dragging}
+        onDragStart={(event) => {
+          writeQuizDrag(event.dataTransfer, {
+            id: quiz.id,
+            folderId: quiz.folderId,
+          });
+          setDragging(true);
+        }}
+        onDragEnd={() => setDragging(false)}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          setMenuAt({ x: event.clientX, y: event.clientY });
+        }}
+        onOpen={() =>
+          navigate(`/quiz/${quiz.id}`, { state: { folderId: quiz.folderId } })
+        }
+        metadata={
+          <>
+            <span>
+              {quiz.questionCount}{" "}
+              {quiz.questionCount === 1 ? "question" : "questions"}
+            </span>
+            <span>·</span>
+            <span>Imported {formatDate(quiz.importedAt)}</span>
+            {quiz.author && (
+              <>
+                <span>·</span>
+                <span>by {quiz.author}</span>
+              </>
+            )}
+          </>
+        }
+        actions={
+          <>
+            <Button variant="ghost" size="sm" onClick={() => onMove(quiz)}>
+              Move
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (confirm(`Delete "${quiz.title}"?`)) onDelete(quiz.id);
+              }}
+            >
+              Delete
+            </Button>
+            <Button size="sm" onClick={() => navigate(`/quiz/${quiz.id}/setup`)}>
+              Start
+            </Button>
+          </>
+        }
+      />
+      <ContextMenu
+        position={menuAt}
+        label={`${quiz.title} actions`}
+        items={menuItems}
+        onClose={closeMenu}
+      />
+    </>
   );
 }

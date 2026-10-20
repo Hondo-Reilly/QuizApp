@@ -11,6 +11,7 @@ export const quizApi: QuizApi = {
   listQuizzes: () => activeQuizApi().listQuizzes(),
   getQuiz: (id) => activeQuizApi().getQuiz(id),
   exportQuiz: (id) => activeQuizApi().exportQuiz(id),
+  revealQuiz: (id) => activeQuizApi().revealQuiz(id),
   getQuizAssetUrls: (quizId, paths) => activeQuizApi().getQuizAssetUrls(quizId, paths),
   deleteQuiz: (id) => activeQuizApi().deleteQuiz(id),
   moveQuiz: (id, folderId) => activeQuizApi().moveQuiz(id, folderId),
