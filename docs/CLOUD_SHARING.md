@@ -121,6 +121,8 @@ Vary: Origin
 - `https://hondo-reilly.github.io`: an origin has no path, so this covers `/QuizApp/`.
 - `http://localhost:5173`: the Vite dev server for `npm run dev -- --web`.
 
+hjr-data already sends these headers (`src/public.ts`). The live server allows the Pages origin. The dev origin is added to the seed on hjr-data's `cloud-quizzes` branch, and must be set on the running server with `ns update`.
+
 Not needed: cookies or `Access-Control-Allow-Credentials` (the app authenticates with the manage-token header), and `Access-Control-Expose-Headers` (the app reads JSON bodies, not response headers).
 
 ## Tests
@@ -135,4 +137,4 @@ Not needed: cookies or `Access-Control-Allow-Credentials` (the app authenticates
 2. Replace-in-place in both stores.
 3. Electron IPC + preload, browser implementation.
 4. UI: share dialog, import-from-code, badges.
-5. Server: set `corsOrigins` as above and confirm preflights pass from the Pages origin. Then the release checklist in `AGENTS.md`.
+5. Server: add `http://localhost:5173` to the live `corsOrigins` (Pages origin already works). Then the release checklist in `AGENTS.md`.
