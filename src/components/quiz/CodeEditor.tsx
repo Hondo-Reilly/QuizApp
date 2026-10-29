@@ -88,6 +88,14 @@ export function CodeEditor({ question, value: saved, onChange, disabled }: CodeE
   ) => {
     const next = value.slice(0, start) + text + value.slice(end);
     if (next.length > maxLength) return;
+    // Editing through the browser keeps Cmd+Z / Ctrl+Z history; setting the
+    // value from React would wipe it. The input event still reaches onChange.
+    area.setSelectionRange(start, end);
+    const edited = document.execCommand(text ? "insertText" : "delete", false, text);
+    if (edited) {
+      area.setSelectionRange(caret, caret);
+      return;
+    }
     change(next);
     requestAnimationFrame(() => area.setSelectionRange(caret, caret));
   };

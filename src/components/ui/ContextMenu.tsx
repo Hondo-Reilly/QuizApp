@@ -97,11 +97,13 @@ export function ContextMenu({ position, label, items, onClose }: ContextMenuProp
           }}
           type="button"
           role="menuitem"
+          // Hover moves focus, so only one item is ever highlighted.
+          onPointerMove={(event) => event.currentTarget.focus()}
           onClick={() => {
             onClose();
             item.onSelect();
           }}
-          className="flex w-full items-center rounded-md px-3 py-1.5 text-left text-sm text-slate-800 hover:bg-slate-100 focus:bg-slate-100 focus:outline-none dark:text-neutral-100 dark:hover:bg-neutral-800 dark:focus:bg-neutral-800"
+          className="flex w-full items-center rounded-md px-3 py-1.5 text-left text-sm text-slate-800 focus:bg-slate-100 focus:outline-none dark:text-neutral-100 dark:focus:bg-neutral-800"
         >
           {item.label}
         </button>
