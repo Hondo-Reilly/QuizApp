@@ -2,7 +2,7 @@
 name: quiz-app-maker
 description: Generate quizzes for QuizApp as a JSON file, or as a .quiz package when the quiz has images. Supports Markdown (LaTeX math, code, tables), images in prompts, choices, and scenarios, and ungraded written, code, and photo answers. Use this skill whenever the user wants to create, write, or generate a quiz, test, trivia set, or set of practice questions — including true/false, multiple-choice, select-all-that-apply, short-answer, essay or written-response, coding, photo or show-your-work, and case-study or scenario-based questions — or asks for quiz questions on any topic, or references importing a quiz into QuizApp, a quiz `.json` file, or a `.quiz` package. Trigger even when the user doesn't say the word "quiz" but clearly wants graded questions with answers (e.g. "make me 10 questions to test my team on the new HR policy"). Do NOT use for ungraded discussion questions, flashcards, or surveys with no correct answer, or for reviewing a quiz the user already took (use quiz-attempt-reviewer).
 metadata:
-  version: "0.7.0"
+  version: "0.8.0"
 ---
 
 # Quiz App Maker
@@ -21,15 +21,17 @@ If the user gave source material (a document, notes, a URL), draw questions from
 
 **With images:** the quiz must be a `.quiz` package, a zip holding `quiz.json` and an `images/` folder. See [Images](#images) below.
 
-The full schema lives in `references/quiz-format.md`. Read it before generating so every field and constraint is correct. It matches QuizApp's `docs/QUIZ_FORMAT.md` and `shared/schema.ts`. Complete valid examples: `references/example-quiz.json` (plain, version 1), `references/example-written-quiz.json` (written, code, and photo answers, version 2), and `references/example-rich-quiz.json` (Markdown, math, images, and a scenario, version 2; it is the `quiz.json` of a package, so its image files are not included). Skim the one that fits. The essentials:
+The full schema lives in `references/quiz-format.md`. Read it before generating so every field and constraint is correct. It matches QuizApp's `docs/QUIZ_FORMAT.md` and `shared/schema.ts`. Complete valid examples: `references/example-quiz.json` (plain text with numeric, money, and matching questions, version 2), `references/example-written-quiz.json` (written, code, and photo answers, version 2), and `references/example-rich-quiz.json` (Markdown, math, images, and a scenario, version 2; it is the `quiz.json` of a package, so its image files are not included). Skim the one that fits. The essentials:
 
 - Top level: `schemaVersion`, `title` (required), `questions` (1+). Optional: `id`, `description`, `author`, `tags`, `scenarios`, and in version 2 `textFormat`.
-- `schemaVersion` is `1` for plain-text quizzes. Use `2` only when the quiz uses Markdown (`"textFormat": "markdown"`) or images.
+- `schemaVersion` is `1` for plain-text quizzes. Use `2` only when the quiz uses Markdown (`"textFormat": "markdown"`), images, or a version 2 question type.
 - Each question needs a unique `id`, a `type`, and a `prompt`.
 - Scenarios (optional) → top-level `scenarios[]` of `{ id, title?, text }`; a question sets `scenarioId` to show that scenario above its prompt. Every `scenarioId` must match a scenario id, and scenario ids must be unique.
 - `true_false` → boolean `answer`.
 - `multiple_choice` → `choices[]` (2+, unique ids), single `answer` id that matches one choice.
 - `multi_answer` → `choices[]` (2+, unique ids), `answers[]` (non-empty, unique choice ids). Graded correct only on an exact-set match.
+- Version 2 only, auto-graded: `numeric` → number `answer`, optional `tolerance` (absolute ±, default 0), optional `currency` (ISO code like `"USD"`) or `unit` (like `"mm"`). Use it when the answer is a calculated value; set a tolerance that accepts reasonable rounding.
+- Version 2 only, auto-graded with partial credit: `matching` → `items[]` of `{ id, text, answer }` (answer is a choice id), `choices[]` bank (2+, unique ids; extra distractor choices are good), optional `reuseChoices` (default `false`: each choice matches at most one item, so item answers must be unique). Use it for term ↔ definition sets of 4–10 items.
 - Version 2 only: `image` (`{ "src": "images/<file>", "alt": "..." }`) on a question, choice, or scenario. A choice with an image may have `"text": ""`.
 - Version 2 only, not auto-graded: `short_answer` and `long_answer` (text, with optional `minLength`/`maxLength`; `"code": true` plus optional `"language"` makes a code answer), and `image_response` (photos, with optional `maxImages`). Give each one a `sampleAnswer` and a `rubric`. See [Written, code, and photo answers](#written-code-and-photo-answers).
 

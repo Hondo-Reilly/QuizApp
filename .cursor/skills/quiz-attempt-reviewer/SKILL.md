@@ -2,7 +2,7 @@
 name: quiz-attempt-reviewer
 description: Review QuizApp quiz results and tell the user what to study. Use this skill whenever the user shares or mentions a QuizApp attempt export (JSON with `questions` holding `selected`, `correct`, and `flagged`, or an `attempts` array, or an `.attempt` file with photo answers), or asks to grade written, code, or photo answers from a quiz, or asks to go over a quiz or test they took, find their weak spots, explain their mistakes, make a study plan, or build a follow-up practice quiz from their results. Trigger even without the word "QuizApp" when the user pastes graded quiz results and wants feedback. Do NOT use for writing a brand-new quiz with no results to review; that is the quiz-app-maker skill's job.
 metadata:
-  version: "0.7.0"
+  version: "0.8.0"
 ---
 
 # Quiz Attempt Reviewer
@@ -60,6 +60,8 @@ Listing wrong questions is not a review. Group them:
 - **Name the underlying idea.** "Prime numbers" is too broad; "forgetting that larger primes like 11 are prime when scanning a list" is useful. Use the prompt, the correct answer, the `explanation`, the `tags`, and the scenario to name it.
 - **Read the wrong choice as evidence.** The distractor a user picked shows *how* they're thinking. Picking "Sydney" for Australia's capital means confusing the largest city with the capital. Explain that pattern, not just the right answer.
 - **For `multi_answer`, compare sets.** Say which correct choices they missed and which wrong ones they added. Missing items and adding items are different problems.
+- **For `matching`, read the swaps.** Two items that got each other's choices usually mean the user confuses those two concepts. Name the pair.
+- **For `numeric`, check the size of the miss.** Off by a factor of 10, 100, or a unit conversion is a different problem from a wrong formula.
 - **Connect related misses.** Two questions that fail on the same idea are one study item.
 - **With several attempts, look at trends.** Which questions are missed every time? Which were fixed? Which stay flagged? Is the score moving? Match questions by `id`, because order and subsets can differ between attempts.
 
