@@ -5,7 +5,9 @@ import {
   formatShareCode,
   hasUnpublishedChanges,
   normalizeShareCode,
+  originalShareCode,
   sha256Hex,
+  sourceAfterReplace,
   withCloudFields,
   type CloudFetch,
   type CloudShareStore,
@@ -357,5 +359,36 @@ describe("older share servers", () => {
     const cloud = createCloudShare(library.store, fetchWithoutVersion, { baseUrl: BASE, now: () => NOW });
     library.add("cells", bytes(1));
     expect((await cloud.shareQuiz("cells")).version).toBe(1);
+  });
+});
+
+describe("passing on an imported quiz", () => {
+  const source: QuizCloudSource = {
+    code: "44332106",
+    version: 1,
+    sha256: "x",
+    checkedAt: "2026-10-29T00:00:00.000Z",
+  };
+  const meta = (cloudSource?: QuizCloudSource): QuizMetadata => ({
+    id: "q",
+    title: "Q",
+    questionCount: 1,
+    importedAt: "2026-10-01T00:00:00.000Z",
+    folderId: null,
+    cloudSource,
+  });
+
+  it("offers the original code while it works and still matches", () => {
+    expect(originalShareCode(meta(source))).toBe("44332106");
+    expect(originalShareCode(meta())).toBeNull();
+    expect(originalShareCode(meta({ ...source, gone: true }))).toBeNull();
+    expect(originalShareCode(meta({ ...source, replacedLocally: true }))).toBeNull();
+  });
+
+  it("marks a source replaced from a file, and clears that on an update", () => {
+    expect(sourceAfterReplace(source, undefined)).toEqual({ ...source, replacedLocally: true });
+    expect(sourceAfterReplace(undefined, undefined)).toBeUndefined();
+    const updated = { ...source, version: 2 };
+    expect(sourceAfterReplace({ ...source, replacedLocally: true }, updated)).toBe(updated);
   });
 });

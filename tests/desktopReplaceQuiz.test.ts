@@ -89,6 +89,17 @@ describe("replacing a desktop quiz in place", () => {
     expect((await store.listQuizzes()).map((q) => q.id)).toEqual(["shared"]);
   });
 
+  it("marks an imported quiz replaced from a file as no longer matching its code", async () => {
+    const bytes = writeQuizPackage(quizWithImage("images/new.png", "Mine"), new Map([["images/new.png", PNG2]]));
+    const meta = await store.replaceQuizBytes("shared", bytes);
+    expect(meta.cloudSource).toMatchObject({ code: "87654321", version: 2, replacedLocally: true });
+    // Restore the title the next test expects.
+    await store.replaceQuizBytes(
+      "shared",
+      writeQuizPackage(quizWithImage("images/new.png", "New"), new Map([["images/new.png", PNG2]])),
+    );
+  });
+
   it("leaves the old quiz whole when the new file is bad", async () => {
     await expect(store.replaceQuizBytes("shared", new TextEncoder().encode("{"))).rejects.toThrow();
     expect((await store.getQuiz("shared"))?.title).toBe("New");

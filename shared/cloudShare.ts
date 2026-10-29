@@ -44,6 +44,28 @@ export function hasUnpublishedChanges(meta: QuizMetadata): boolean {
   return Date.parse(meta.updatedAt) > Date.parse(meta.share.publishedAt);
 }
 
+/**
+ * The source to keep when a quiz's content is replaced: the new one from an
+ * update, or the old one marked as no longer matching its code.
+ */
+export function sourceAfterReplace(
+  existing: QuizCloudSource | undefined,
+  incoming: QuizCloudSource | undefined,
+): QuizCloudSource | undefined {
+  if (incoming) return incoming;
+  return existing && { ...existing, replacedLocally: true };
+}
+
+/**
+ * The code someone should pass on instead of uploading a copy: the code an
+ * imported quiz came from, while it still works and the quiz still matches it.
+ */
+export function originalShareCode(meta: QuizMetadata): string | null {
+  const source = meta.cloudSource;
+  if (!source || source.gone || source.replacedLocally) return null;
+  return source.code;
+}
+
 /** Share fields to change on a stored quiz. Undefined keeps a field; null removes it. */
 export interface CloudFields {
   share?: QuizShare | null;

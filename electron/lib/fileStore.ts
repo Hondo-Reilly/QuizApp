@@ -12,7 +12,11 @@ import {
 } from "../../shared/quizPackage";
 import { withSvgRasterizer } from "./svgRaster";
 import { collectDescendantFolderIds, toMetadata } from "../../shared/library";
-import { withCloudFields, type CloudFields } from "../../shared/cloudShare";
+import {
+  sourceAfterReplace,
+  withCloudFields,
+  type CloudFields,
+} from "../../shared/cloudShare";
 import { allocateStorageId, slugifyTitle } from "../../shared/storageId";
 import { DamagedStoreError, readJsonIfPresent, writeJsonAtomic } from "./durableJson";
 import type {
@@ -306,7 +310,7 @@ async function swapQuiz(
     updatedAt: new Date().toISOString(),
   };
   if (existing.share) meta.share = existing.share;
-  const source = cloudSource ?? existing.cloudSource;
+  const source = sourceAfterReplace(existing.cloudSource, cloudSource);
   if (source) meta.cloudSource = source;
   await writeIndex({
     ...index,

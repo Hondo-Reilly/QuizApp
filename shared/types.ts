@@ -206,6 +206,8 @@ export interface QuizCloudSource {
   available?: { version: number; sha256: string };
   /** The server no longer has the file. Gone codes are not checked again. */
   gone?: boolean;
+  /** The quiz was replaced from a file, so it may differ from what the code holds. */
+  replacedLocally?: boolean;
 }
 
 /** What the share server says about a code before it is downloaded. */

@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { withCloudFields, type CloudFields } from "@shared/cloudShare";
+import { sourceAfterReplace, withCloudFields, type CloudFields } from "@shared/cloudShare";
 import { collectDescendantFolderIds, toMetadata } from "@shared/library";
 import { parseQuiz } from "@shared/schema";
 import { imageContentType, imageRefs } from "@shared/quizContent";
@@ -134,7 +134,7 @@ export async function replaceBrowserQuizBytes(
     updatedAt: new Date().toISOString(),
   };
   if (existing.share) meta.share = existing.share;
-  const source = cloudSource ?? existing.cloudSource;
+  const source = sourceAfterReplace(existing.cloudSource, cloudSource);
   if (source) meta.cloudSource = source;
 
   const stale = (await quizRecordDeletes(id)).filter(

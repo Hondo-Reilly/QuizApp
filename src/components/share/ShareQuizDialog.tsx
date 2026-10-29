@@ -3,7 +3,11 @@ import { quizApi } from "@/api/quizApi";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { errorText, formatDay, liveShare, shareExpiresSoon } from "@/lib/shareText";
-import { formatShareCode, hasUnpublishedChanges } from "@shared/cloudShare";
+import {
+  formatShareCode,
+  hasUnpublishedChanges,
+  originalShareCode,
+} from "@shared/cloudShare";
 import type { QuizMetadata } from "@shared/types";
 
 export interface ShareQuizDialogProps {
@@ -29,12 +33,14 @@ export function ShareQuizDialog({ open, quiz, onClose, onChanged }: ShareQuizDia
   const [busy, setBusy] = useState<Action | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [ownCopy, setOwnCopy] = useState(false);
 
   useEffect(() => {
     if (open) {
       setBusy(null);
       setError(null);
       setCopied(false);
+      setOwnCopy(false);
     }
   }, [open, quiz?.id]);
 
@@ -42,6 +48,10 @@ export function ShareQuizDialog({ open, quiz, onClose, onChanged }: ShareQuizDia
   const share = liveShare(quiz);
   const lapsed = !!quiz.share && !share;
   const unpublished = !!share && hasUnpublishedChanges(quiz);
+  // An imported quiz passes on the code it came from, unless the user asks for their own.
+  const fromCode = share ? null : originalShareCode(quiz);
+  const original = ownCopy ? null : fromCode;
+  const shownCode = share?.code ?? original;
 
   const act = async (action: Action, work: () => Promise<unknown>) => {
     setBusy(action);
@@ -69,16 +79,32 @@ export function ShareQuizDialog({ open, quiz, onClose, onChanged }: ShareQuizDia
   };
 
   const copyCode = async () => {
-    if (!share) return;
+    if (!shownCode) return;
     try {
-      await navigator.clipboard.writeText(share.code);
+      await navigator.clipboard.writeText(shownCode);
       setCopied(true);
     } catch {
       setError("Could not copy the code. Select it and copy it instead.");
     }
   };
 
-  const footer = share ? (
+  const codeBox = shownCode && (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
+      <span
+        className="select-all font-mono text-3xl font-semibold tracking-widest text-slate-900 dark:text-neutral-100"
+        aria-label={`Share code ${shownCode.split("").join(" ")}`}
+      >
+        {formatShareCode(shownCode)}
+      </span>
+      <Button variant="secondary" size="sm" onClick={() => void copyCode()}>
+        {copied ? "Copied" : "Copy"}
+      </Button>
+    </div>
+  );
+
+  const footer = original ? (
+    <Button onClick={onClose}>Done</Button>
+  ) : share ? (
     <>
       <Button variant="ghost" onClick={stopSharing} disabled={busy !== null} className="mr-auto">
         {busy === "stop" ? busyLabels.stop : "Stop sharing"}
@@ -118,19 +144,27 @@ export function ShareQuizDialog({ open, quiz, onClose, onChanged }: ShareQuizDia
   return (
     <Modal open={open} title={`Share "${quiz.title}"`} onClose={onClose} footer={footer}>
       <div className="flex flex-col gap-4">
-        {share ? (
+        {original ? (
           <>
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-              <span
-                className="select-all font-mono text-3xl font-semibold tracking-widest text-slate-900 dark:text-neutral-100"
-                aria-label={`Share code ${share.code.split("").join(" ")}`}
-              >
-                {formatShareCode(share.code)}
-              </span>
-              <Button variant="secondary" size="sm" onClick={() => void copyCode()}>
-                {copied ? "Copied" : "Copy"}
-              </Button>
-            </div>
+            {codeBox}
+            <p className={noteClass}>
+              You imported this quiz from this code. Pass the same code on: anyone who imports
+              it gets the original author's updates too.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setOwnCopy(true);
+                setCopied(false);
+              }}
+              className="self-start text-sm font-medium text-brand-700 hover:underline dark:text-brand-300"
+            >
+              Share my own copy instead
+            </button>
+          </>
+        ) : share ? (
+          <>
+            {codeBox}
             <p className={noteClass}>
               Anyone with this code can import the quiz with "Import quiz", then "From share
               code". They get your updates after you publish them.
@@ -170,6 +204,12 @@ export function ShareQuizDialog({ open, quiz, onClose, onChanged }: ShareQuizDia
           </>
         ) : (
           <>
+            {fromCode && (
+              <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                Your copy gets a new code. People who import it get only the updates you
+                publish, not the original author's.
+              </p>
+            )}
             {lapsed && (
               <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-300">
                 The code {formatShareCode(quiz.share!.code)} expired and no longer works.
