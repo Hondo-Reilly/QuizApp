@@ -12,12 +12,14 @@ import {
 } from "../../shared/quizPackage";
 import { withSvgRasterizer } from "./svgRaster";
 import { collectDescendantFolderIds, toMetadata } from "../../shared/library";
+import { withCloudFields, type CloudFields } from "../../shared/cloudShare";
 import { allocateStorageId, slugifyTitle } from "../../shared/storageId";
 import { DamagedStoreError, readJsonIfPresent, writeJsonAtomic } from "./durableJson";
 import type {
   Folder,
   LibrarySnapshot,
   Quiz,
+  QuizCloudSource,
   QuizMetadata,
 } from "../../shared/types";
 import { deleteAttemptsForQuizzes } from "./attemptStore";
@@ -99,6 +101,11 @@ export async function librarySnapshot(): Promise<LibrarySnapshot> {
   return { folders, quizzes };
 }
 
+export async function getQuizMetadata(id: string): Promise<QuizMetadata | null> {
+  const index = await readIndex();
+  return index.quizzes.find((q) => q.id === id) ?? null;
+}
+
 export async function listQuizzes(): Promise<QuizMetadata[]> {
   const snap = await librarySnapshot();
   return snap.quizzes;
@@ -143,9 +150,57 @@ export function importQuizFromFile(
   folderId: string | null = null,
   withRasterizer: typeof withSvgRasterizer = withSvgRasterizer,
 ): Promise<QuizMetadata> {
+  return libraryWrites.enqueue(async () => {
+    const bytes = new Uint8Array(await fs.readFile(sourcePath));
+    return withRasterizer((rasterize) => addQuiz(bytes, folderId, rasterize));
+  });
+}
+
+/** Imports quiz bytes that came from somewhere other than a file, like a share code. */
+export function importQuizBytes(
+  bytes: Uint8Array,
+  folderId: string | null,
+  cloudSource?: QuizCloudSource,
+  withRasterizer: typeof withSvgRasterizer = withSvgRasterizer,
+): Promise<QuizMetadata> {
   return libraryWrites.enqueue(() =>
-    withRasterizer((rasterize) => importQuizFile(sourcePath, folderId, rasterize)),
+    withRasterizer((rasterize) => addQuiz(bytes, folderId, rasterize, cloudSource)),
   );
+}
+
+/**
+ * Replaces a quiz's content with a new .json or .quiz file, keeping its id,
+ * folder, share and attempts.
+ */
+export function replaceQuizBytes(
+  id: string,
+  bytes: Uint8Array,
+  cloudSource?: QuizCloudSource,
+  withRasterizer: typeof withSvgRasterizer = withSvgRasterizer,
+): Promise<QuizMetadata> {
+  return libraryWrites.enqueue(() =>
+    withRasterizer((rasterize) => swapQuiz(id, bytes, rasterize, cloudSource)),
+  );
+}
+
+/** Changes share fields of stored quizzes, reading each one's metadata at write time. */
+export function updateCloudFields(
+  ids: readonly string[],
+  update: (meta: QuizMetadata) => CloudFields | null,
+): Promise<void> {
+  return libraryWrites.enqueue(async () => {
+    const wanted = new Set(ids);
+    const index = await readIndex();
+    let changed = false;
+    const quizzes = index.quizzes.map((meta) => {
+      if (!wanted.has(meta.id)) return meta;
+      const fields = update(meta);
+      if (!fields) return meta;
+      changed = true;
+      return withCloudFields(meta, fields);
+    });
+    if (changed) await writeIndex({ ...index, quizzes });
+  });
 }
 
 async function removeQuizAssets(id: string): Promise<void> {
@@ -164,12 +219,12 @@ async function writeQuizAssets(
   }
 }
 
-async function importQuizFile(
-  sourcePath: string,
+async function addQuiz(
+  bytes: Uint8Array,
   folderId: string | null,
   rasterize: SvgRasterizer,
+  cloudSource?: QuizCloudSource,
 ): Promise<QuizMetadata> {
-  const bytes = new Uint8Array(await fs.readFile(sourcePath));
   const { quiz: parsed, assets } = await convertSvgImages(readQuizFile(bytes), rasterize);
 
   const index = await readIndex();
@@ -197,9 +252,65 @@ async function importQuizFile(
   const resolvedFolderId = folderExists ? folderId : null;
 
   const meta = toMetadata(quiz, new Date().toISOString(), resolvedFolderId);
+  if (cloudSource) meta.cloudSource = cloudSource;
   await writeIndex({
     ...index,
     quizzes: [...index.quizzes.filter((q) => q.id !== id), meta],
+  });
+  return meta;
+}
+
+async function swapQuiz(
+  id: string,
+  bytes: Uint8Array,
+  rasterize: SvgRasterizer,
+  cloudSource?: QuizCloudSource,
+): Promise<QuizMetadata> {
+  const index = await readIndex();
+  const existing = index.quizzes.find((q) => q.id === id);
+  if (!existing) throw new Error("Quiz not found");
+  const { quiz: parsed, assets } = await convertSvgImages(readQuizFile(bytes), rasterize);
+  const quiz: Quiz = { ...parsed, id } as Quiz;
+
+  // Write the new images beside the old ones, then swap the folders, so a
+  // failure part way leaves the old quiz whole.
+  const assetsDir = quizAssetsDir(id);
+  const nextDir = `${assetsDir}.next`;
+  const oldDir = `${assetsDir}.old`;
+  await fs.rm(nextDir, { recursive: true, force: true });
+  await fs.rm(oldDir, { recursive: true, force: true });
+  try {
+    for (const [rel, data] of assets) {
+      const file = path.join(nextDir, path.relative(assetsDir, quizAssetFile(id, rel)));
+      await fs.mkdir(path.dirname(file), { recursive: true });
+      await fs.writeFile(file, data);
+    }
+  } catch (err) {
+    await fs.rm(nextDir, { recursive: true, force: true });
+    throw err;
+  }
+  const hadAssets = existsSync(assetsDir);
+  if (hadAssets) await fs.rename(assetsDir, oldDir);
+  if (existsSync(nextDir)) await fs.rename(nextDir, assetsDir);
+  try {
+    await writeJsonAtomic(quizFile(id), quiz);
+  } catch (err) {
+    await fs.rm(assetsDir, { recursive: true, force: true });
+    if (hadAssets) await fs.rename(oldDir, assetsDir);
+    throw err;
+  }
+  await fs.rm(oldDir, { recursive: true, force: true });
+
+  const meta: QuizMetadata = {
+    ...toMetadata(quiz, existing.importedAt, existing.folderId),
+    updatedAt: new Date().toISOString(),
+  };
+  if (existing.share) meta.share = existing.share;
+  const source = cloudSource ?? existing.cloudSource;
+  if (source) meta.cloudSource = source;
+  await writeIndex({
+    ...index,
+    quizzes: index.quizzes.map((q) => (q.id === id ? meta : q)),
   });
   return meta;
 }

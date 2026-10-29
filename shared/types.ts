@@ -173,6 +173,50 @@ export interface QuizMetadata {
   questionCount: number;
   importedAt: string;
   folderId: string | null;
+  /** When the quiz content was last replaced. Missing until the first replace. */
+  updatedAt?: string;
+  /** Set on a quiz this library shared to the cloud. */
+  share?: QuizShare;
+  /** Set on a quiz imported from a share code. */
+  cloudSource?: QuizCloudSource;
+}
+
+/** A quiz this library uploaded, and the secret that lets it change the upload. */
+export interface QuizShare {
+  /** 8-digit share code. */
+  code: string;
+  manageToken: string;
+  version: number;
+  sha256: string;
+  expiresAt: string | null;
+  sharedAt: string;
+  /** When the current server version was uploaded. */
+  publishedAt: string;
+  /** The server no longer has the file, usually because it expired. */
+  gone?: boolean;
+}
+
+/** Where a quiz imported from a share code came from, and what the server has now. */
+export interface QuizCloudSource {
+  code: string;
+  version: number;
+  sha256: string;
+  checkedAt: string;
+  /** A newer version the last check found. */
+  available?: { version: number; sha256: string };
+  /** The server no longer has the file. Gone codes are not checked again. */
+  gone?: boolean;
+}
+
+/** What the share server says about a code before it is downloaded. */
+export interface SharedQuizInfo {
+  code: string;
+  version: number;
+  filename: string;
+  size: number;
+  sha256: string;
+  updatedAt: string;
+  expiresAt: string | null;
 }
 
 export interface Folder {

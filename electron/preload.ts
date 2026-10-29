@@ -14,7 +14,9 @@ import type {
   Quiz,
   QuizAttempt,
   QuizMetadata,
+  QuizShare,
   SaveAttemptInput,
+  SharedQuizInfo,
   UpdateCheck,
   UpdateProgress,
 } from "../shared/types";
@@ -38,6 +40,24 @@ const quizApi: QuizApi = {
     ipcRenderer.invoke(IpcChannels.deleteQuiz, id),
   moveQuiz: (id: string, folderId: string | null): Promise<void> =>
     ipcRenderer.invoke(IpcChannels.moveQuiz, { id, folderId }),
+  replaceQuizFromFile: (id: string): Promise<QuizMetadata | null> =>
+    ipcRenderer.invoke(IpcChannels.replaceQuizFromFile, id),
+  shareQuiz: (id: string): Promise<QuizShare> =>
+    ipcRenderer.invoke(IpcChannels.shareQuiz, id),
+  publishQuizUpdate: (id: string): Promise<QuizShare> =>
+    ipcRenderer.invoke(IpcChannels.publishQuizUpdate, id),
+  extendQuizShare: (id: string): Promise<QuizShare> =>
+    ipcRenderer.invoke(IpcChannels.extendQuizShare, id),
+  unshareQuiz: (id: string): Promise<void> =>
+    ipcRenderer.invoke(IpcChannels.unshareQuiz, id),
+  previewSharedQuiz: (code: string): Promise<SharedQuizInfo> =>
+    ipcRenderer.invoke(IpcChannels.previewSharedQuiz, code),
+  importSharedQuiz: (code: string, folderId: string | null): Promise<QuizMetadata> =>
+    ipcRenderer.invoke(IpcChannels.importSharedQuiz, { code, folderId }),
+  checkSharedQuizzes: (): Promise<void> =>
+    ipcRenderer.invoke(IpcChannels.checkSharedQuizzes),
+  updateSharedQuiz: (id: string): Promise<QuizMetadata> =>
+    ipcRenderer.invoke(IpcChannels.updateSharedQuiz, id),
   librarySnapshot: (): Promise<LibrarySnapshot> =>
     ipcRenderer.invoke(IpcChannels.librarySnapshot),
   createFolder: (payload: CreateFolderPayload): Promise<Folder> =>
