@@ -172,6 +172,8 @@ export interface QuizMetadata {
   tags?: string[];
   questionCount: number;
   importedAt: string;
+  /** When the quiz was last saved in the editor. Missing until then. */
+  updatedAt?: string;
   folderId: string | null;
 }
 
@@ -244,6 +246,8 @@ export interface QuizAttempt {
   /** Whether the user chose to mark their own open answers for this attempt. */
   selfMarking?: boolean;
   selfMarks?: Record<string, SelfMark>;
+  /** Missing until an edit changes a question this attempt asked. */
+  snapshot?: AttemptSnapshot;
 }
 
 /** A photo taken for an image response, already resized and re-encoded as JPEG. */
@@ -251,6 +255,16 @@ export interface AttemptPhoto {
   /** File name the answers refer to, e.g. "q10-1.jpg". */
   name: string;
   data: Uint8Array;
+}
+
+/**
+ * The questions an attempt asked, as they were. Saved on the attempt when an
+ * edit changes them, so its review keeps showing what was actually asked.
+ */
+export interface AttemptSnapshot {
+  textFormat?: TextFormat;
+  scenarios?: Scenario[];
+  questions: Question[];
 }
 
 /** A new score after self-marks change. */

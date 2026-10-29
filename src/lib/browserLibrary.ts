@@ -7,15 +7,23 @@ import { base64ToBytes, rasterizeSvgInPage } from "@shared/svgRaster";
 import { allocateStorageId, slugifyTitle } from "@shared/storageId";
 import type { Folder, LibrarySnapshot, Quiz, QuizMetadata } from "@shared/types";
 import type { CreateFolderPayload, UpdateFolderPayload } from "@shared/quizApi";
-import { attemptChangesWithoutQuizzes } from "./browserAttempts";
+import { attemptChangesForSavedQuiz, attemptChangesWithoutQuizzes } from "./browserAttempts";
 import {
   assetKey,
+  assetKeyPrefix,
   changeRecords,
   LIBRARY_KEY,
   quizKey,
+  readKeysWithPrefix,
   readRecord,
   type RecordChange,
 } from "./idbRecords";
+import {
+  missingImage,
+  missingImageMessage,
+  prepareSavedQuiz,
+  savedMetadata,
+} from "@shared/quizSave";
 
 interface LibraryRecord {
   folders: Folder[];
@@ -94,14 +102,59 @@ export async function importQuizBytes(
   return meta;
 }
 
-/** Deletes for a quiz record and every image it references. */
+/**
+ * Deletes for a quiz record and every image stored with it, including images
+ * an edit stopped using, which past attempts' snapshots may still show.
+ */
 async function quizRecordDeletes(id: string): Promise<RecordChange[]> {
-  const stored = await readRecord<Quiz>(quizKey(id));
-  const paths = stored ? imageRefs(stored) : [];
+  const assetKeys = await readKeysWithPrefix(assetKeyPrefix(id));
   return [
     { key: quizKey(id), delete: true },
-    ...paths.map((path) => ({ key: assetKey(id, path), delete: true as const })),
+    ...assetKeys.map((key) => ({ key, delete: true as const })),
   ];
+}
+
+/** Stores a quiz made in the editor. It starts without images. */
+export async function createBrowserQuiz(raw: unknown, folderId: string | null): Promise<QuizMetadata> {
+  const library = await readLibrary();
+  const title = raw && typeof raw === "object" ? String((raw as { title?: unknown }).title ?? "") : "";
+  const id = allocateStorageId(undefined, title, new Set(library.quizzes.map((quiz) => quiz.id)), () => nanoid(6));
+  const quiz = prepareSavedQuiz(raw, id);
+  const missing = missingImage(quiz, () => false);
+  if (missing) throw new Error(missingImageMessage(missing));
+  const folderExists = folderId === null || library.folders.some((folder) => folder.id === folderId);
+  const meta = toMetadata(quiz, new Date().toISOString(), folderExists ? folderId : null);
+  await changeRecords([
+    { key: quizKey(id), value: quiz },
+    { key: LIBRARY_KEY, value: { ...library, quizzes: [...library.quizzes, meta] } },
+  ]);
+  return meta;
+}
+
+/**
+ * Saves an edited quiz over the stored one, in one transaction with the
+ * attempts' copies of what they asked. Its images must already be stored.
+ */
+export async function saveBrowserQuiz(raw: unknown): Promise<QuizMetadata> {
+  const id = raw && typeof raw === "object" ? (raw as { id?: unknown }).id : undefined;
+  const previous = typeof id === "string" ? await getBrowserQuiz(id) : null;
+  const library = await readLibrary();
+  const entry = library.quizzes.find((quiz) => quiz.id === id);
+  if (!previous || !entry) throw new Error("Quiz not found");
+  const quiz = prepareSavedQuiz(raw, previous.id);
+  const stored = new Set(await readKeysWithPrefix(assetKeyPrefix(quiz.id)));
+  const missing = missingImage(quiz, (src) => stored.has(assetKey(quiz.id, src)));
+  if (missing) throw new Error(missingImageMessage(missing));
+  const meta = savedMetadata(entry, quiz, new Date().toISOString());
+  await changeRecords([
+    ...(await attemptChangesForSavedQuiz(previous, quiz)),
+    { key: quizKey(quiz.id), value: quiz },
+    {
+      key: LIBRARY_KEY,
+      value: { ...library, quizzes: library.quizzes.map((item) => (item.id === quiz.id ? meta : item)) },
+    },
+  ]);
+  return meta;
 }
 
 interface StoredAsset {

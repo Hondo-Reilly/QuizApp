@@ -1,7 +1,7 @@
 import { strToU8, zipSync, type Zippable } from "fflate";
 import { quizApi } from "@/api/quizApi";
 import { flaggedIds } from "@shared/attemptFlags";
-import { attemptPhotoNames } from "@shared/attemptRecord";
+import { attemptPhotoNames, attemptQuestions, quizForAttempt } from "@shared/attemptRecord";
 import { questionCredit, questionOutcome } from "@shared/grading";
 import { isPhotoAnswer } from "@shared/questionTypes";
 import { imageRefs } from "@shared/quizContent";
@@ -37,6 +37,10 @@ export type ExportedQuestion = Question & {
 
 export interface ExportedAttempt {
   id: string;
+  /** Present when the quiz was edited after this attempt: its scenarios as they were. */
+  scenarios?: Scenario[];
+  /** Present when the quiz was edited after this attempt: its text format as it was. */
+  textFormat?: TextFormat;
   completedAt: string;
   correct: number;
   wrong: number;
@@ -79,11 +83,9 @@ export interface AllAttemptsExport {
   attempts: ExportedAttempt[];
 }
 
+// Attempts saved before an edit export the questions as they were asked.
 function questionsForAttempt(quiz: Quiz, attempt: QuizAttempt): Question[] {
-  const byId = new Map(quiz.questions.map((question) => [question.id, question]));
-  return attempt.questionIds
-    .map((questionId) => byId.get(questionId))
-    .filter((question): question is Question => !!question);
+  return attemptQuestions(quiz, attempt);
 }
 
 function exportQuestions(
@@ -115,6 +117,9 @@ function exportAttempt(attempt: QuizAttempt, questions: readonly Question[]): Ex
   const exported = exportQuestions(attempt, questions);
   return {
     id: attempt.id,
+    ...(attempt.snapshot
+      ? { scenarios: attempt.snapshot.scenarios, textFormat: attempt.snapshot.textFormat }
+      : {}),
     completedAt: attempt.completedAt,
     correct: attempt.correct,
     wrong: Math.max(0, attempt.total - attempt.correct),
@@ -132,6 +137,7 @@ export function buildAttemptExport(
   questions: readonly Question[],
 ): AttemptExport {
   const exported = exportAttempt(attempt, questions);
+  const asked = quizForAttempt(quiz, attempt);
   return {
     schemaVersion: 2,
     id: quiz.id,
@@ -139,8 +145,8 @@ export function buildAttemptExport(
     description: quiz.description,
     author: quiz.author,
     tags: quiz.tags,
-    textFormat: quiz.textFormat,
-    scenarios: quiz.scenarios,
+    textFormat: asked.textFormat,
+    scenarios: asked.scenarios,
     completedAt: exported.completedAt,
     correct: exported.correct,
     wrong: exported.wrong,
@@ -224,7 +230,10 @@ async function buildAttemptPackage(
       files[exportedPhotoPath(attempt.id, name)] = [bytes, { level: 0 }];
     }
   }
-  const images = imageRefs(quiz);
+  // Edited quizzes can have attempts that showed images the quiz no longer uses.
+  const images = [
+    ...new Set([quiz, ...attempts.map((attempt) => quizForAttempt(quiz, attempt))].flatMap((item) => imageRefs(item))),
+  ];
   if (images.length > 0) {
     const urls = await quizApi.getQuizAssetUrls(quiz.id, images);
     for (const path of images) {

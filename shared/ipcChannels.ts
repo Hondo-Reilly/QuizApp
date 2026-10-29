@@ -2,6 +2,8 @@ export const IpcChannels = {
   importQuiz: "quiz:import",
   listQuizzes: "quiz:list",
   getQuiz: "quiz:get",
+  createQuiz: "quiz:create",
+  saveQuiz: "quiz:save",
   exportQuiz: "quiz:export",
   revealQuiz: "quiz:reveal",
   deleteQuiz: "quiz:delete",

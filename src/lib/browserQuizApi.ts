@@ -11,6 +11,7 @@ import {
 } from "./browserAttempts";
 import {
   createBrowserFolder,
+  createBrowserQuiz,
   deleteBrowserFolder,
   deleteBrowserQuiz,
   getBrowserQuiz,
@@ -18,6 +19,7 @@ import {
   importQuizBytes,
   librarySnapshot,
   moveBrowserQuiz,
+  saveBrowserQuiz,
   updateBrowserFolder,
 } from "./browserLibrary";
 import { clearAppLocalStorage } from "./appStorage";
@@ -72,6 +74,8 @@ export const browserQuizApi: QuizApi = {
       return snap.quizzes;
     }),
   getQuiz: (id) => run(() => getBrowserQuiz(id)),
+  createQuiz: (quiz, folderId = null) => run(() => createBrowserQuiz(quiz, folderId)),
+  saveQuiz: (quiz) => run(() => saveBrowserQuiz(quiz)),
   exportQuiz: (id) =>
     run(async () => {
       const exported = await exportBrowserQuiz(id);

@@ -4,6 +4,9 @@ import { isSelfMark } from "./selfMarks";
 import type {
   AttemptPhoto,
   AttemptScore,
+  AttemptSnapshot,
+  Question,
+  Quiz,
   QuizAttempt,
   SaveAttemptInput,
   SelfMark,
@@ -92,4 +95,58 @@ export function withAttemptSelfMarks(
   const next = attempts.slice();
   next[index] = attempt;
   return { attempts: next, attempt };
+}
+
+/** What an attempt asked from a quiz: its questions in order, their scenarios, and the text format. */
+function askedContent(quiz: Quiz, questionIds: readonly string[]): AttemptSnapshot {
+  const byId = new Map(quiz.questions.map((question) => [question.id, question]));
+  const questions = questionIds
+    .map((id) => byId.get(id))
+    .filter((question): question is Question => !!question);
+  const used = new Set(questions.map((question) => question.scenarioId).filter(Boolean));
+  const scenarios = (quiz.scenarios ?? []).filter((scenario) => used.has(scenario.id));
+  return {
+    textFormat: quiz.textFormat,
+    ...(scenarios.length > 0 ? { scenarios } : {}),
+    questions,
+  };
+}
+
+/**
+ * Before a quiz is saved over, keeps a copy of what each of its attempts asked
+ * whenever the edit changes it. An attempt that already has a copy keeps it.
+ */
+export function withQuizSnapshots(
+  attempts: readonly QuizAttempt[],
+  previous: Quiz,
+  next: Quiz,
+): { attempts: QuizAttempt[]; changed: boolean } {
+  let changed = false;
+  const out = attempts.map((attempt) => {
+    if (attempt.quizId !== previous.id || attempt.snapshot) return attempt;
+    const before = askedContent(previous, attempt.questionIds);
+    if (JSON.stringify(before) === JSON.stringify(askedContent(next, attempt.questionIds))) {
+      return attempt;
+    }
+    changed = true;
+    return { ...attempt, snapshot: before };
+  });
+  return { attempts: out, changed };
+}
+
+/** The quiz as the attempt saw it: its snapshot, when an edit has changed the quiz since. */
+export function quizForAttempt(quiz: Quiz, attempt: Pick<QuizAttempt, "snapshot">): Quiz {
+  const snapshot = attempt.snapshot;
+  if (!snapshot) return quiz;
+  return {
+    ...quiz,
+    textFormat: snapshot.textFormat,
+    scenarios: snapshot.scenarios,
+    questions: snapshot.questions,
+  };
+}
+
+/** The attempt's questions in the order they were asked, as they were asked. */
+export function attemptQuestions(quiz: Quiz, attempt: Pick<QuizAttempt, "snapshot" | "questionIds">): Question[] {
+  return askedContent(quizForAttempt(quiz, attempt), attempt.questionIds).questions;
 }

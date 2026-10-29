@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import { nanoid } from "nanoid";
 import { withAttemptFlags } from "../../shared/attemptFlags";
-import { buildAttempt, withAttemptSelfMarks } from "../../shared/attemptRecord";
-import type { AttemptScore, QuizAttempt, SaveAttemptInput } from "../../shared/types";
+import { buildAttempt, withAttemptSelfMarks, withQuizSnapshots } from "../../shared/attemptRecord";
+import type { AttemptScore, Quiz, QuizAttempt, SaveAttemptInput } from "../../shared/types";
 import { DamagedStoreError, readJsonIfPresent, writeJsonAtomic } from "./durableJson";
 import { createMutationQueue } from "./mutationQueue";
 import { attemptPhotoFile, attemptPhotosDir, attemptsFile } from "./paths";
@@ -130,6 +130,15 @@ async function removeAttempts(ids: string[]): Promise<void> {
   if (next.length === file.attempts.length) return;
   await writeAttempts({ ...file, attempts: next });
   await removeAttemptPhotos(ids);
+}
+
+/** Before a quiz is saved over, keeps a copy of what its attempts asked, where the edit changes it. */
+export function snapshotAttemptsForQuiz(previous: Quiz, next: Quiz): Promise<void> {
+  return attemptWrites.enqueue(async () => {
+    const file = await readAttempts();
+    const result = withQuizSnapshots(file.attempts, previous, next);
+    if (result.changed) await writeAttempts({ ...file, attempts: result.attempts });
+  });
 }
 
 export function deleteAttemptsForQuizzes(quizIds: string[]): Promise<void> {

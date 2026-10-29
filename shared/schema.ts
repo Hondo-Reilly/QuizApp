@@ -7,7 +7,7 @@ import {
 } from "./quizContent";
 import { isCurrencyCode } from "./numeric";
 import { isOpenQuestion, MAX_IMAGES_LIMIT, MAX_TEXT_LENGTH } from "./questionTypes";
-import type { Quiz } from "./types";
+import type { QuestionType, Quiz } from "./types";
 
 const imageSchema = z.object({
   src: z.string().refine(isPackageImagePath, {
@@ -187,6 +187,18 @@ const imageResponseSchema = baseQuestion.extend({
   ...openFields,
   maxImages: z.number().int().min(1).max(MAX_IMAGES_LIMIT).optional(),
 });
+
+/** Each question type's own schema, for errors that point at one field. */
+export const questionSchemas = {
+  true_false: trueFalseSchema,
+  multiple_choice: multipleChoiceSchema,
+  multi_answer: multiAnswerSchema,
+  numeric: numericSchema,
+  matching: matchingSchema,
+  short_answer: shortAnswerSchema,
+  long_answer: longAnswerSchema,
+  image_response: imageResponseSchema,
+} satisfies Record<QuestionType, z.ZodTypeAny>;
 
 export const questionSchema = z.union([
   trueFalseSchema,

@@ -11,6 +11,7 @@ import { formatTimeTaken } from "@/lib/formatDuration";
 import { useSavedAttempt } from "@/hooks/useSavedAttempt";
 import { useAttemptFlags } from "@/hooks/useAttemptFlags";
 import { flaggedIds } from "@shared/attemptFlags";
+import { attemptQuestions, quizForAttempt } from "@shared/attemptRecord";
 import { useAttemptSelfMarks, type SelfMarkState } from "@/hooks/useAttemptSelfMarks";
 import {
   PhotoSourceProvider,
@@ -66,13 +67,12 @@ export function QuizAttemptPage() {
   const flaggedSet = useMemo(() => new Set(flaggedList), [flaggedList]);
   const photoSource = useAttemptPhotoSource(attempt?.id ?? null);
 
-  const questions = useMemo(() => {
-    if (!quiz || !attempt) return [] as Question[];
-    const byId = new Map(quiz.questions.map((question) => [question.id, question]));
-    return attempt.questionIds
-      .map((questionId) => byId.get(questionId))
-      .filter((question): question is Question => !!question);
-  }, [quiz, attempt]);
+  // The questions as this attempt asked them, even if the quiz was edited since.
+  const asked = useMemo(() => (quiz && attempt ? quizForAttempt(quiz, attempt) : null), [quiz, attempt]);
+  const questions = useMemo(
+    () => (asked && attempt ? attemptQuestions(asked, attempt) : ([] as Question[])),
+    [asked, attempt],
+  );
 
   const applyMarks = useCallback(
     (next: SelfMarkState) => {
@@ -104,7 +104,7 @@ export function QuizAttemptPage() {
     return <LoadingMessage />;
   }
 
-  if (error || !quiz || !attempt) {
+  if (error || !quiz || !attempt || !asked) {
     return (
       <PageErrorState
         message={error ?? "Attempt not found."}
@@ -115,7 +115,7 @@ export function QuizAttemptPage() {
   }
 
   return (
-    <QuizContentProvider quiz={quiz}>
+    <QuizContentProvider quiz={asked}>
       <PhotoSourceProvider source={photoSource ?? NO_PHOTOS}>
       <DetailPageLayout
         width="3xl"
@@ -149,7 +149,7 @@ export function QuizAttemptPage() {
         )}
         <QuestionAnswerList
           questions={questions}
-          scenarios={quiz.scenarios}
+          scenarios={asked.scenarios}
           answers={attempt.answers}
           flagged={flaggedSet}
           onToggleFlag={flags.toggle}

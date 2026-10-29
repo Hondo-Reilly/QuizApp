@@ -13,6 +13,12 @@ import {
 import { withSvgRasterizer } from "./svgRaster";
 import { collectDescendantFolderIds, toMetadata } from "../../shared/library";
 import { allocateStorageId, slugifyTitle } from "../../shared/storageId";
+import {
+  missingImage,
+  missingImageMessage,
+  prepareSavedQuiz,
+  savedMetadata,
+} from "../../shared/quizSave";
 import { DamagedStoreError, readJsonIfPresent, writeJsonAtomic } from "./durableJson";
 import type {
   Folder,
@@ -20,7 +26,7 @@ import type {
   Quiz,
   QuizMetadata,
 } from "../../shared/types";
-import { deleteAttemptsForQuizzes } from "./attemptStore";
+import { deleteAttemptsForQuizzes, snapshotAttemptsForQuiz } from "./attemptStore";
 import { createMutationQueue } from "./mutationQueue";
 import { indexFile, quizAssetFile, quizAssetsDir, quizFile, quizzesDir } from "./paths";
 
@@ -202,6 +208,47 @@ async function importQuizFile(
     quizzes: [...index.quizzes.filter((q) => q.id !== id), meta],
   });
   return meta;
+}
+
+/** Stores a quiz made in the editor. It starts without images. */
+export function createQuiz(raw: unknown, folderId: string | null = null): Promise<QuizMetadata> {
+  return libraryWrites.enqueue(async () => {
+    const index = await readIndex();
+    const title = raw && typeof raw === "object" ? String((raw as { title?: unknown }).title ?? "") : "";
+    const id = allocateStorageId(undefined, title, new Set(index.quizzes.map((q) => q.id)), () => nanoid(6));
+    const quiz = prepareSavedQuiz(raw, id);
+    const missing = missingImage(quiz, () => false);
+    if (missing) throw new Error(missingImageMessage(missing));
+    await ensureDir();
+    await writeJsonAtomic(quizFile(id), quiz);
+    const folderExists = folderId === null || index.folders.some((f) => f.id === folderId);
+    const meta = toMetadata(quiz, new Date().toISOString(), folderExists ? folderId : null);
+    await writeIndex({ ...index, quizzes: [...index.quizzes, meta] });
+    return meta;
+  });
+}
+
+/**
+ * Saves an edited quiz over the stored one. Its images must already be stored
+ * with it. Attempts keep a copy of what they asked before the quiz changes.
+ */
+export function saveQuiz(raw: unknown): Promise<QuizMetadata> {
+  return libraryWrites.enqueue(async () => {
+    const id = raw && typeof raw === "object" ? (raw as { id?: unknown }).id : undefined;
+    const previous = typeof id === "string" ? await getQuiz(id) : null;
+    const index = await readIndex();
+    const entry = index.quizzes.find((q) => q.id === id);
+    if (!previous || !entry) throw new Error("Quiz not found");
+    const quiz = prepareSavedQuiz(raw, previous.id);
+    const missing = missingImage(quiz, (src) => existsSync(quizAssetFile(quiz.id, src)));
+    if (missing) throw new Error(missingImageMessage(missing));
+    // Snapshots first: if the quiz write then fails, they only repeat the stored quiz.
+    await snapshotAttemptsForQuiz(previous, quiz);
+    await writeJsonAtomic(quizFile(quiz.id), quiz);
+    const meta = savedMetadata(entry, quiz, new Date().toISOString());
+    await writeIndex({ ...index, quizzes: index.quizzes.map((q) => (q.id === quiz.id ? meta : q)) });
+    return meta;
+  });
 }
 
 /** Builds a .quiz package from a stored quiz and its images. */

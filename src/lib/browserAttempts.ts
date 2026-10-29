@@ -4,8 +4,9 @@ import {
   attemptPhotoNames,
   buildAttempt,
   withAttemptSelfMarks,
+  withQuizSnapshots,
 } from "@shared/attemptRecord";
-import type { AttemptScore, QuizAttempt, SaveAttemptInput } from "@shared/types";
+import type { AttemptScore, Quiz, QuizAttempt, SaveAttemptInput } from "@shared/types";
 import {
   ATTEMPTS_KEY,
   attemptPhotoKey,
@@ -98,6 +99,15 @@ export async function deleteBrowserAttempts(ids: string[]): Promise<void> {
 }
 
 /** Changes that remove the attempts of deleted quizzes, and those attempts' photos. */
+/** The attempts record with copies of what each asked, when saving the quiz changes it. */
+export async function attemptChangesForSavedQuiz(
+  previous: Quiz,
+  next: Quiz,
+): Promise<RecordChange[]> {
+  const result = withQuizSnapshots(await readAttempts(), previous, next);
+  return result.changed ? [{ key: ATTEMPTS_KEY, value: result.attempts }] : [];
+}
+
 export async function attemptChangesWithoutQuizzes(
   quizIds: readonly string[],
 ): Promise<RecordChange[]> {

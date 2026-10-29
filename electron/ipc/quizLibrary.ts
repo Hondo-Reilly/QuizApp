@@ -8,6 +8,7 @@ import type { ImportResult } from "../../shared/quizApi";
 import { IpcChannels } from "../../shared/ipcChannels";
 import {
   createFolder,
+  createQuiz,
   deleteFolder,
   deleteQuiz,
   exportQuizPackage,
@@ -16,6 +17,7 @@ import {
   librarySnapshot,
   listQuizzes,
   moveQuiz,
+  saveQuiz,
   updateFolder,
   type CreateFolderInput,
   type UpdateFolderInput,
@@ -87,6 +89,12 @@ export function registerQuizLibraryHandlers(): void {
   );
   ipcMain.handle(IpcChannels.listQuizzes, () => listQuizzes());
   ipcMain.handle(IpcChannels.getQuiz, (_e, id: string) => getQuiz(id));
+  ipcMain.handle(
+    IpcChannels.createQuiz,
+    (_e, payload: { quiz: unknown; folderId?: unknown }) =>
+      createQuiz(payload?.quiz, typeof payload?.folderId === "string" ? payload.folderId : null),
+  );
+  ipcMain.handle(IpcChannels.saveQuiz, (_e, quiz: unknown) => saveQuiz(quiz));
   ipcMain.handle(IpcChannels.deleteQuiz, (_e, id: string) => deleteQuiz(id));
   ipcMain.handle(
     IpcChannels.moveQuiz,

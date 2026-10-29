@@ -59,6 +59,8 @@ The top level has the quiz fields above (`schemaVersion`, `id`, `title`, `descri
 
 Attempts are listed newest first. When questions were shuffled or a random subset was used, different attempts can contain different questions in different orders. Match questions across attempts by `id`.
 
+Each attempt's `questions` are the questions as that attempt asked them. If the quiz was edited afterwards, an older attempt can show a different prompt, choices, or answer key than a newer one for the same `id`, and it may carry its own `scenarios` and `textFormat`. Treat a question whose content differs between attempts as changed, not as something the user forgot.
+
 ## ExportedQuestion
 
 Each exported question is the quiz question itself plus results fields.

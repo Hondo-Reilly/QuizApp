@@ -37,6 +37,13 @@ export interface QuizApi {
   importQuiz(folderId?: string | null): Promise<ImportResult>;
   listQuizzes(): Promise<QuizMetadata[]>;
   getQuiz(id: string): Promise<Quiz | null>;
+  /** Stores a quiz made in the editor, under a new id from its title. */
+  createQuiz(quiz: Quiz, folderId?: string | null): Promise<QuizMetadata>;
+  /**
+   * Saves an edited quiz over the stored one with the same id. Attempts that
+   * asked a changed question keep a copy of it as it was.
+   */
+  saveQuiz(quiz: Quiz): Promise<QuizMetadata>;
   /** Saves a quiz and its images as a .quiz package. Resolves false if cancelled. */
   exportQuiz(id: string): Promise<boolean>;
   /** Shows the stored quiz file in Finder. Desktop only; the web build rejects. */

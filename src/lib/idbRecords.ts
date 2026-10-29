@@ -14,6 +14,11 @@ export function assetKey(quizId: string, path: string): string {
   return `asset:${quizId}:${path}`;
 }
 
+/** The start every image key of one quiz shares. */
+export function assetKeyPrefix(quizId: string): string {
+  return `asset:${quizId}:`;
+}
+
 /** A photo from an image-response answer, stored with its attempt. */
 export function attemptPhotoKey(attemptId: string, name: string): string {
   return `attempt-photo:${attemptId}:${name}`;
@@ -75,6 +80,18 @@ export function readRecord<T>(key: string): Promise<T | undefined> {
       value = request.result as T | undefined;
     };
     return () => value;
+  });
+}
+
+/** Every stored key that starts with the prefix. */
+export function readKeysWithPrefix(prefix: string): Promise<string[]> {
+  return access("readonly", (store) => {
+    let keys: string[] = [];
+    const request = store.getAllKeys(IDBKeyRange.bound(prefix, `${prefix}\uffff`));
+    request.onsuccess = () => {
+      keys = request.result.map(String);
+    };
+    return () => keys;
   });
 }
 
