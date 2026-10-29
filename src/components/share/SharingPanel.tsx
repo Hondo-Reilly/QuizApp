@@ -96,7 +96,7 @@ export function SharingPanel({ quiz, actions, onCheck }: SharingPanelProps) {
 
       <div className="flex flex-wrap items-center justify-end gap-2">
         {source && !source.gone && (
-          <Button variant="ghost" size="sm" onClick={() => void check()} disabled={checking}>
+          <Button variant="secondary" size="sm" onClick={() => void check()} disabled={checking}>
             {checking ? "Checking…" : "Check for updates"}
           </Button>
         )}
