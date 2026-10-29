@@ -95,19 +95,21 @@ export function SharingPanel({ quiz, actions, onCheck }: SharingPanelProps) {
       )}
 
       <div className="flex flex-wrap items-center justify-end gap-2">
-        {source && !source.gone && (
-          <Button variant="secondary" size="sm" onClick={() => void check()} disabled={checking}>
-            {checking ? "Checking…" : "Check for updates"}
-          </Button>
-        )}
+        {source &&
+          !source.gone &&
+          // Once a check finds a newer version, the same spot offers the update.
+          (source.available ? (
+            <Button size="sm" onClick={() => void update()} disabled={updating}>
+              {updating ? "Updating…" : "Update quiz"}
+            </Button>
+          ) : (
+            <Button variant="secondary" size="sm" onClick={() => void check()} disabled={checking}>
+              {checking ? "Checking…" : "Check for updates"}
+            </Button>
+          ))}
         <Button variant="secondary" size="sm" onClick={() => void actions.replaceFromFile(quiz)}>
           Replace from file…
         </Button>
-        {source?.available && !source.gone && (
-          <Button variant="secondary" size="sm" onClick={() => void update()} disabled={updating}>
-            {updating ? "Updating…" : "Update quiz"}
-          </Button>
-        )}
         <Button size="sm" onClick={() => actions.openShare(quiz)}>
           {share ? "Share settings" : "Share…"}
         </Button>
