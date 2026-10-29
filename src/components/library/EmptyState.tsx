@@ -2,11 +2,10 @@ import { Card } from "@/components/ui/Card";
 import { ImportButton } from "./ImportButton";
 
 export interface EmptyStateProps {
-  onImportFile: () => void;
-  onImportCode: () => void;
+  onImport: () => void;
 }
 
-export function EmptyState({ onImportFile, onImportCode }: EmptyStateProps) {
+export function EmptyState({ onImport }: EmptyStateProps) {
   return (
     <Card className="flex flex-col items-center gap-4 py-12 text-center">
       <div className="text-lg font-semibold text-slate-800 dark:text-neutral-200">
@@ -20,7 +19,7 @@ export function EmptyState({ onImportFile, onImportCode }: EmptyStateProps) {
         </code>{" "}
         file. Or enter a share code from someone who shared a quiz.
       </p>
-      <ImportButton onImportFile={onImportFile} onImportCode={onImportCode} />
+      <ImportButton onClick={onImport} />
     </Card>
   );
 }

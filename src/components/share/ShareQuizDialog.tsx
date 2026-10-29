@@ -166,8 +166,8 @@ export function ShareQuizDialog({ open, quiz, onClose, onChanged }: ShareQuizDia
           <>
             {codeBox}
             <p className={noteClass}>
-              Anyone with this code can import the quiz with "Import quiz", then "From share
-              code". They get your updates after you publish them.
+              Anyone can enter this code under "Import quiz" to import the quiz. They get
+              your updates after you publish them.
             </p>
             <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
               <span

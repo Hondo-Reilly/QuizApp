@@ -35,8 +35,16 @@ export interface ImportResult {
   failures?: ImportFailure[];
 }
 
+/** A quiz file the page already has, such as one dropped onto it. */
+export interface QuizFileInput {
+  name: string;
+  bytes: Uint8Array;
+}
+
 export interface QuizApi {
+  /** Picks quiz files with the platform's file dialog and imports them. */
   importQuiz(folderId?: string | null): Promise<ImportResult>;
+  importQuizFiles(files: QuizFileInput[], folderId: string | null): Promise<ImportResult>;
   listQuizzes(): Promise<QuizMetadata[]>;
   getQuiz(id: string): Promise<Quiz | null>;
   /** Saves a quiz and its images as a .quiz package. Resolves false if cancelled. */

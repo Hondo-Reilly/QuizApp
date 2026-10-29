@@ -3,7 +3,11 @@ import { quizApi } from "@/api/quizApi";
 import { forgetQuiz } from "@/lib/quizPageCache";
 import { keepLocalPrompt, liveShare } from "@/lib/shareText";
 import { collectDescendantFolderIds } from "@shared/library";
-import type { CreateFolderPayload, UpdateFolderPayload } from "@shared/quizApi";
+import type {
+  CreateFolderPayload,
+  ImportResult,
+  UpdateFolderPayload,
+} from "@shared/quizApi";
 import type { Folder, QuizMetadata } from "@shared/types";
 
 export interface UseLibrary {
@@ -21,7 +25,10 @@ export interface UseLibrary {
   refresh: () => Promise<void>;
   /** Reloads the library without showing the loading state. */
   reload: () => Promise<void>;
-  importQuizzes: (folderId: string | null) => Promise<void>;
+  /** Picks files with the platform dialog. The caller shows the result's error. */
+  importQuizzes: (folderId: string | null) => Promise<ImportResult>;
+  /** Imports files the page already has, such as dropped ones. */
+  importQuizFiles: (files: readonly File[], folderId: string | null) => Promise<ImportResult>;
   /** Resolves false when the user kept the quiz after its shared copy could not be deleted. */
   deleteQuiz: (id: string) => Promise<boolean>;
   moveQuiz: (id: string, folderId: string | null) => Promise<void>;
@@ -161,11 +168,26 @@ export function useLibrary(): UseLibrary {
     async (folderId: string | null) => {
       setError(null);
       const result = await quizApi.importQuiz(folderId);
-      if (result.cancelled) return;
-      if ((result.imported?.length ?? 0) > 0 || result.ok) await refresh();
-      if (!result.ok && result.error) setError(result.error);
+      if ((result.imported?.length ?? 0) > 0) await reload();
+      return result;
     },
-    [refresh],
+    [reload],
+  );
+
+  const importQuizFiles = useCallback(
+    async (files: readonly File[], folderId: string | null) => {
+      setError(null);
+      const inputs = await Promise.all(
+        files.map(async (file) => ({
+          name: file.name,
+          bytes: new Uint8Array(await file.arrayBuffer()),
+        })),
+      );
+      const result = await quizApi.importQuizFiles(inputs, folderId);
+      if ((result.imported?.length ?? 0) > 0) await reload();
+      return result;
+    },
+    [reload],
   );
 
   const deleteQuiz = useCallback(
@@ -287,6 +309,7 @@ export function useLibrary(): UseLibrary {
     refresh,
     reload,
     importQuizzes,
+    importQuizFiles,
     deleteQuiz,
     moveQuiz,
     createFolder,

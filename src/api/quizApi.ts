@@ -8,6 +8,7 @@ function activeQuizApi(): QuizApi {
 
 export const quizApi: QuizApi = {
   importQuiz: (folderId) => activeQuizApi().importQuiz(folderId),
+  importQuizFiles: (files, folderId) => activeQuizApi().importQuizFiles(files, folderId),
   listQuizzes: () => activeQuizApi().listQuizzes(),
   getQuiz: (id) => activeQuizApi().getQuiz(id),
   exportQuiz: (id) => activeQuizApi().exportQuiz(id),

@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { slugifyTitle } from "../../shared/storageId";
 import { importBatchMessage, type ImportFailure } from "../../shared/importBatch";
-import type { ImportResult } from "../../shared/quizApi";
+import type { ImportResult, QuizFileInput } from "../../shared/quizApi";
 import { IpcChannels } from "../../shared/ipcChannels";
 import {
   createFolder,
@@ -12,6 +12,7 @@ import {
   deleteQuiz,
   exportQuizPackage,
   getQuiz,
+  importQuizBytes,
   importQuizFromFile,
   librarySnapshot,
   listQuizzes,
@@ -53,6 +54,28 @@ async function handleImport(
   return { ok: true, imported };
 }
 
+/** Imports files the renderer already read, such as ones dropped on the window. */
+async function handleImportFiles(
+  files: QuizFileInput[],
+  folderId: string | null,
+): Promise<ImportResult> {
+  const imported: Awaited<ReturnType<typeof importQuizBytes>>[] = [];
+  const failures: ImportFailure[] = [];
+  for (const file of files) {
+    try {
+      imported.push(await importQuizBytes(new Uint8Array(file.bytes), folderId));
+    } catch (err) {
+      failures.push({
+        name: file.name,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+  const error = importBatchMessage(imported.length, failures);
+  if (error) return { ok: false, error, imported, failures };
+  return { ok: true, imported };
+}
+
 async function handleExport(
   event: Electron.IpcMainInvokeEvent,
   id: string,
@@ -84,6 +107,11 @@ export function registerQuizLibraryHandlers(): void {
   ipcMain.handle(
     IpcChannels.importQuiz,
     (event, folderId: string | null = null) => handleImport(event, folderId),
+  );
+  ipcMain.handle(
+    IpcChannels.importQuizFiles,
+    (_e, payload: { files: QuizFileInput[]; folderId: string | null }) =>
+      handleImportFiles(payload.files, payload.folderId),
   );
   ipcMain.handle(IpcChannels.listQuizzes, () => listQuizzes());
   ipcMain.handle(IpcChannels.getQuiz, (_e, id: string) => getQuiz(id));

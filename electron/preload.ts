@@ -6,6 +6,7 @@ import type {
   CreateFolderPayload,
   ImportResult,
   QuizApi,
+  QuizFileInput,
   UpdateFolderPayload,
 } from "../shared/quizApi";
 import type {
@@ -24,6 +25,8 @@ import type {
 const quizApi: QuizApi = {
   importQuiz: (folderId: string | null = null): Promise<ImportResult> =>
     ipcRenderer.invoke(IpcChannels.importQuiz, folderId),
+  importQuizFiles: (files: QuizFileInput[], folderId: string | null): Promise<ImportResult> =>
+    ipcRenderer.invoke(IpcChannels.importQuizFiles, { files, folderId }),
   listQuizzes: (): Promise<QuizMetadata[]> =>
     ipcRenderer.invoke(IpcChannels.listQuizzes),
   getQuiz: (id: string): Promise<Quiz | null> =>

@@ -11,7 +11,7 @@ import { FolderCard } from "@/components/library/FolderCard";
 import { NewFolderDialog } from "@/components/library/NewFolderDialog";
 import { RenameFolderDialog } from "@/components/library/RenameFolderDialog";
 import { MoveQuizDialog } from "@/components/library/MoveQuizDialog";
-import { ImportCodeDialog } from "@/components/share/ImportCodeDialog";
+import { ImportQuizDialog } from "@/components/library/ImportQuizDialog";
 import type { UseLibrary } from "@/hooks/useLibrary";
 import { useShareActions } from "@/hooks/useShareActions";
 import { deleteFolderSharedNote } from "@/lib/shareText";
@@ -35,6 +35,7 @@ export function LibraryPage() {
     pathTo,
     countsByFolder,
     importQuizzes,
+    importQuizFiles,
     deleteQuiz,
     moveQuiz,
     createFolder,
@@ -55,7 +56,7 @@ export function LibraryPage() {
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [renameTarget, setRenameTarget] = useState<Folder | null>(null);
   const [moveTarget, setMoveTarget] = useState<QuizMetadata | null>(null);
-  const [codeOpen, setCodeOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const isInvalidFolder =
     currentFolderId !== null && currentFolder === null && !loading;
@@ -99,10 +100,7 @@ export function LibraryPage() {
       <Button variant="secondary" onClick={() => setNewFolderOpen(true)}>
         New folder
       </Button>
-      <ImportButton
-        onImportFile={() => importQuizzes(currentFolderId)}
-        onImportCode={() => setCodeOpen(true)}
-      />
+      <ImportButton onClick={() => setImportOpen(true)} />
     </div>
   );
 
@@ -119,10 +117,7 @@ export function LibraryPage() {
       {loading ? (
         <LoadingMessage />
       ) : libraryIsEmpty && currentFolderId === null ? (
-        <EmptyState
-          onImportFile={() => importQuizzes(null)}
-          onImportCode={() => setCodeOpen(true)}
-        />
+        <EmptyState onImport={() => setImportOpen(true)} />
       ) : (
         <div className="flex flex-col gap-8">
           {childFolders.length > 0 && (
@@ -172,11 +167,13 @@ export function LibraryPage() {
 
       {shareActions.dialog}
 
-      <ImportCodeDialog
-        open={codeOpen}
+      <ImportQuizDialog
+        open={importOpen}
         folderName={currentFolder?.name}
-        onClose={() => setCodeOpen(false)}
-        onImport={(code) => importSharedQuiz(code, currentFolderId)}
+        onClose={() => setImportOpen(false)}
+        onBrowse={() => importQuizzes(currentFolderId)}
+        onDropFiles={(files) => importQuizFiles(files, currentFolderId)}
+        onImportCode={(code) => importSharedQuiz(code, currentFolderId)}
       />
 
       <NewFolderDialog

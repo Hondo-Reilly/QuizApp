@@ -1,6 +1,6 @@
 import { createCloudShare, type CloudShareStore } from "@shared/cloudShare";
 import { importBatchMessage, type ImportFailure } from "@shared/importBatch";
-import type { QuizApi } from "@shared/quizApi";
+import type { ImportResult, QuizApi, QuizFileInput } from "@shared/quizApi";
 import type {
   QuizCloudSource,
   QuizMetadata,
@@ -75,33 +75,43 @@ const cloudStore: CloudShareStore = {
 // Needs the page's origin in the quiz-app namespace's corsOrigins on hjr-data.
 const cloud = createCloudShare(cloudStore, (url, init) => window.fetch(url, init));
 
+async function importFiles(
+  files: readonly QuizFileInput[],
+  folderId: string | null,
+): Promise<ImportResult> {
+  const imported = [];
+  const failures: ImportFailure[] = [];
+  for (const file of files) {
+    try {
+      imported.push(await importQuizBytes(file.bytes, folderId, file.name));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      // The batch message names the file already.
+      failures.push({
+        name: file.name,
+        error: message.replace(`Failed to import ${file.name}: `, ""),
+      });
+    }
+  }
+  const error = importBatchMessage(imported.length, failures);
+  if (error) return { ok: false, error, imported, failures };
+  return { ok: true, imported };
+}
+
 export const browserQuizApi: QuizApi = {
   importQuiz: (folderId = null) =>
     run(async () => {
       const files = await pickQuizFiles();
       if (!files || files.length === 0) return { ok: false, cancelled: true };
-      const imported = [];
-      const failures: ImportFailure[] = [];
-      for (const file of files) {
-        try {
-          imported.push(
-            await importQuizBytes(
-              new Uint8Array(await file.arrayBuffer()),
-              folderId,
-              file.name,
-            ),
-          );
-        } catch (err) {
-          failures.push({
-            name: file.name,
-            error: err instanceof Error ? err.message : String(err),
-          });
-        }
-      }
-      const error = importBatchMessage(imported.length, failures);
-      if (error) return { ok: false, error, imported, failures };
-      return { ok: true, imported };
+      const inputs = await Promise.all(
+        files.map(async (file) => ({
+          name: file.name,
+          bytes: new Uint8Array(await file.arrayBuffer()),
+        })),
+      );
+      return importFiles(inputs, folderId);
     }),
+  importQuizFiles: (files, folderId) => run(() => importFiles(files, folderId)),
   listQuizzes: () =>
     run(async () => {
       const snap = await librarySnapshot();
