@@ -342,3 +342,20 @@ describe("unpublished changes", () => {
     expect(hasUnpublishedChanges({ ...meta, updatedAt: "2026-10-03T00:00:00.000Z" })).toBe(true);
   });
 });
+
+describe("older share servers", () => {
+  it("treats a missing version as version 1", async () => {
+    const server = fakeServer();
+    const library = memoryStore();
+    const fetchWithoutVersion: CloudFetch = async (url, init) => {
+      const response = await server.fetch(url, init);
+      if (!response.headers.get("Content-Type")?.includes("json")) return response;
+      const body = (await response.json()) as Record<string, unknown>;
+      delete body.version;
+      return new Response(JSON.stringify(body), { status: response.status, headers: response.headers });
+    };
+    const cloud = createCloudShare(library.store, fetchWithoutVersion, { baseUrl: BASE, now: () => NOW });
+    library.add("cells", bytes(1));
+    expect((await cloud.shareQuiz("cells")).version).toBe(1);
+  });
+});

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/Button";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { isElectronApp } from "@/lib/runtime";
 import { writeQuizDrag } from "@/lib/quizDrag";
+import { ShareStatus } from "@/components/share/ShareStatus";
+import { deleteQuizPrompt } from "@/lib/shareText";
 import { LibraryItemCard } from "./LibraryItemCard";
 import type { QuizMetadata } from "@shared/types";
 
@@ -12,6 +14,9 @@ export interface QuizCardProps {
   quiz: QuizMetadata;
   onDelete: (id: string) => void;
   onMove: (quiz: QuizMetadata) => void;
+  onShare: (quiz: QuizMetadata) => void;
+  onReplace: (quiz: QuizMetadata) => void;
+  onUpdate: (quiz: QuizMetadata) => void;
 }
 
 function formatDate(iso: string): string {
@@ -26,7 +31,14 @@ function formatDate(iso: string): string {
   }
 }
 
-export function QuizCard({ quiz, onDelete, onMove }: QuizCardProps) {
+export function QuizCard({
+  quiz,
+  onDelete,
+  onMove,
+  onShare,
+  onReplace,
+  onUpdate,
+}: QuizCardProps) {
   const navigate = useNavigate();
   const [dragging, setDragging] = useState(false);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
@@ -36,6 +48,11 @@ export function QuizCard({ quiz, onDelete, onMove }: QuizCardProps) {
     alert(`Could not ${action}. ${err instanceof Error ? err.message : ""}`.trim());
 
   const menuItems: ContextMenuItem[] = [
+    { label: "Share…", onSelect: () => onShare(quiz) },
+    ...(quiz.cloudSource?.available && !quiz.cloudSource.gone
+      ? [{ label: "Update to newest version", onSelect: () => onUpdate(quiz) }]
+      : []),
+    { label: "Replace from file…", onSelect: () => onReplace(quiz) },
     ...(isElectronApp()
       ? [
           {
@@ -87,6 +104,7 @@ export function QuizCard({ quiz, onDelete, onMove }: QuizCardProps) {
                 <span>by {quiz.author}</span>
               </>
             )}
+            <ShareStatus quiz={quiz} />
           </>
         }
         actions={
@@ -98,10 +116,13 @@ export function QuizCard({ quiz, onDelete, onMove }: QuizCardProps) {
               variant="ghost"
               size="sm"
               onClick={() => {
-                if (confirm(`Delete "${quiz.title}"?`)) onDelete(quiz.id);
+                if (confirm(deleteQuizPrompt(quiz))) onDelete(quiz.id);
               }}
             >
               Delete
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => onShare(quiz)}>
+              Share
             </Button>
             <Button size="sm" onClick={() => navigate(`/quiz/${quiz.id}/setup`)}>
               Start

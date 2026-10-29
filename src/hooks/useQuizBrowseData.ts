@@ -9,7 +9,8 @@ import {
 } from "@/lib/quizPageCache";
 import type { Quiz, QuizAttempt } from "@shared/types";
 
-export function useQuizBrowseData(quizId: string): {
+/** Pass a revision that changes when the quiz content is replaced, to load it again. */
+export function useQuizBrowseData(quizId: string, revision?: string): {
   quiz: Quiz | null;
   attempts: QuizAttempt[];
   loading: boolean;
@@ -59,7 +60,7 @@ export function useQuizBrowseData(quizId: string): {
     return () => {
       active = false;
     };
-  }, [quizId]);
+  }, [quizId, revision]);
 
   const removeAttempts = async (ids: string[]) => {
     await quizApi.deleteAttempts(ids);

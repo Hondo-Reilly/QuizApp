@@ -141,16 +141,13 @@ async function serverMessage(response: Response): Promise<string> {
 function parseInfo(body: unknown): SharedQuizInfo {
   const info = (body ?? {}) as Record<string, unknown>;
   const code = info.code ?? info.name;
-  if (
-    typeof code !== "string" ||
-    typeof info.version !== "number" ||
-    typeof info.sha256 !== "string"
-  ) {
+  if (typeof code !== "string" || typeof info.sha256 !== "string") {
     throw new CloudShareError("The share server sent an answer QuizApp does not understand.");
   }
   return {
     code,
-    version: info.version,
+    // Servers from before file versions leave it out; sha256 still tells versions apart.
+    version: typeof info.version === "number" ? info.version : 1,
     filename: typeof info.filename === "string" ? info.filename : `${code}.quiz`,
     size: typeof info.size === "number" ? info.size : 0,
     sha256: info.sha256,

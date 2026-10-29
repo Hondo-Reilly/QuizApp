@@ -14,8 +14,11 @@ import { QuestionAnswerList } from "@/components/quiz/QuestionAnswerList";
 import { PrintQuizDialog } from "@/components/quiz/PrintQuizDialog";
 import { AttemptList } from "@/components/library/AttemptList";
 import { MoveQuizDialog } from "@/components/library/MoveQuizDialog";
+import { SharingPanel } from "@/components/share/SharingPanel";
 import type { UseLibrary } from "@/hooks/useLibrary";
 import { useQuizBrowseData } from "@/hooks/useQuizBrowseData";
+import { useShareActions } from "@/hooks/useShareActions";
+import { deleteQuizPrompt } from "@/lib/shareText";
 import type { QuizMetadata } from "@shared/types";
 
 export function QuizBrowsePage() {
@@ -29,7 +32,8 @@ export function QuizBrowsePage() {
   const folderId = metadata?.folderId ?? storedFolderId;
 
   const { quiz, attempts, loading, error, setError, removeAttempts } =
-    useQuizBrowseData(id);
+    useQuizBrowseData(id, metadata?.updatedAt);
+  const shareActions = useShareActions(library);
   const [printOpen, setPrintOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
 
@@ -62,10 +66,9 @@ export function QuizBrowsePage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Delete "${quiz.title}"?`)) return;
+    if (!confirm(deleteQuizPrompt(moveTarget))) return;
     try {
-      await library.deleteQuiz(quiz.id);
-      back();
+      if (await library.deleteQuiz(quiz.id)) back();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -88,6 +91,18 @@ export function QuizBrowsePage() {
           quiz={quiz}
           onClose={() => setPrintOpen(false)}
         />
+
+        {metadata && (
+          <section className="mb-8">
+            <SectionHeader title="Sharing" />
+            <SharingPanel
+              quiz={metadata}
+              actions={shareActions}
+              onCheck={() => library.checkSharedQuizzes(true)}
+            />
+          </section>
+        )}
+        {shareActions.dialog}
 
         <section className="mb-8">
           <SectionHeader title="Previous attempts" />

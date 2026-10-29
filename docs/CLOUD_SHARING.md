@@ -1,6 +1,8 @@
-# Cloud quiz sharing (plan)
+# Cloud quiz sharing
 
-Status: draft plan on branch `cloud-quizzes`. Nothing is implemented yet.
+Status: implemented on branch `cloud-quizzes`. Update checks need hjr-data's `main` deployed (file versions and `POST /check`); the server running on 2026-10-29 predates them.
+
+Code: `shared/cloudShare.ts` (client), `electron/ipc/cloudShare.ts` (desktop), `src/lib/browserQuizApi.ts` (web), `src/components/share/` and `src/hooks/useShareActions.tsx` (UI). Tests: `tests/cloudShare.test.ts`, `tests/desktopReplaceQuiz.test.ts`.
 
 Users share a quiz from their library. QuizApp uploads it to the `quiz-app` namespace on `data.hjrsystems.com` (hjr-data) and shows an 8-digit share code. Anyone can type that code to import the quiz, and QuizApp later checks whether the sharer has published a newer version.
 

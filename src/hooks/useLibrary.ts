@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { quizApi } from "@/api/quizApi";
 import { forgetQuiz } from "@/lib/quizPageCache";
+import { keepLocalPrompt, liveShare } from "@/lib/shareText";
 import { collectDescendantFolderIds } from "@shared/library";
 import type { CreateFolderPayload, UpdateFolderPayload } from "@shared/quizApi";
 import type { Folder, QuizMetadata } from "@shared/types";
@@ -18,12 +19,31 @@ export interface UseLibrary {
   folderById: Map<string, Folder>;
 
   refresh: () => Promise<void>;
+  /** Reloads the library without showing the loading state. */
+  reload: () => Promise<void>;
   importQuizzes: (folderId: string | null) => Promise<void>;
-  deleteQuiz: (id: string) => Promise<void>;
+  /** Resolves false when the user kept the quiz after its shared copy could not be deleted. */
+  deleteQuiz: (id: string) => Promise<boolean>;
   moveQuiz: (id: string, folderId: string | null) => Promise<void>;
   createFolder: (payload: CreateFolderPayload) => Promise<Folder>;
   updateFolder: (payload: UpdateFolderPayload) => Promise<Folder>;
   deleteFolder: (id: string, recursive?: boolean) => Promise<void>;
+  /** Resolves null when the file picker was cancelled. */
+  replaceQuizFromFile: (id: string) => Promise<QuizMetadata | null>;
+  importSharedQuiz: (code: string, folderId: string | null) => Promise<QuizMetadata>;
+  updateSharedQuiz: (id: string) => Promise<QuizMetadata>;
+  /** Checks share codes for updates. Without force, skips if checked recently. */
+  checkSharedQuizzes: (force?: boolean) => Promise<void>;
+}
+
+/** Background update checks run at most this often. */
+const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+let lastSharedCheck = 0;
+
+function hasCodesToCheck(quizzes: readonly QuizMetadata[]): boolean {
+  return quizzes.some(
+    (quiz) => (quiz.cloudSource && !quiz.cloudSource.gone) || (quiz.share && !quiz.share.gone),
+  );
 }
 
 function buildCounts(
@@ -62,9 +82,42 @@ export function useLibrary(): UseLibrary {
     }
   }, []);
 
+  /** Reloads the library without showing the loading state. */
+  const reload = useCallback(async () => {
+    const snap = await quizApi.librarySnapshot();
+    setFolders(snap.folders);
+    setQuizzes(snap.quizzes);
+  }, []);
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const quizzesRef = useRef(quizzes);
+  quizzesRef.current = quizzes;
+
+  const checkSharedQuizzes = useCallback(
+    async (force = false) => {
+      if (!force && Date.now() - lastSharedCheck < CHECK_INTERVAL_MS) return;
+      if (!force && !hasCodesToCheck(quizzesRef.current)) return;
+      lastSharedCheck = Date.now();
+      await quizApi.checkSharedQuizzes();
+      await reload();
+    },
+    [reload],
+  );
+
+  // Look for updates once the library has loaded, then every few hours.
+  // A failed background check (offline, server down) waits for the next one.
+  useEffect(() => {
+    if (loading) return;
+    void checkSharedQuizzes().catch(() => undefined);
+    const timer = window.setInterval(
+      () => void checkSharedQuizzes().catch(() => undefined),
+      CHECK_INTERVAL_MS,
+    );
+    return () => window.clearInterval(timer);
+  }, [loading, checkSharedQuizzes]);
 
   const folderById = useMemo(
     () => new Map(folders.map((f) => [f.id, f])),
@@ -118,9 +171,18 @@ export function useLibrary(): UseLibrary {
   const deleteQuiz = useCallback(
     async (id: string) => {
       setError(null);
+      const meta = quizzesRef.current.find((quiz) => quiz.id === id);
+      if (meta && liveShare(meta)) {
+        try {
+          await quizApi.unshareQuiz(id);
+        } catch (err) {
+          if (!confirm(keepLocalPrompt(err, `"${meta.title}"`))) return false;
+        }
+      }
       await quizApi.deleteQuiz(id);
       forgetQuiz(id);
       await refresh();
+      return true;
     },
     [refresh],
   );
@@ -158,14 +220,58 @@ export function useLibrary(): UseLibrary {
     async (id: string, recursive = true) => {
       setError(null);
       const folderIds = collectDescendantFolderIds(folders, id);
-      const quizIds = quizzes
-        .filter((quiz) => quiz.folderId && folderIds.has(quiz.folderId))
-        .map((quiz) => quiz.id);
+      const inside = quizzes.filter(
+        (quiz) => quiz.folderId && folderIds.has(quiz.folderId),
+      );
+      const quizIds = inside.map((quiz) => quiz.id);
+      const failures: unknown[] = [];
+      for (const quiz of inside.filter((item) => liveShare(item))) {
+        try {
+          await quizApi.unshareQuiz(quiz.id);
+        } catch (err) {
+          failures.push(err);
+        }
+      }
+      if (failures.length > 0 && !confirm(keepLocalPrompt(failures[0], "the folder"))) {
+        await reload();
+        return;
+      }
       await quizApi.deleteFolder(id, recursive);
       for (const quizId of quizIds) forgetQuiz(quizId);
       await refresh();
     },
-    [folders, quizzes, refresh],
+    [folders, quizzes, refresh, reload],
+  );
+
+  const replaceQuizFromFile = useCallback(
+    async (id: string) => {
+      const meta = await quizApi.replaceQuizFromFile(id);
+      if (!meta) return null;
+      forgetQuiz(id);
+      await reload();
+      return meta;
+    },
+    [reload],
+  );
+
+  const importSharedQuiz = useCallback(
+    async (code: string, folderId: string | null) => {
+      setError(null);
+      const meta = await quizApi.importSharedQuiz(code, folderId);
+      await reload();
+      return meta;
+    },
+    [reload],
+  );
+
+  const updateSharedQuiz = useCallback(
+    async (id: string) => {
+      const meta = await quizApi.updateSharedQuiz(id);
+      forgetQuiz(id);
+      await reload();
+      return meta;
+    },
+    [reload],
   );
 
   return {
@@ -179,11 +285,16 @@ export function useLibrary(): UseLibrary {
     countsByFolder,
     folderById,
     refresh,
+    reload,
     importQuizzes,
     deleteQuiz,
     moveQuiz,
     createFolder,
     updateFolder,
     deleteFolder,
+    replaceQuizFromFile,
+    importSharedQuiz,
+    updateSharedQuiz,
+    checkSharedQuizzes,
   };
 }
