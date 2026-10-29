@@ -24,6 +24,8 @@ export function App() {
 
   const folderMatch = useMatch("/folder/:folderId");
   const takingQuiz = useMatch("/quiz/:id/take");
+  // The editor's three panes need more room than other pages.
+  const editing = useMatch("/quiz/:id/edit");
   const folderId = folderMatch?.params.folderId ?? null;
   const breadcrumbPath = folderId ? library.pathTo(folderId) : [];
   const desktop = isElectronApp();
@@ -83,7 +85,7 @@ export function App() {
         )}
       </header>
       <main
-        className={`page-gutter mx-auto w-full max-w-6xl flex-1 pt-5 sm:pt-8 ${desktop ? "pb-8" : "pb-8 sm:pb-14"}`}
+        className={`page-gutter mx-auto w-full ${editing ? "max-w-[96rem]" : "max-w-6xl"} flex-1 pt-5 sm:pt-8 ${desktop ? "pb-8" : "pb-8 sm:pb-14"}`}
       >
         <Outlet context={library satisfies UseLibrary} />
       </main>

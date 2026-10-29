@@ -36,6 +36,7 @@ export function QuizCard({ quiz, onDelete, onMove }: QuizCardProps) {
     alert(`Could not ${action}. ${err instanceof Error ? err.message : ""}`.trim());
 
   const menuItems: ContextMenuItem[] = [
+    { label: "Edit quiz", onSelect: () => navigate(`/quiz/${quiz.id}/edit`) },
     ...(isElectronApp()
       ? [
           {

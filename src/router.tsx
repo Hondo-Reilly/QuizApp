@@ -6,6 +6,7 @@ import { TakeQuizPage } from "./pages/TakeQuizPage";
 import { ReviewPage } from "./pages/ReviewPage";
 import { QuizBrowsePage } from "./pages/QuizBrowsePage";
 import { QuizAttemptPage } from "./pages/QuizAttemptPage";
+import { QuizEditorPage } from "./pages/QuizEditorPage";
 
 export const router = createHashRouter([
   {
@@ -16,6 +17,7 @@ export const router = createHashRouter([
       { path: "folder/:folderId", element: <LibraryPage /> },
       { path: "quiz/:id", element: <QuizBrowsePage /> },
       { path: "quiz/:id/attempt/:attemptId", element: <QuizAttemptPage /> },
+      { path: "quiz/:id/edit", element: <QuizEditorPage /> },
       { path: "quiz/:id/setup", element: <QuizSetupPage /> },
       { path: "quiz/:id/take", element: <TakeQuizPage /> },
       { path: "quiz/:id/review", element: <ReviewPage /> },

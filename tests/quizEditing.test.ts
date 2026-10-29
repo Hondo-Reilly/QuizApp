@@ -173,10 +173,10 @@ describe("quiz issues", () => {
     expect(issues).toEqual([
       { questionId: "q1", field: "answer", message: "Choose the correct answer." },
       { questionId: "q2", field: "items.1.answer", message: "Item 2 needs a match." },
-      { questionId: "q2", field: "choices.1.text", message: "Choice 2 needs text or an image." },
+      { questionId: "q2", field: "choices.1.text", message: "Choice B needs text or an image." },
       { questionId: "q3", field: "answer", message: "The correct answer must be a number." },
     ]);
-    expect(describeIssue(quiz, issues[2])).toBe("Question 2: Choice 2 needs text or an image.");
+    expect(describeIssue(quiz, issues[2])).toBe("Question 2: Choice B needs text or an image.");
   });
 
   it("flags quiz-wide problems such as a shared choice or a missing scenario", () => {

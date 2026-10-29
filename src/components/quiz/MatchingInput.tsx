@@ -17,7 +17,7 @@ export interface MatchingInputProps {
 }
 
 const selectClasses =
-  "w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:bg-slate-50 disabled:text-slate-600 sm:w-48 md:w-full xl:w-48 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:disabled:bg-neutral-900/60 dark:disabled:text-neutral-300";
+  "w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:bg-slate-50 disabled:text-slate-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:disabled:bg-neutral-900/60 dark:disabled:text-neutral-300";
 
 function rowTone(reveal: boolean, right: boolean): string {
   if (!reveal) return "border-slate-200 dark:border-neutral-800";
@@ -26,7 +26,6 @@ function rowTone(reveal: boolean, right: boolean): string {
     : "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/40";
 }
 
-// Beside the bank, a row is too narrow for text and drop-down side by side until xl.
 /** Concepts on one side, each matched by drop-down to a lettered statement in the choice bank. */
 export function MatchingInput({ question, value, onChange, reveal, disabled, choiceOrder }: MatchingInputProps) {
   const bankId = useId();
@@ -42,7 +41,7 @@ export function MatchingInput({ question, value, onChange, reveal, disabled, cho
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]">
       <div className="flex flex-col gap-2">
         <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
           Concept / term
@@ -54,13 +53,14 @@ export function MatchingInput({ question, value, onChange, reveal, disabled, cho
             return (
               <li
                 key={item.id}
-                className={`flex flex-col gap-2 rounded-lg border p-2.5 sm:flex-row sm:items-center sm:justify-between md:flex-col md:items-stretch xl:flex-row xl:items-center ${rowTone(reveal, right)}`}
+                className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border p-2.5 ${rowTone(reveal, right)}`}
               >
-                <div className="flex min-w-0 gap-1.5 text-sm text-slate-800 dark:text-neutral-200">
+                <div className="flex min-w-0 flex-[1_1_8rem] gap-1.5 text-sm text-slate-800 dark:text-neutral-200">
                   <span className="shrink-0 font-medium tabular-nums">{index + 1}.</span>
                   <RichText text={item.text} inline className="min-w-0" />
                 </div>
-                <div className="flex shrink-0 flex-col gap-1 sm:items-end md:items-stretch xl:items-end">
+                {/* The drop-down sits beside the text when both fit, and wraps under it when they don't. */}
+                <div className="flex min-w-0 flex-[1_1_12rem] flex-col items-stretch gap-1 sm:max-w-[16rem]">
                   <select
                     aria-label={`Match for ${index + 1}`}
                     aria-describedby={bankId}

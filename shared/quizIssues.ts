@@ -1,4 +1,5 @@
 import type { ZodIssue } from "zod";
+import { choiceLetter } from "./matching";
 import { questionSchemas, quizSchema } from "./schema";
 import type { Question, QuestionType, Quiz } from "./types";
 
@@ -59,9 +60,12 @@ const LIST_NAMES: Record<string, string> = {
 };
 
 /** What a path points at, for the start of a message, e.g. "Choice 2" or "The prompt". */
-function label(path: readonly (string | number)[]): string {
+function label(path: readonly (string | number)[], question?: Question): string {
   const [first, second] = path;
-  if (first === "choices" && typeof second === "number") return `Choice ${second + 1}`;
+  // A matching bank is lettered, so its choices are named by letter.
+  if (first === "choices" && typeof second === "number") {
+    return question?.type === "matching" ? `Choice ${choiceLetter(second)}` : `Choice ${second + 1}`;
+  }
   if (first === "items" && typeof second === "number") return `Item ${second + 1}`;
   if (first === "rubric" && typeof second === "number") return `Rubric point ${second + 1}`;
   const last = [...path].reverse().find((part): part is string => typeof part === "string");
@@ -69,7 +73,7 @@ function label(path: readonly (string | number)[]): string {
 }
 
 function friendlyMessage(issue: ZodIssue, path: readonly (string | number)[], question?: Question): string {
-  if (issue.message === "A choice needs text or an image") return `${label(path)} needs text or an image.`;
+  if (issue.message === "A choice needs text or an image") return `${label(path, question)} needs text or an image.`;
   if (MESSAGES[issue.message]) return MESSAGES[issue.message];
   for (const [prefix, message] of PREFIXED) if (issue.message.startsWith(prefix)) return message;
 
@@ -77,9 +81,9 @@ function friendlyMessage(issue: ZodIssue, path: readonly (string | number)[], qu
   switch (issue.code) {
     case "too_small":
       if (issue.type === "string") {
-        if (path[0] === "items" && last === "answer") return `${label(path)} needs a match.`;
+        if (path[0] === "items" && last === "answer") return `${label(path, question)} needs a match.`;
         if (last === "answer" && question?.type === "multiple_choice") return "Choose the correct answer.";
-        return `${label(path)} can't be empty.`;
+        return `${label(path, question)} can't be empty.`;
       }
       if (issue.type === "array") {
         if (last === "answers") return "Mark at least one correct choice.";
@@ -88,17 +92,17 @@ function friendlyMessage(issue: ZodIssue, path: readonly (string | number)[], qu
         return `Add at least ${issue.minimum} ${Number(issue.minimum) === 1 ? name.replace(/s$/, "") : name}.`;
       }
       if (last === "tolerance") return "The tolerance can't be negative.";
-      return `${label(path)} must be at least ${issue.minimum}.`;
+      return `${label(path, question)} must be at least ${issue.minimum}.`;
     case "too_big":
       if (issue.type === "array") {
         const name = typeof last === "string" ? (LIST_NAMES[last] ?? "entries") : "entries";
         return `Use at most ${issue.maximum} ${name}.`;
       }
-      if (issue.type === "string") return `${label(path)} is too long (${issue.maximum} characters at most).`;
-      return `${label(path)} must be at most ${issue.maximum}.`;
+      if (issue.type === "string") return `${label(path, question)} is too long (${issue.maximum} characters at most).`;
+      return `${label(path, question)} must be at most ${issue.maximum}.`;
     case "invalid_type":
-      if (issue.expected === "number") return `${label(path)} must be a number.`;
-      if (issue.received === "undefined") return `${label(path)} is missing.`;
+      if (issue.expected === "number") return `${label(path, question)} must be a number.`;
+      if (issue.received === "undefined") return `${label(path, question)} is missing.`;
       return issue.message;
     case "invalid_string":
       return last === "language" ? "Use a short language name, like python." : issue.message;

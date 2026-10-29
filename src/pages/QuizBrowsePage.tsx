@@ -129,6 +129,13 @@ export function QuizBrowsePage() {
                 >
                   Delete
                 </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => navigate(`/quiz/${id}/edit`)}
+                >
+                  Edit
+                </Button>
                 <Button size="sm" onClick={() => navigate(`/quiz/${id}/setup`)}>
                   Start quiz
                 </Button>
