@@ -48,6 +48,16 @@ cloudSource?: {
 
 Old records without these fields keep working. `exportQuiz` must not write `share.manageToken` into the downloaded `.quiz`.
 
+## Decisions
+
+- Always upload `.quiz` packages, even for quizzes without images.
+- Base URL is fixed: `https://data.hjrsystems.com/quiz-app`. The web client stays on GitHub Pages.
+- Sharers change a shared quiz with "Replace from file…" now, and with the editor (separate branch) later. Either way, "Publish update" is a separate, explicit step.
+- No automatic expiry extension. The app shows the expiry and offers a manual "Extend" button.
+- Recipients update only when they press "Update quiz".
+- Deleting a shared quiz deletes it on the server too, after a warning.
+- The manage token lives only in the sharer's local library. Another device or browser can't publish updates or stop sharing. Accepted for now.
+
 ## Code layout
 
 - `shared/cloudShare.ts`: pure client. Base URL, code normalising (`1234 5678`, `1234-5678` → `12345678`), request builders, response parsing, `/check` batching (50 per call), error messages for 404 / 413 / 429 / quota. Takes a `fetch` so tests and both builds can inject one.
@@ -55,12 +65,14 @@ Old records without these fields keep working. `exportQuiz` must not write `shar
   - `shareQuiz(id)` → `{ code, expiresAt }` (upload, or reuse an existing share)
   - `publishQuizUpdate(id)` → PUT the current package with the manage token
   - `unshareQuiz(id)` → DELETE and clear `share`
+  - `extendShare(id)` → `PATCH {"ttl":"90d"}`, update `share.expiresAt`
+  - `replaceQuizFromFile(id)` → pick a file and replace the quiz in place (local only, no upload)
   - `previewSharedQuiz(code)` → `/info`
   - `importSharedQuiz(code, folderId)` → download, import, set `cloudSource`
   - `checkSharedQuizzes()` → one `/check` pass over every `cloudSource` (and `share`, to refresh expiry), stores results, returns the snapshot
   - `updateSharedQuiz(id)` → download the newer version and replace the quiz **in place**
 - Electron: `electron/ipc/cloudShare.ts` handlers using `net.fetch` in the main process (like `electron/lib/updates.ts`). This avoids CORS for the `file://` renderer, whose origin is `null`. Wired in `electron/preload.ts` and `shared/ipcChannels.ts`.
-- Web: implemented in `src/lib/browserQuizApi.ts` with `window.fetch`. Needs `https://hondo-reilly.github.io` (and the Vite dev origin) in the namespace's `corsOrigins`.
+- Web: implemented in `src/lib/browserQuizApi.ts` with `window.fetch`. Needs the CORS setup below.
 - `src/api/quizApi.ts`: forward the new methods.
 
 ## Replace-in-place import
@@ -74,20 +86,42 @@ Both stores currently allocate a fresh id on every import (`allocateStorageId`).
 
 Attempts store answers by question id, so old attempts keep working when questions are added. Review of an old attempt must tolerate question ids that no longer exist in the new version (check `ReviewPage` / `useSavedAttempt`).
 
-The same helper serves the sharer's "Replace from file…" if we add it (see open questions).
+The same helper serves the sharer's "Replace from file…" and, later, saves from the editor. After a replace, the local package's hash no longer matches `share.sha256`, so the share dialog offers "Publish update".
 
 ## UI
 
 All in shared screens:
 
-- **Quiz card menu / quiz detail page:** "Share…" opens a dialog showing the code (`1234 5678`), a copy button, the expiry date, and "Stop sharing". On an already-shared quiz the same dialog shows "Publish update" when the local copy differs from the shared `sha256`.
+- **Quiz card menu / quiz detail page:** "Share…" opens a dialog showing the code (`1234 5678`), a copy button, the expiry date with an "Extend" button, and "Stop sharing". On an already-shared quiz the same dialog shows "Publish update" when the local copy differs from the shared `sha256`.
+- **Replace from file…:** on the card menu and detail page, for any quiz. It replaces the quiz in place. On a shared quiz, it then points to "Publish update".
+- **Delete:** deleting a shared quiz (or a folder that contains one) warns that the shared copy will also be deleted from the server, and that people who imported it will stop getting updates. On confirm: `DELETE` on the server first, then local delete. If the server call fails (offline, or the share already expired), offer "Delete locally anyway". A 404 counts as already deleted.
 - **Library header:** "Import quiz" becomes a small menu, "From file…" / "From share code…". The code dialog formats input as `1234 5678`, calls `/info` to show the filename and size, then imports into the current folder.
 - **Update badge:** cards with `cloudSource.available` show "Update available"; the detail page offers "Update quiz" with the new version number. `gone` shows "No longer shared" and stops checking that code.
 - **Checking:** `checkSharedQuizzes()` on Library mount, at most once every 6 hours (timestamp in `localStorage`, like other UI preferences), plus a manual "Check for updates" on the detail page. Codes that return `not_found` are dropped from future checks, as the server README asks.
 
 ## Expiry
 
-Shares expire 30 days after upload or the last update. Plan: when the sharer's app runs `checkSharedQuizzes()`, any owned share expiring within 14 days gets `PATCH {"ttl":"90d"}`. The share dialog shows the current expiry. (Open question below.)
+Shares expire 30 days after upload or the last update (the server resets the expiry on `PUT`). Nothing extends automatically. The share dialog shows the expiry, and "Extend" sends `PATCH {"ttl":"90d"}`. Quiz cards show a "Share expires soon" hint when an owned share has under 7 days left, and "Share expired" once the server reports it gone. Re-sharing an expired quiz uploads it again and gets a new code.
+
+## CORS (web build only)
+
+The web app runs at `https://hondo-reilly.github.io` and calls `https://data.hjrsystems.com`. Those are different origins, so the browser only lets the page read responses that carry the right CORS headers. The Mac app sends its requests from the Electron main process, which CORS doesn't apply to.
+
+Every write, and `/check`, sends a custom header (`X-Filename`, `X-Manage-Token`) or a JSON body, or uses `PUT`/`PATCH`/`DELETE`. So the browser first sends an `OPTIONS` preflight. hjr-data must answer it, and the real request, with:
+
+```
+Access-Control-Allow-Origin: https://hondo-reilly.github.io
+Access-Control-Allow-Methods: GET, HEAD, POST, PUT, PATCH, DELETE
+Access-Control-Allow-Headers: Content-Type, X-Filename, X-TTL, X-Manage-Token
+Vary: Origin
+```
+
+`quiz-app.corsOrigins` should contain:
+
+- `https://hondo-reilly.github.io`: an origin has no path, so this covers `/QuizApp/`.
+- `http://localhost:5173`: the Vite dev server for `npm run dev -- --web`.
+
+Not needed: cookies or `Access-Control-Allow-Credentials` (the app authenticates with the manage-token header), and `Access-Control-Expose-Headers` (the app reads JSON bodies, not response headers).
 
 ## Tests
 
@@ -101,4 +135,4 @@ Shares expire 30 days after upload or the last update. Plan: when the sharer's a
 2. Replace-in-place in both stores.
 3. Electron IPC + preload, browser implementation.
 4. UI: share dialog, import-from-code, badges.
-5. Server: add the Pages origin to `corsOrigins`. Then the release checklist in `AGENTS.md`.
+5. Server: set `corsOrigins` as above and confirm preflights pass from the Pages origin. Then the release checklist in `AGENTS.md`.
