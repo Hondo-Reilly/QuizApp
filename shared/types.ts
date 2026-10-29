@@ -2,6 +2,8 @@ export type QuestionType =
   | "true_false"
   | "multiple_choice"
   | "multi_answer"
+  | "numeric"
+  | "matching"
   | "short_answer"
   | "long_answer"
   | "image_response";
@@ -60,6 +62,44 @@ export interface MultiAnswerQuestion {
   explanation?: string;
 }
 
+export interface NumericQuestion {
+  id: string;
+  type: "numeric";
+  scenarioId?: string;
+  prompt: string;
+  image?: QuizImage;
+  answer: number;
+  /** How far an answer may be from `answer` and still be correct. Defaults to 0. */
+  tolerance?: number;
+  /** ISO 4217 code such as "USD". The answer is entered and shown as money. */
+  currency?: string;
+  /** Shown after the answer box, e.g. "mm" or "°". Not used with currency. */
+  unit?: string;
+  explanation?: string;
+}
+
+/** A concept or term matched to one statement in the choice bank. */
+export interface MatchItem {
+  id: string;
+  text: string;
+  /** The id of the matching choice. */
+  answer: string;
+}
+
+export interface MatchingQuestion {
+  id: string;
+  type: "matching";
+  scenarioId?: string;
+  prompt: string;
+  image?: QuizImage;
+  items: MatchItem[];
+  /** The choice bank, lettered A, B, C... in the order shown. */
+  choices: Choice[];
+  /** Whether one choice may match more than one item. Defaults to false. */
+  reuseChoices?: boolean;
+  explanation?: string;
+}
+
 /** Fields shared by the question types the app does not grade itself. */
 interface WrittenQuestionFields {
   id: string;
@@ -107,6 +147,8 @@ export type Question =
   | TrueFalseQuestion
   | MultipleChoiceQuestion
   | MultiAnswerQuestion
+  | NumericQuestion
+  | MatchingQuestion
   | OpenQuestion;
 
 export interface Quiz {
@@ -165,12 +207,17 @@ export interface PhotoAnswer {
   photos: string[];
 }
 
+/** A matching answer: the choice id picked for each item id. */
+export interface MatchAnswer {
+  matches: Record<string, string>;
+}
+
 /**
  * The answer's shape depends on the question type: a boolean for true/false,
- * a choice id or written text as a string, choice ids as a string array, or
- * photo file names for an image response.
+ * a choice id, written text, or a typed number as a string, choice ids as a
+ * string array, photo file names for an image response, or item matches.
  */
-export type UserAnswer = boolean | string | string[] | PhotoAnswer | null;
+export type UserAnswer = boolean | string | string[] | PhotoAnswer | MatchAnswer | null;
 
 /** How the user marked their own open answer, when self-marking is on. */
 export type SelfMark = "got" | "missed" | "unsure";
@@ -180,7 +227,10 @@ export interface QuizAttempt {
   quizId: string;
   startedAt?: string;
   completedAt: string;
-  /** Questions graded correct: auto-graded, plus open answers self-marked "got". */
+  /**
+   * Questions graded correct: auto-graded, plus open answers self-marked "got".
+   * Matching questions add the share of items matched, so this may be fractional.
+   */
   correct: number;
   /** Questions with a grade. Open answers without a self-mark are not counted. */
   total: number;
@@ -227,13 +277,16 @@ export interface SaveAttemptInput {
   photos?: AttemptPhoto[];
 }
 
-export type QuestionOutcome = "correct" | "wrong" | "ungraded";
+/** "partial" is a matching answer with some, but not all, items right. */
+export type QuestionOutcome = "correct" | "partial" | "wrong" | "ungraded";
 
 export interface QuestionResult {
   questionId: string;
   /** True only for a correct outcome. */
   correct: boolean;
   outcome: QuestionOutcome;
+  /** Share of the question earned, 0 to 1. Null when ungraded. */
+  credit: number | null;
   userAnswer: UserAnswer;
 }
 

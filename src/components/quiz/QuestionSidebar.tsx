@@ -12,8 +12,8 @@ export interface QuestionSidebarProps {
   answers: Record<string, UserAnswer>;
   flagged?: Record<string, boolean>;
   /**
-   * Revealed answers, in "after each question" mode. Their dots turn green or
-   * red; answered but unsubmitted questions stay blue.
+   * Revealed answers, in "after each question" mode. Their dots turn green,
+   * amber for partly right, or red; answered but unsubmitted questions stay blue.
    */
   submitted?: Record<string, boolean>;
   /** Self-marks for revealed written and photo answers. */
@@ -34,12 +34,13 @@ function rowClasses(isCurrent: boolean): string {
   return `${base} text-slate-700 hover:bg-slate-100 dark:text-neutral-300 dark:hover:bg-neutral-800`;
 }
 
-type QuestionStatus = "unanswered" | "answered" | "correct" | "wrong" | "ungraded";
+type QuestionStatus = "unanswered" | "answered" | "correct" | "partial" | "wrong" | "ungraded";
 
 const STATUS_LABEL: Record<QuestionStatus, string> = {
   unanswered: "Not answered",
   answered: "Answered",
   correct: "Correct",
+  partial: "Partly correct",
   wrong: "Incorrect",
   ungraded: "Submitted, not graded",
 };
@@ -53,6 +54,8 @@ function indicatorClasses(status: QuestionStatus): string {
       return `${base} bg-brand-500`;
     case "correct":
       return `${base} bg-green-500`;
+    case "partial":
+      return `${base} bg-amber-500`;
     case "wrong":
       return `${base} bg-red-500`;
     case "ungraded":

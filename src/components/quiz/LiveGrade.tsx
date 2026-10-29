@@ -1,3 +1,5 @@
+import { formatScore } from "@shared/grading";
+
 export interface LiveGradeProps {
   correct: number;
   /** Revealed questions with a result; ungraded written answers are left out. */
@@ -14,10 +16,10 @@ export function LiveGrade({ correct, graded }: LiveGradeProps) {
       aria-label={
         percent === null
           ? "Score so far: nothing graded yet"
-          : `Score so far: ${correct} of ${graded} correct, ${percent} percent`
+          : `Score so far: ${formatScore(correct)} of ${graded} correct, ${percent} percent`
       }
     >
-      {percent === null ? "–" : `${correct}/${graded} · ${percent}%`}
+      {percent === null ? "–" : `${formatScore(correct)}/${graded} · ${percent}%`}
     </div>
   );
 }

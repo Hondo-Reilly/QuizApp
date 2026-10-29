@@ -23,6 +23,7 @@ function badgeFor(outcome: QuestionOutcome, selfMark?: SelfMark): [string, keyof
   if (selfMark === "missed") return ["Missed it", "red"];
   if (selfMark === "unsure") return ["Not sure", "amber"];
   if (outcome === "correct") return ["Correct", "green"];
+  if (outcome === "partial") return ["Partly correct", "amber"];
   if (outcome === "wrong") return ["Incorrect", "red"];
   return ["Not graded", "violet"];
 }

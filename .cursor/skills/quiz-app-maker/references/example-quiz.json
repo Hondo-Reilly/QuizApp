@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "general-knowledge-sample",
   "title": "General Knowledge Sample",
-  "description": "A short demo quiz covering all three question types and a shared scenario.",
+  "description": "A short demo quiz covering true/false, multiple-choice, select-all, number, money, and matching questions, plus a shared scenario.",
   "author": "QuizApp",
   "tags": ["sample", "demo"],
   "scenarios": [
@@ -69,6 +69,63 @@
     },
     {
       "id": "q6",
+      "type": "numeric",
+      "prompt": "Light from the Sun takes about 8 minutes 20 seconds to reach Earth. How many seconds is that?",
+      "answer": 500,
+      "unit": "s",
+      "explanation": "8 x 60 + 20 = 500 seconds. Light covers roughly 150 million km in that time."
+    },
+    {
+      "id": "q7",
+      "type": "numeric",
+      "prompt": "Water boils at 100 °C at sea level. What is that in degrees Fahrenheit? Answers within half a degree count.",
+      "answer": 212,
+      "tolerance": 0.5,
+      "unit": "°F",
+      "explanation": "°F = °C x 9/5 + 32, so 100 x 1.8 + 32 = 212."
+    },
+    {
+      "id": "q8",
+      "type": "matching",
+      "prompt": "Match each country to its capital. Each capital is used once, and one is not used.",
+      "items": [
+        { "id": "canada", "text": "Canada", "answer": "c" },
+        { "id": "brazil", "text": "Brazil", "answer": "a" },
+        { "id": "turkey", "text": "Turkey", "answer": "e" },
+        { "id": "nigeria", "text": "Nigeria", "answer": "b" }
+      ],
+      "choices": [
+        { "id": "a", "text": "Brasília" },
+        { "id": "b", "text": "Abuja" },
+        { "id": "c", "text": "Ottawa" },
+        { "id": "d", "text": "Lagos" },
+        { "id": "e", "text": "Ankara" }
+      ],
+      "explanation": "Like Canberra, these capitals are not their country's largest city: Toronto, São Paulo, Istanbul, and Lagos are bigger. Lagos was Nigeria's capital until 1991."
+    },
+    {
+      "id": "q9",
+      "type": "matching",
+      "prompt": "Sort each animal into its class. A class may be used more than once.",
+      "reuseChoices": true,
+      "items": [
+        { "id": "dolphin", "text": "Dolphin", "answer": "mammal" },
+        { "id": "penguin", "text": "Penguin", "answer": "bird" },
+        { "id": "bat", "text": "Bat", "answer": "mammal" },
+        { "id": "salamander", "text": "Salamander", "answer": "amphibian" },
+        { "id": "sea-turtle", "text": "Sea turtle", "answer": "reptile" }
+      ],
+      "choices": [
+        { "id": "mammal", "text": "Mammal" },
+        { "id": "bird", "text": "Bird" },
+        { "id": "reptile", "text": "Reptile" },
+        { "id": "amphibian", "text": "Amphibian" },
+        { "id": "fish", "text": "Fish" }
+      ],
+      "explanation": "Dolphins and bats are mammals even though they swim and fly, and a penguin is a bird that can't fly. Salamanders are amphibians, not reptiles."
+    },
+    {
+      "id": "q10",
       "scenarioId": "garden-trip",
       "type": "multiple_choice",
       "prompt": "Which crop best suits Maya's bed?",
@@ -82,12 +139,22 @@
       "explanation": "Only lettuce fits all three conditions: partial shade, damp soil, and a harvest inside two months."
     },
     {
-      "id": "q7",
+      "id": "q11",
       "scenarioId": "garden-trip",
       "type": "true_false",
       "prompt": "Raising the bed a few inches would help with the soil condition described.",
       "answer": true,
       "explanation": "Soil that stays damp for days drains poorly. A raised bed lifts the roots above the wettest soil."
+    },
+    {
+      "id": "q12",
+      "scenarioId": "garden-trip",
+      "type": "numeric",
+      "prompt": "Maya buys 4 bags of compost at 6.75 dollars each and a trowel for 12.50 dollars. What does she spend in total?",
+      "answer": 39.5,
+      "tolerance": 0.01,
+      "currency": "USD",
+      "explanation": "4 x 6.75 = 27.00 dollars, and the trowel brings the total to 39.50 dollars."
     }
   ]
 }

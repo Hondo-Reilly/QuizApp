@@ -5,6 +5,8 @@ import { QuizImageView } from "@/components/content/QuizImageView";
 import { RichText } from "@/components/content/RichText";
 import { OpenAnswerView, SampleAnswerView } from "@/components/quiz/OpenAnswer";
 import { SelfMarkControl } from "@/components/quiz/SelfMarkControl";
+import { MatchingResult } from "@/components/quiz/MatchingResult";
+import { describeNumericAnswer, describeTypedNumber } from "@shared/numeric";
 import { isChoiceQuestion, isOpenQuestion } from "@shared/questionTypes";
 import type { Choice, Question, QuestionOutcome, SelfMark, UserAnswer } from "@shared/types";
 
@@ -45,6 +47,10 @@ function describeAnswer(question: Question, answer: UserAnswer): Shown[] {
       const map = choicesById(question);
       return answer.map((id) => map.get(id) ?? { text: id });
     }
+    case "numeric":
+      return typeof answer === "string" && answer.trim()
+        ? [{ text: describeTypedNumber(question, answer) }]
+        : [];
     default:
       return [];
   }
@@ -60,13 +66,17 @@ function describeCorrect(question: Question): Shown[] {
       const map = choicesById(question);
       return question.answers.map((id) => map.get(id) ?? { text: id });
     }
+    case "numeric":
+      return [{ text: describeNumericAnswer(question) }];
     default:
       return [];
   }
 }
 
-function ShownChoices({ items }: { items: Shown[] }) {
+// Numbers stay plain text: a Markdown quiz would read "$12.50" as math.
+function ShownChoices({ items, plain = false }: { items: Shown[]; plain?: boolean }) {
   if (items.length === 0) return <>No answer</>;
+  if (plain) return <span className="tabular-nums">{items.map((item) => item.text).join(", ")}</span>;
   return (
     <ul className="flex flex-col gap-1">
       {items.map((item, index) => (
@@ -121,6 +131,8 @@ export function ReviewItem({
           <SampleAnswerView question={question} />
           {onSelfMark && <SelfMarkControl value={selfMark} onChange={onSelfMark} />}
         </div>
+      ) : question.type === "matching" ? (
+        <MatchingResult question={question} answer={userAnswer} showAnswer />
       ) : (
         <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
           <div>
@@ -134,7 +146,10 @@ export function ReviewItem({
                   : "text-red-700 dark:text-red-400"
               }`}
             >
-              <ShownChoices items={describeAnswer(question, userAnswer)} />
+              <ShownChoices
+                items={describeAnswer(question, userAnswer)}
+                plain={question.type === "numeric"}
+              />
             </dd>
           </div>
           <div>
@@ -142,7 +157,7 @@ export function ReviewItem({
               Correct answer
             </dt>
             <dd className="font-medium text-green-700 dark:text-green-400">
-              <ShownChoices items={describeCorrect(question)} />
+              <ShownChoices items={describeCorrect(question)} plain={question.type === "numeric"} />
             </dd>
           </div>
         </dl>

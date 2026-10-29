@@ -1,3 +1,5 @@
+import { isMatchAnswer } from "./matching";
+import { parseNumericAnswer } from "./numeric";
 import { isPhotoAnswer, isTextQuestion, textLimits } from "./questionTypes";
 import type { Question, UserAnswer } from "./types";
 
@@ -10,6 +12,7 @@ export function hasAnswer(value: UserAnswer | undefined): boolean {
   if (Array.isArray(value)) return value.length > 0;
   if (typeof value === "string") return value.trim().length > 0;
   if (isPhotoAnswer(value)) return value.photos.length > 0;
+  if (isMatchAnswer(value)) return Object.keys(value.matches).length > 0;
   return true;
 }
 
@@ -18,6 +21,13 @@ export function isAnswered(question: Question | undefined, value: UserAnswer | u
   if (!hasAnswer(value)) return false;
   if (question && isTextQuestion(question) && typeof value === "string") {
     return value.trim().length >= textLimits(question).minLength;
+  }
+  if (question?.type === "numeric") {
+    return typeof value === "string" && parseNumericAnswer(value, question) !== null;
+  }
+  // Every item needs a match before a matching answer can be submitted.
+  if (question?.type === "matching") {
+    return isMatchAnswer(value) && question.items.every((item) => !!value.matches[item.id]);
   }
   return true;
 }

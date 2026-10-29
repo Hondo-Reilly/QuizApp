@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/Card";
+import { formatScore } from "@shared/grading";
 
 export interface ScoreSummaryProps {
   correct: number;
@@ -44,7 +45,7 @@ export function ScoreSummary({
             Correct
           </div>
           <div className="text-2xl font-semibold text-slate-900 dark:text-neutral-100">
-            {correct} / {total}
+            {formatScore(correct)} / {total}
           </div>
         </div>
       </div>

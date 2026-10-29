@@ -7,6 +7,8 @@ import { FlagButton } from "./FlagButton";
 import { TextAnswerInput } from "./TextAnswerInput";
 import { CodeEditor } from "./CodeEditor";
 import { PhotoAnswerInput } from "./PhotoAnswerInput";
+import { NumericAnswerInput } from "./NumericAnswerInput";
+import { MatchingInput } from "./MatchingInput";
 import { isPhotoAnswer } from "@shared/questionTypes";
 import { ScenarioPanel } from "./ScenarioPanel";
 import { QuizImageView } from "@/components/content/QuizImageView";
@@ -80,6 +82,28 @@ export function QuestionCard({
         <MultiAnswerInput
           question={question}
           value={Array.isArray(value) ? value : []}
+          onChange={onChange}
+          reveal={reveal}
+          disabled={disabled}
+          choiceOrder={choiceOrder}
+        />
+      )}
+
+      {question.type === "numeric" && (
+        <NumericAnswerInput
+          key={question.id}
+          question={question}
+          value={typeof value === "string" ? value : ""}
+          onChange={onChange}
+          disabled={disabled}
+          onEnter={onEnter}
+        />
+      )}
+
+      {question.type === "matching" && (
+        <MatchingInput
+          question={question}
+          value={value}
           onChange={onChange}
           reveal={reveal}
           disabled={disabled}

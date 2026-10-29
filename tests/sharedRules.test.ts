@@ -83,9 +83,9 @@ describe("grading and answer counts", () => {
       percent: 33,
       ungraded: 0,
       results: [
-        { questionId: "tf", userAnswer: false, correct: true, outcome: "correct" },
-        { questionId: "single", userAnswer: "a", correct: false, outcome: "wrong" },
-        { questionId: "multi", userAnswer: null, correct: false, outcome: "wrong" },
+        { questionId: "tf", userAnswer: false, correct: true, outcome: "correct", credit: 1 },
+        { questionId: "single", userAnswer: "a", correct: false, outcome: "wrong", credit: 0 },
+        { questionId: "multi", userAnswer: null, correct: false, outcome: "wrong", credit: 0 },
       ],
     });
     expect(gradeQuiz([], {})).toMatchObject({ total: 0, percent: 0 });

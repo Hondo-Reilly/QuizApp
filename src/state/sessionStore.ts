@@ -114,7 +114,7 @@ function buildChoicesOrder(
   const out: Record<string, string[]> = {};
   if (!shuffleChoices) return out;
   for (const q of quiz.questions) {
-    if (q.type === "multiple_choice" || q.type === "multi_answer") {
+    if (q.type === "multiple_choice" || q.type === "multi_answer" || q.type === "matching") {
       out[q.id] = shuffle(q.choices.map((c) => c.id));
     }
   }

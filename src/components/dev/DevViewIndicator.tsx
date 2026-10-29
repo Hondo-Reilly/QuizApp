@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMatch } from "react-router-dom";
-import { gradeQuiz } from "@shared/grading";
+import { formatScore, gradeQuiz } from "@shared/grading";
 import type { UseLibrary } from "@/hooks/useLibrary";
 import { isElectronApp } from "@/lib/runtime";
 import { useSessionStore } from "@/state/sessionStore";
@@ -192,7 +192,7 @@ function useDevView(library: UseLibrary): DevView | null {
       runtime,
       details: [
         sessionQuiz?.title ?? title ?? "Quiz",
-        grade ? `${grade.correct} / ${grade.total} · ${grade.percent}%` : "No session",
+        grade ? `${formatScore(grade.correct)} / ${grade.total} · ${grade.percent}%` : "No session",
       ],
     };
   }

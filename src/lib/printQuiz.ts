@@ -2,7 +2,9 @@ import { quizApi } from "@/api/quizApi";
 import { imageRefs, textFormatOf } from "@shared/quizContent";
 import { scenarioFor, startsScenario } from "@shared/scenarios";
 import { isChoiceQuestion, isCodeQuestion, isOpenQuestion, textLimits } from "@shared/questionTypes";
-import type { OpenQuestion, Question, Quiz, QuizImage } from "@shared/types";
+import { letteredChoices } from "@shared/matching";
+import { currencySymbol, describeNumericAnswer } from "@shared/numeric";
+import type { MatchingQuestion, NumericQuestion, OpenQuestion, Question, Quiz, QuizImage } from "@shared/types";
 
 export interface PrintQuizOptions {
   showAnswers: boolean;
@@ -76,8 +78,44 @@ function responseSpaceHtml(question: OpenQuestion): string {
   return `<div class="lines">${"<div></div>".repeat(lines)}</div>`;
 }
 
+function numericHtml(question: NumericQuestion, showAnswers: boolean): string {
+  const prefix = question.currency ? escapeHtml(currencySymbol(question.currency)) : "";
+  const unit = question.unit ? ` ${escapeHtml(question.unit)}` : "";
+  const answer = showAnswers
+    ? `<div class="sample"><strong>Answer</strong>${escapeHtml(describeNumericAnswer(question))}</div>`
+    : "";
+  return `<div class="number-blank">${prefix}<span></span>${unit}</div>${answer}`;
+}
+
+// Items with a blank for a letter, beside the lettered choice bank.
+function matchingHtml(question: MatchingQuestion, showAnswers: boolean, ctx: PrintContext): string {
+  const bank = letteredChoices(question.choices);
+  const letterOf = new Map(bank.map((choice) => [choice.id, choice.letter]));
+  const items = question.items
+    .map((item, index) => {
+      const blank = showAnswers ? `<u>&nbsp;${letterOf.get(item.answer) ?? ""}&nbsp;</u>` : "______";
+      return `<li>${index + 1}. ${blank} ${textHtml(item.text, ctx, true)}</li>`;
+    })
+    .join("");
+  const choices = bank
+    .map(
+      (choice) =>
+        `<li>${choice.letter}. ${imageHtml(choice.image, ctx, "choice-image")}${textHtml(choice.text, ctx, true)}</li>`,
+    )
+    .join("");
+  const note = question.reuseChoices ? "Choices may be used more than once." : "Each choice is used once.";
+  return `<p class="note">${note}</p><div class="matching"><ul>${items}</ul><ul>${choices}</ul></div>`;
+}
+
+function matchingKey(question: MatchingQuestion): string {
+  const letterOf = new Map(letteredChoices(question.choices).map((choice) => [choice.id, choice.letter]));
+  return question.items.map((item, index) => `${index + 1}–${letterOf.get(item.answer) ?? ""}`).join(", ");
+}
+
 // Choice ids (a, b, ...) identify image-only choices in the answer key.
 function keyHtml(question: Question, ctx: PrintContext): string {
+  if (question.type === "numeric") return escapeHtml(describeNumericAnswer(question));
+  if (question.type === "matching") return matchingKey(question);
   if (isOpenQuestion(question)) {
     return question.sampleAnswer ? sampleHtml(question, ctx) : "Answers vary";
   }
@@ -107,6 +145,12 @@ function questionHtml(
     .join("");
   const image = imageHtml(question.image, ctx, "question-image");
   const prompt = `<div class="prompt"><span>${index + 1}.</span><div>${textHtml(question.prompt, ctx)}</div></div>`;
+  if (question.type === "numeric") {
+    return `<section class="question">${prompt}${image}${numericHtml(question, showAnswers)}</section>`;
+  }
+  if (question.type === "matching") {
+    return `<section class="question">${prompt}${image}${matchingHtml(question, showAnswers, ctx)}</section>`;
+  }
   if (isOpenQuestion(question)) {
     const sample =
       showAnswers && question.sampleAnswer
@@ -179,6 +223,12 @@ function buildHtml(quiz: Quiz, options: PrintQuizOptions, ctx: PrintContext): st
     li { margin: 4px 0; }
     li.correct { font-weight: 700; }
     li.correct::after { content: " \\2713"; }
+    .number-blank { display: flex; align-items: flex-end; gap: 4px; font-size: 15px; }
+    .number-blank span { display: inline-block; width: 2in; border-bottom: 1px solid #bbb; height: 22px; }
+    .note { color: #555; font-size: 13px; margin: 0 0 6px; }
+    .matching { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .matching ul { list-style: none; margin: 0; padding: 0; }
+    .matching li { margin: 0 0 8px; }
     .key-title { margin-top: 32px; font-size: 18px; page-break-before: always; }
     .key { padding-left: 1.4em; }
   </style>

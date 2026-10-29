@@ -82,6 +82,10 @@ export function questionTypeLabel(question: Question): string {
       return "Multiple choice";
     case "multi_answer":
       return "Select all";
+    case "numeric":
+      return question.currency ? "Money answer" : "Number answer";
+    case "matching":
+      return "Matching";
     case "short_answer":
       return "Short answer";
     case "long_answer":

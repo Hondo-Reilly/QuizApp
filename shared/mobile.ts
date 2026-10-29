@@ -1,4 +1,6 @@
 import { isAnswered } from "./answers";
+import { isMatchAnswer } from "./matching";
+import { MAX_NUMERIC_LENGTH } from "./numeric";
 import { isSelfMark, withSelfMark } from "./selfMarks";
 import {
   isOpenQuestion,
@@ -51,6 +53,14 @@ export function sameAnswer(
   a: UserAnswer | undefined,
   b: UserAnswer | undefined,
 ): boolean {
+  if (isMatchAnswer(a) || isMatchAnswer(b)) {
+    if (!isMatchAnswer(a) || !isMatchAnswer(b)) return false;
+    const keys = Object.keys(a.matches);
+    return (
+      keys.length === Object.keys(b.matches).length &&
+      keys.every((key) => a.matches[key] === b.matches[key])
+    );
+  }
   if (Array.isArray(a) || Array.isArray(b)) {
     if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
       return false;
@@ -174,6 +184,16 @@ function isPatchAnswer(value: unknown): value is UserAnswer {
   }
   if (typeof value !== "object") return false;
   const keys = Object.keys(value);
+  const matches = (value as { matches?: unknown }).matches;
+  if (keys.length === 1 && matches && typeof matches === "object" && !Array.isArray(matches)) {
+    const entries = Object.entries(matches);
+    return (
+      entries.length <= 100 &&
+      entries.every(
+        ([key, id]) => key.length <= 200 && typeof id === "string" && id.length > 0 && id.length <= 200,
+      )
+    );
+  }
   const photos = (value as { photos?: unknown }).photos;
   return (
     keys.length === 1 &&
@@ -252,6 +272,17 @@ function answerFitsQuestion(question: Question, answer: UserAnswer): boolean {
       answer.photos.length <= maxImagesOf(question) &&
       new Set(answer.photos).size === answer.photos.length
     );
+  }
+  if (question.type === "numeric") {
+    return typeof answer === "string" && answer.length <= MAX_NUMERIC_LENGTH;
+  }
+  if (question.type === "matching") {
+    if (!isMatchAnswer(answer)) return false;
+    const items = new Set(question.items.map((item) => item.id));
+    const choices = new Set(question.choices.map((choice) => choice.id));
+    const picked = Object.entries(answer.matches);
+    if (!picked.every(([item, choice]) => items.has(item) && choices.has(choice))) return false;
+    return question.reuseChoices === true || new Set(picked.map(([, choice]) => choice)).size === picked.length;
   }
   if (question.type === "multiple_choice") {
     return (

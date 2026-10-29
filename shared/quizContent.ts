@@ -59,8 +59,11 @@ export function markdownFields(quiz: Pick<Quiz, "scenarios" | "questions">): str
   for (const question of quiz.questions) {
     fields.push(question.prompt);
     if (question.explanation) fields.push(question.explanation);
-    if (isChoiceQuestion(question)) {
+    if (isChoiceQuestion(question) || question.type === "matching") {
       for (const choice of question.choices) fields.push(choice.text);
+    }
+    if (question.type === "matching") {
+      for (const item of question.items) fields.push(item.text);
     }
     // A code question's sample answer is code, not Markdown.
     if (isOpenQuestion(question) && !isCodeQuestion(question)) {
@@ -74,7 +77,7 @@ export function markdownFields(quiz: Pick<Quiz, "scenarios" | "questions">): str
 function structuredImages(question: Question): string[] {
   const out: string[] = [];
   if (question.image) out.push(question.image.src);
-  if (isChoiceQuestion(question)) {
+  if (isChoiceQuestion(question) || question.type === "matching") {
     for (const choice of question.choices) {
       if (choice.image) out.push(choice.image.src);
     }
@@ -141,6 +144,17 @@ export function renameImageRefs<T extends Pick<Quiz, "textFormat" | "scenarios" 
           sampleAnswer:
             question.sampleAnswer === undefined ? undefined : text(question.sampleAnswer),
           rubric: question.rubric?.map(text),
+        };
+      }
+      if (question.type === "matching") {
+        return {
+          ...base,
+          items: question.items.map((item) => ({ ...item, text: text(item.text) })),
+          choices: question.choices.map((choice) => ({
+            ...choice,
+            text: text(choice.text),
+            image: image(choice.image),
+          })),
         };
       }
       if (!isChoiceQuestion(question)) return base;

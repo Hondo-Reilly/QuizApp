@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 2,
+  "id": "numeric-matching-demo",
+  "title": "Numeric and Matching Demo",
+  "description": "Number answers with a tolerance, money answers, and a matching set with partial credit.",
+  "questions": [
+    {
+      "id": "match-ut",
+      "type": "matching",
+      "prompt": "Match each concept on the left to the single best statement on the right.",
+      "items": [
+        { "id": "1", "text": "Mode conversion", "answer": "e" },
+        { "id": "2", "text": "Damping", "answer": "i" },
+        { "id": "3", "text": "Direct piezoelectric effect", "answer": "d" },
+        { "id": "4", "text": "Couplant", "answer": "g" },
+        { "id": "5", "text": "Wavelength", "answer": "a" },
+        { "id": "6", "text": "Second critical angle", "answer": "j" },
+        { "id": "7", "text": "Diffracted wave", "answer": "h" },
+        { "id": "8", "text": "First critical angle", "answer": "c" },
+        { "id": "9", "text": "Effective aperture", "answer": "f" },
+        { "id": "10", "text": "Focal law", "answer": "b" }
+      ],
+      "choices": [
+        { "id": "a", "text": "Controls the smallest flaw size likely to be detectable" },
+        { "id": "b", "text": "Programmed timing pattern used to build, steer, or focus a PA beam" },
+        { "id": "c", "text": "Incident angle where the refracted longitudinal wave reaches 90°" },
+        { "id": "d", "text": "Converts received mechanical vibration into electrical signal" },
+        { "id": "e", "text": "Generation of more than one refracted wave mode at an angled interface" },
+        { "id": "f", "text": "Number of PAUT elements actively pulsed for a given beam" },
+        { "id": "g", "text": "Improves transmission across the probe-workpiece interface" },
+        { "id": "h", "text": "Low-energy wave generated from flaw tips and edges" },
+        { "id": "i", "text": "Reduces ringing and shortens pulse length" },
+        { "id": "j", "text": "Incident angle where the refracted shear wave reaches 90°" }
+      ]
+    },
+    {
+      "id": "match-reuse",
+      "type": "matching",
+      "prompt": "Name the wave mode each technique mainly uses. A mode may be used more than once.",
+      "reuseChoices": true,
+      "items": [
+        { "id": "straight", "text": "Straight-beam thickness gauging", "answer": "long" },
+        { "id": "angle", "text": "Angle-beam weld inspection", "answer": "shear" },
+        { "id": "tofd", "text": "TOFD lateral wave", "answer": "long" },
+        { "id": "surface", "text": "Detecting shallow surface cracks", "answer": "rayleigh" }
+      ],
+      "choices": [
+        { "id": "long", "text": "Longitudinal" },
+        { "id": "shear", "text": "Shear" },
+        { "id": "rayleigh", "text": "Rayleigh (surface)" },
+        { "id": "lamb", "text": "Lamb (plate)" }
+      ]
+    },
+    {
+      "id": "wavelength",
+      "type": "numeric",
+      "prompt": "Longitudinal velocity in steel is 5,920 m/s. What is the wavelength of a 5 MHz probe?",
+      "answer": 1.184,
+      "tolerance": 0.01,
+      "unit": "mm",
+      "explanation": "λ = v / f = 5,920 m/s ÷ 5,000,000 Hz = 0.001184 m = 1.184 mm."
+    },
+    {
+      "id": "cost",
+      "type": "numeric",
+      "prompt": "A UT kit costs $1,240 before an 8% sales tax. What is the total?",
+      "answer": 1339.2,
+      "tolerance": 0.01,
+      "currency": "USD",
+      "explanation": "1,240 × 1.08 = 1,339.20."
+    }
+  ]
+}

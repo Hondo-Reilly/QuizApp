@@ -1,3 +1,5 @@
+import { countCorrectMatches, isMatchingCorrect } from "./matching";
+import { isNumericCorrect } from "./numeric";
 import { isOpenQuestion } from "./questionTypes";
 import type {
   AttemptScore,
@@ -8,7 +10,10 @@ import type {
   UserAnswer,
 } from "./types";
 
-/** Auto-grades a choice or true/false question. Open questions are never correct here. */
+/**
+ * Whether an auto-graded question is fully right. Open questions are never
+ * correct here, and a matching answer needs every item matched.
+ */
 export function gradeQuestion(question: Question, userAnswer: UserAnswer): boolean {
   if (userAnswer === null || userAnswer === undefined) return false;
 
@@ -25,11 +30,46 @@ export function gradeQuestion(question: Question, userAnswer: UserAnswer): boole
       for (const id of expected) if (!actual.has(id)) return false;
       return true;
     }
+    case "numeric":
+      return typeof userAnswer === "string" && isNumericCorrect(question, userAnswer);
+    case "matching":
+      return isMatchingCorrect(question, userAnswer);
     case "short_answer":
     case "long_answer":
     case "image_response":
       return false;
   }
+}
+
+// Scores keep two decimals, so partial matching credit adds up without float noise.
+function roundScore(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * The share of a question earned, 0 to 1, or null when it has no grade.
+ * Matching earns the share of items matched; open answers count when self-marked.
+ */
+export function questionCredit(
+  question: Question,
+  userAnswer: UserAnswer,
+  selfMark?: SelfMark,
+): number | null {
+  if (isOpenQuestion(question)) {
+    if (selfMark === "got") return 1;
+    if (selfMark === "missed") return 0;
+    return null;
+  }
+  if (question.type === "matching") {
+    return roundScore(countCorrectMatches(question, userAnswer) / question.items.length);
+  }
+  return gradeQuestion(question, userAnswer) ? 1 : 0;
+}
+
+function outcomeOf(credit: number | null): QuestionOutcome {
+  if (credit === null) return "ungraded";
+  if (credit >= 1) return "correct";
+  return credit > 0 ? "partial" : "wrong";
 }
 
 /**
@@ -41,12 +81,7 @@ export function questionOutcome(
   userAnswer: UserAnswer,
   selfMark?: SelfMark,
 ): QuestionOutcome {
-  if (isOpenQuestion(question)) {
-    if (selfMark === "got") return "correct";
-    if (selfMark === "missed") return "wrong";
-    return "ungraded";
-  }
-  return gradeQuestion(question, userAnswer) ? "correct" : "wrong";
+  return outcomeOf(questionCredit(question, userAnswer, selfMark));
 }
 
 export function gradeQuiz(
@@ -56,10 +91,11 @@ export function gradeQuiz(
 ): QuizGrade {
   const results = questions.map((q) => {
     const userAnswer = answers[q.id] ?? null;
-    const outcome = questionOutcome(q, userAnswer, selfMarks[q.id]);
-    return { questionId: q.id, userAnswer, outcome, correct: outcome === "correct" };
+    const credit = questionCredit(q, userAnswer, selfMarks[q.id]);
+    const outcome = outcomeOf(credit);
+    return { questionId: q.id, userAnswer, outcome, credit, correct: outcome === "correct" };
   });
-  const correct = results.filter((r) => r.outcome === "correct").length;
+  const correct = roundScore(results.reduce((sum, r) => sum + (r.credit ?? 0), 0));
   const ungraded = results.filter((r) => r.outcome === "ungraded").length;
   const total = results.length - ungraded;
   const percent = total === 0 ? 0 : Math.round((correct / total) * 100);
@@ -80,12 +116,17 @@ export function gradeSoFar(
   let graded = 0;
   for (const q of questions) {
     if (!submitted[q.id]) continue;
-    const outcome = questionOutcome(q, answers[q.id] ?? null, selfMarks[q.id]);
-    if (outcome === "ungraded") continue;
+    const credit = questionCredit(q, answers[q.id] ?? null, selfMarks[q.id]);
+    if (credit === null) continue;
     graded += 1;
-    if (outcome === "correct") correct += 1;
+    correct += credit;
   }
-  return { correct, graded };
+  return { correct: roundScore(correct), graded };
+}
+
+/** A score count for display: whole numbers as is, partial credit to two decimals. */
+export function formatScore(value: number): string {
+  return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
 }
 
 export function scoreOf(grade: QuizGrade): AttemptScore {

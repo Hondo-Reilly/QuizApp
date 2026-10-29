@@ -5,6 +5,7 @@ import {
   markdownFields,
   markdownImageSources,
 } from "./quizContent";
+import { isCurrencyCode } from "./numeric";
 import { isOpenQuestion, MAX_IMAGES_LIMIT, MAX_TEXT_LENGTH } from "./questionTypes";
 import type { Quiz } from "./types";
 
@@ -86,6 +87,58 @@ const multiAnswerSchema = baseQuestion
     path: ["answers"],
   });
 
+const numericSchema = baseQuestion
+  .extend({
+    type: z.literal("numeric"),
+    answer: z.number().finite(),
+    tolerance: z.number().finite().min(0).optional(),
+    currency: z
+      .string()
+      .refine(isCurrencyCode, { message: "currency must be an ISO 4217 code such as USD" })
+      .optional(),
+    unit: z.string().trim().min(1).max(20).optional(),
+  })
+  .refine((q) => q.currency === undefined || q.unit === undefined, {
+    message: "Use currency or unit, not both",
+    path: ["unit"],
+  });
+
+const matchItemSchema = z.object({
+  id: z.string().min(1),
+  text: z.string().min(1),
+  answer: z.string().min(1),
+});
+
+const matchingSchema = baseQuestion
+  .extend({
+    type: z.literal("matching"),
+    items: z.array(matchItemSchema).min(1).max(50),
+    choices: z.array(choiceSchema).min(2).max(50),
+    reuseChoices: z.boolean().optional(),
+  })
+  .refine((q) => uniqueChoiceIds(q.choices), {
+    message: "Choice ids must be unique",
+    path: ["choices"],
+  })
+  .refine((q) => uniqueChoiceIds(q.items), {
+    message: "Item ids must be unique",
+    path: ["items"],
+  })
+  .refine(
+    (q) => {
+      const ids = new Set(q.choices.map((c) => c.id));
+      return q.items.every((item) => ids.has(item.answer));
+    },
+    { message: "Each item's answer must match one of the choice ids", path: ["items"] },
+  )
+  .refine(
+    (q) => q.reuseChoices === true || new Set(q.items.map((item) => item.answer)).size === q.items.length,
+    {
+      message: "Items share a choice; set reuseChoices: true to allow that",
+      path: ["reuseChoices"],
+    },
+  );
+
 const openFields = {
   sampleAnswer: z.string().min(1).optional(),
   rubric: z.array(z.string().min(1)).min(1).optional(),
@@ -139,6 +192,8 @@ export const questionSchema = z.union([
   trueFalseSchema,
   multipleChoiceSchema,
   multiAnswerSchema,
+  numericSchema,
+  matchingSchema,
   shortAnswerSchema,
   longAnswerSchema,
   imageResponseSchema,
@@ -169,6 +224,13 @@ export const quizSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Written and photo answer questions need schemaVersion 2",
+          path: ["schemaVersion"],
+        });
+      }
+      if (quiz.questions.some((question) => question.type === "numeric" || question.type === "matching")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Numeric and matching questions need schemaVersion 2",
           path: ["schemaVersion"],
         });
       }

@@ -17,6 +17,7 @@ import {
   useAttemptPhotoSource,
   type PhotoSource,
 } from "@/components/content/PhotoSource";
+import { formatScore } from "@shared/grading";
 import type { Question, QuizAttempt } from "@shared/types";
 
 const NO_PHOTOS: PhotoSource = { resolve: async () => ({}) };
@@ -25,7 +26,7 @@ function attemptSubtitle(attempt: QuizAttempt): string {
   const taken = attempt.startedAt
     ? formatTimeTaken(attempt.startedAt, attempt.completedAt)
     : null;
-  const parts = [formatDate(attempt.completedAt), `${attempt.correct}/${attempt.total} correct`];
+  const parts = [formatDate(attempt.completedAt), `${formatScore(attempt.correct)}/${attempt.total} correct`];
   if (attempt.total > 0) parts.push(`${attempt.percent}%`);
   if (attempt.ungraded) parts.push(`${attempt.ungraded} not graded`);
   if (taken) parts.push(taken);

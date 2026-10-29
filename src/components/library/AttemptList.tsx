@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { FlagIcon } from "@/components/quiz/FlagButton";
 import { Button } from "@/components/ui/Button";
 import { downloadAttemptExport } from "@/lib/exportAttempt";
+import { formatScore } from "@shared/grading";
 import type { Quiz, QuizAttempt } from "@shared/types";
 
 export interface AttemptListProps {
@@ -179,7 +180,7 @@ export function AttemptList({ quiz, attempts, onOpen, onDelete }: AttemptListPro
                 </span>
               )}
               <span className="shrink-0 tabular-nums text-slate-600 dark:text-neutral-300">
-                {attempt.correct}/{attempt.total} correct
+                {formatScore(attempt.correct)}/{attempt.total} correct
               </span>
               <span className="ml-auto w-14 shrink-0 text-right font-semibold sm:ml-0 tabular-nums text-slate-900 dark:text-neutral-100">
                 {attempt.total > 0 ? `${attempt.percent}%` : "—"}

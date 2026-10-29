@@ -8,6 +8,8 @@ import { questionOutcome } from "@shared/grading";
 import { isChoiceQuestion, isOpenQuestion, questionTypeLabel } from "@shared/questionTypes";
 import { OpenAnswerView, SampleAnswerView } from "./OpenAnswer";
 import { SelfMarkControl } from "./SelfMarkControl";
+import { MatchingResult } from "./MatchingResult";
+import { describeNumericAnswer, describeTypedNumber } from "@shared/numeric";
 import { startsScenario } from "@shared/scenarios";
 import type { Choice, Question, QuizImage, Scenario, SelfMark, UserAnswer } from "@shared/types";
 
@@ -92,6 +94,35 @@ function ChoiceRow({
         </span>
       )}
     </li>
+  );
+}
+
+function NumericRows({
+  question,
+  answer,
+  showSelections,
+}: {
+  question: Extract<Question, { type: "numeric" }>;
+  answer: UserAnswer | undefined;
+  showSelections: boolean;
+}) {
+  const typed = typeof answer === "string" && answer.trim() ? describeTypedNumber(question, answer) : null;
+  const right = questionOutcome(question, answer ?? null) === "correct";
+  return (
+    <dl className="grid grid-cols-1 gap-2 text-sm tabular-nums sm:grid-cols-2">
+      {showSelections && (
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-slate-500 dark:text-neutral-400">Your answer</dt>
+          <dd className={`font-medium ${right ? "text-slate-800 dark:text-neutral-200" : "text-red-700 dark:text-red-400"}`}>
+            {typed ?? "No answer"}
+          </dd>
+        </div>
+      )}
+      <div>
+        <dt className="text-xs uppercase tracking-wide text-slate-500 dark:text-neutral-400">Correct answer</dt>
+        <dd className="font-medium text-green-700 dark:text-green-400">{describeNumericAnswer(question)}</dd>
+      </div>
+    </dl>
   );
 }
 
@@ -205,6 +236,10 @@ export function QuestionAnswerList({
                     />
                   )}
                 </div>
+              ) : question.type === "numeric" ? (
+                <NumericRows question={question} answer={answer} showSelections={showSelections} />
+              ) : question.type === "matching" ? (
+                <MatchingResult question={question} answer={answer} showAnswer={showSelections} />
               ) : (
                 <ul className="flex flex-col gap-2">
                   {choicesFor(question, answer, showSelections).map((choice) => (

@@ -2,7 +2,7 @@ import { strToU8, zipSync, type Zippable } from "fflate";
 import { quizApi } from "@/api/quizApi";
 import { flaggedIds } from "@shared/attemptFlags";
 import { attemptPhotoNames } from "@shared/attemptRecord";
-import { questionOutcome } from "@shared/grading";
+import { questionCredit, questionOutcome } from "@shared/grading";
 import { isPhotoAnswer } from "@shared/questionTypes";
 import { imageRefs } from "@shared/quizContent";
 import type {
@@ -27,6 +27,8 @@ export type ExportedQuestion = Question & {
   /** Null when the answer has no grade: a written or photo answer without a self-mark. */
   correct: boolean | null;
   outcome: QuestionOutcome;
+  /** Share of the question earned, 0 to 1; partial for a matching answer. Null when ungraded. */
+  credit: number | null;
   /** How the user marked their own written or photo answer. */
   selfMark?: SelfMark;
   /** The user marked this question to study, whether or not they got it right. */
@@ -93,6 +95,7 @@ function exportQuestions(
   return questions.map((question) => {
     const answer = attempt.answers[question.id] ?? null;
     const outcome = questionOutcome(question, answer, marks[question.id]);
+    const credit = questionCredit(question, answer, marks[question.id]);
     const selected = isPhotoAnswer(answer)
       ? { photos: answer.photos.map((name) => exportedPhotoPath(attempt.id, name)) }
       : answer;
@@ -101,6 +104,7 @@ function exportQuestions(
       selected,
       correct: outcome === "ungraded" ? null : outcome === "correct",
       outcome,
+      credit,
       ...(marks[question.id] ? { selfMark: marks[question.id] } : {}),
       flagged: flagged.has(question.id),
     };

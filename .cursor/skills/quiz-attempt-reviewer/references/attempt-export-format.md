@@ -66,12 +66,15 @@ Each exported question is the quiz question itself plus results fields.
 | Field         | Type                     | Notes                                                                 |
 | ------------- | ------------------------ | --------------------------------------------------------------------- |
 | `id`          | `string`                 | Stable across attempts.                                               |
-| `type`        | enum                     | Auto-graded: `"true_false"`, `"multiple_choice"`, `"multi_answer"`. Open (not auto-graded): `"short_answer"`, `"long_answer"`, `"image_response"`. |
+| `type`        | enum                     | Auto-graded: `"true_false"`, `"multiple_choice"`, `"multi_answer"`, `"numeric"`, `"matching"`. Open (not auto-graded): `"short_answer"`, `"long_answer"`, `"image_response"`. |
 | `prompt`      | `string`                 | The question text.                                                    |
 | `scenarioId`  | `string`                 | Optional. Points to `scenarios[].id`; read that scenario for context. |
 | `image`       | `{ src, alt? }`          | Optional. The image itself is not in the export; only `alt` describes it. |
-| `choices`     | `{ id, text, image? }[]` | For `multiple_choice` and `multi_answer`.                             |
-| `answer`      | `boolean` or `string`    | The correct answer: a boolean for `true_false`, a choice id for `multiple_choice`. |
+| `choices`     | `{ id, text, image? }[]` | For `multiple_choice`, `multi_answer`, and `matching` (the choice bank, lettered A, B, C... in this order). |
+| `answer`      | `boolean`, `string`, or `number` | The correct answer: a boolean for `true_false`, a choice id for `multiple_choice`, the value for `numeric`. |
+| `tolerance`, `currency`, `unit` | `number`, `string`, `string` | `numeric` only. Answers within `tolerance` of `answer` are correct. |
+| `items`       | `{ id, text, answer }[]` | `matching` only. Each item's correct choice id.                       |
+| `reuseChoices`| `boolean`                | `matching` only. Whether one choice could match several items.        |
 | `answers`     | `string[]`               | For `multi_answer`: every correct choice id.                          |
 | `explanation` | `string`                 | Optional. Why the answer is right.                                    |
 | `sampleAnswer`| `string`                 | Open questions, optional. The quiz author's model answer.             |
@@ -80,8 +83,9 @@ Each exported question is the quiz question itself plus results fields.
 | `code`, `language` | `boolean`, `string` | `long_answer` only. A code answer, and its language.                  |
 | `maxImages`   | `number`                 | `image_response` only. How many photos were allowed.                  |
 | `selected`    | see below                | What the user answered.                                               |
-| `outcome`     | `"correct"`, `"wrong"`, `"ungraded"` | The result.                                               |
-| `correct`     | `boolean` or `null`      | `true`/`false` from `outcome`; `null` when ungraded.                  |
+| `outcome`     | `"correct"`, `"partial"`, `"wrong"`, `"ungraded"` | The result. `"partial"` is a matching answer with some items right. |
+| `correct`     | `boolean` or `null`      | `true` only for a `"correct"` outcome; `null` when ungraded.          |
+| `credit`      | `number` or `null`       | Share of the question earned, 0 to 1. Matching earns the share of items matched; `null` when ungraded. |
 | `selfMark`    | `"got"`, `"missed"`, `"unsure"` | Open questions only, when the user marked their own answer.     |
 | `flagged`     | `boolean`                | The user marked this question to study.                               |
 
@@ -92,6 +96,8 @@ Each exported question is the quiz question itself plus results fields.
 | `true_false`      | `true` or `false`                                 |
 | `multiple_choice` | One choice id, e.g. `"b"`                         |
 | `multi_answer`    | An array of choice ids, e.g. `["a", "c"]`         |
+| `numeric`         | The text the user typed, e.g. `"1,250.5"`         |
+| `matching`        | `{ "matches": { "<itemId>": "<choiceId>" } }`; unmatched items are missing |
 | `short_answer`, `long_answer` | The user's text (code for a code answer) |
 | `image_response`  | `{ "photos": ["responses/<attemptId>/<file>.jpg"] }`, paths inside the `.attempt` package |
 | any               | `null` if the question was left unanswered        |
@@ -101,6 +107,8 @@ Map choice ids to `choices[].text` before talking about them. Users never see th
 ### Grading
 
 - `multi_answer` is correct only when the selected set exactly matches `answers`. A partly right selection, such as two of three correct choices, is graded wrong. Say which choices were missed or added.
+- `numeric` is correct when the typed number is within `tolerance` of `answer`. Commas and the currency symbol are ignored.
+- `matching` earns partial credit: the attempt's `correct` adds each question's `credit`, so it may be fractional (e.g. `7.7`). Say which items were mismatched and what they were confused with.
 - An unanswered question (`selected: null`) is graded wrong. Many unanswered questions at the end of an attempt usually mean time ran out.
 - For auto-graded questions, treat `correct` as authoritative. Don't regrade.
 - Open questions are never graded by QuizApp. With `selfMarking` on, the user compared their answer with the sample: `"got"` counts as correct, `"missed"` as wrong, and `"unsure"` stays ungraded and also flags the question. Without a self-mark, `outcome` is `"ungraded"`. A self-mark is the user's own judgment, not a verified grade.

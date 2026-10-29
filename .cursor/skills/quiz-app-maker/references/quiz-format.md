@@ -3,7 +3,7 @@
 A quiz is a single JSON file. A quiz with images is a **`.quiz` package**: a zip file that holds that JSON as `quiz.json` plus an `images/` folder (see [Images and .quiz packages](#images-and-quiz-packages)).
 
 - **Version 1** is plain text only. Every existing quiz keeps working unchanged.
-- **Version 2** adds optional Markdown with math (`textFormat`), images, and written and photo answers. A version 2 quiz that uses neither looks exactly like version 1.
+- **Version 2** adds optional Markdown with math (`textFormat`), images, numeric and matching questions, and written and photo answers. A version 2 quiz that uses neither looks exactly like version 1.
 
 The top-level object looks like this:
 
@@ -26,7 +26,7 @@ Every question has these common fields:
 | Field         | Type     | Required | Notes                                                                          |
 | ------------- | -------- | -------- | ------------------------------------------------------------------------------ |
 | `id`          | `string` | yes      | Stable identifier, unique within the quiz. Used to record answers.             |
-| `type`        | enum     | yes      | `"true_false"`, `"multiple_choice"`, `"multi_answer"`, or, in version 2, `"short_answer"`, `"long_answer"`, `"image_response"`. |
+| `type`        | enum     | yes      | `"true_false"`, `"multiple_choice"`, `"multi_answer"`, or, in version 2, `"numeric"`, `"matching"`, `"short_answer"`, `"long_answer"`, `"image_response"`. |
 | `scenarioId`  | `string` | no       | The `id` of a scenario to show above the prompt. Must match `scenarios[].id`.  |
 | `prompt`      | `string` | yes      | The question text shown to the user.                                           |
 | `image`       | `Image`  | no       | Version 2 only. An image shown below the prompt.                               |
@@ -122,6 +122,68 @@ Use a scenario when several questions depend on the same background: a case stud
 - `answers` is a non-empty array of `choices[].id` values.
 - `answers` must not repeat an id.
 - A response is graded correct only if the user's selected set exactly matches `answers`.
+
+## Numeric and matching questions (version 2)
+
+These two types are graded by the app and need `schemaVersion: 2`.
+
+### `numeric`
+
+The user types a number. It is correct when it is within `tolerance` of `answer`.
+
+```json
+{
+  "id": "q4",
+  "type": "numeric",
+  "prompt": "A part costs $12.40 plus 25% markup. What is the selling price?",
+  "answer": 15.5,
+  "tolerance": 0.01,
+  "currency": "USD"
+}
+```
+
+| Field       | Type     | Required | Notes                                                                                   |
+| ----------- | -------- | -------- | --------------------------------------------------------------------------------------- |
+| `answer`    | `number` | yes      | The correct value.                                                                      |
+| `tolerance` | `number` | no       | How far an answer may be from `answer` and still be correct, e.g. `0.5` accepts 9.5 to 10.5. Defaults to `0` (exact). |
+| `currency`  | `string` | no       | An ISO 4217 code such as `"USD"`, `"EUR"`, or `"JPY"`. The box shows the symbol, and answers are shown as money. |
+| `unit`      | `string` | no       | Shown after the box, e.g. `"mm"`, `"°"`, or `"MHz"`. Not used with `currency`.          |
+
+- The user may type commas between thousands (`1,250.5`), the currency symbol, or scientific notation (`3.2e-4`). Other text is not a number and can't be submitted.
+- `answer` and `tolerance` are plain numbers, never strings: write `15.5`, not `"$15.50"`.
+
+### `matching`
+
+Each item on the left gets one statement from a lettered choice bank on the right, picked from a drop-down. The question earns partial credit: matching 7 of 10 items scores 0.7 of a question.
+
+```json
+{
+  "id": "q5",
+  "type": "matching",
+  "prompt": "Match each concept to the single best statement.",
+  "items": [
+    { "id": "1", "text": "Mode conversion", "answer": "e" },
+    { "id": "2", "text": "Damping", "answer": "i" },
+    { "id": "3", "text": "Couplant", "answer": "g" }
+  ],
+  "choices": [
+    { "id": "e", "text": "Generation of more than one refracted wave mode at an angled interface" },
+    { "id": "g", "text": "Improves transmission across the probe-workpiece interface" },
+    { "id": "i", "text": "Reduces ringing and shortens pulse length" },
+    { "id": "x", "text": "Converts electrical signal into mechanical vibration" }
+  ],
+  "reuseChoices": false
+}
+```
+
+| Field          | Type                         | Required | Notes                                                                    |
+| -------------- | ---------------------------- | -------- | ------------------------------------------------------------------------ |
+| `items`        | `{ id, text, answer }[]`     | yes      | 1 to 50 concepts or terms, shown in file order. `answer` is a `choices[].id`. Item ids are unique. |
+| `choices`      | `{ id, text, image? }[]`     | yes      | The choice bank, 2 to 50 statements with unique ids. Shown lettered A, B, C... Extra choices that match nothing are fine. |
+| `reuseChoices` | `boolean`                    | no       | `true` lets one choice match several items. Defaults to `false`: each choice is used once, so items must not share an `answer`, and a picked choice leaves the other items' drop-downs until it is cleared. |
+
+- **Shuffle choices** on the setup screen shuffles the bank, and the letters follow the shown order. Items keep their order.
+- In "after each question" mode, every item needs a match before the answer can be submitted.
 
 ## Written and photo answers (version 2)
 
