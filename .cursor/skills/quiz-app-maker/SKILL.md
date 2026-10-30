@@ -19,6 +19,8 @@ If the user gave source material (a document, notes, a URL), draw questions from
 
 **Without images:** output **only** the JSON object — no commentary, no markdown code fence, nothing before or after — so it can be saved directly to a `.json` file. When working with files, save it as `<slug>.json`.
 
+The user can import the file, or paste the JSON into QuizApp's **New quiz → Paste quiz JSON** to review and change it in the editor before saving. Pasting only works for quizzes without images.
+
 **With images:** the quiz must be a `.quiz` package, a zip holding `quiz.json` and an `images/` folder. See [Images](#images) below.
 
 The full schema lives in `references/quiz-format.md`. Read it before generating so every field and constraint is correct. It matches QuizApp's `docs/QUIZ_FORMAT.md` and `shared/schema.ts`. Complete valid examples: `references/example-quiz.json` (plain text with numeric, money, and matching questions, version 2), `references/example-written-quiz.json` (written, code, and photo answers, version 2), and `references/example-rich-quiz.json` (Markdown, math, images, and a scenario, version 2; it is the `quiz.json` of a package, so its image files are not included). Skim the one that fits. The essentials:
