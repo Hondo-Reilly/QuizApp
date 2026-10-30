@@ -236,10 +236,10 @@ export function QuizEditorPage() {
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" onClick={undo} disabled={past.length === 0} title="Undo (⌘Z)">
+            <Button variant="ghost" size="sm" onClick={undo} disabled={past.length === 0} title="Undo (⌘Z)">
               Undo
             </Button>
-            <Button variant="secondary" size="sm" onClick={redo} disabled={future.length === 0} title="Redo (⇧⌘Z)">
+            <Button variant="ghost" size="sm" onClick={redo} disabled={future.length === 0} title="Redo (⇧⌘Z)">
               Redo
             </Button>
             <Button

@@ -4,6 +4,8 @@ export interface ToggleProps {
   label?: string;
   description?: string;
   disabled?: boolean;
+  /** Replaces the label's text style, e.g. to match a section label beside it. */
+  labelClassName?: string;
 }
 
 export function Toggle({
@@ -12,6 +14,7 @@ export function Toggle({
   label,
   description,
   disabled,
+  labelClassName = "text-sm font-medium text-slate-800 dark:text-neutral-200",
 }: ToggleProps) {
   return (
     <label
@@ -33,9 +36,7 @@ export function Toggle({
       {(label || description) && (
         <div className="flex flex-col">
           {label && (
-            <span className="text-sm font-medium text-slate-800 dark:text-neutral-200">
-              {label}
-            </span>
+            <span className={labelClassName}>{label}</span>
           )}
           {description && (
             <span className="text-xs text-slate-500 dark:text-neutral-400">
