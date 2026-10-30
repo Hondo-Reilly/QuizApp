@@ -259,10 +259,8 @@ export function QuizEditorPage() {
         {saveError && <ErrorNotice message={saveError} />}
 
         <div className="flex flex-wrap items-start gap-5">
-          <div className="flex w-full flex-col gap-3 lg:sticky lg:top-16 lg:w-72">
-            {/* An empty header row keeps this card level with the Edit and Preview cards. */}
-            <div className="min-h-6" aria-hidden="true" />
-            <aside className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 lg:max-h-[calc(100vh-7.5rem)] lg:overflow-y-auto">
+          <div className="flex w-full flex-col lg:sticky lg:top-16 lg:w-72">
+            <aside className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto">
               <EditorOutline
                 quiz={draft}
                 issues={issues}
@@ -275,7 +273,7 @@ export function QuizEditorPage() {
           </div>
 
           <div className="flex min-w-0 flex-[999_1_32rem] flex-col gap-3">
-            {/* Matches the Preview header, so all three cards line up. */}
+            {/* Matches the Preview header, so the form and preview cards line up. */}
             <div className="flex min-h-6 items-center">
               <span className={labelClasses}>Edit</span>
             </div>
