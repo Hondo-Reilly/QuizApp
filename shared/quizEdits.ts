@@ -329,3 +329,13 @@ export function countDollarFields(quiz: Quiz): number {
 export function escapeDollars(quiz: Quiz): Quiz {
   return mapQuizText(quiz, (text) => text.replace(LONE_DOLLAR, "\\$"));
 }
+
+/**
+ * Where an item dragged from `from` ends up when dropped in a gap: slot 0 is
+ * before the first item and slot n after the last. Null when the drop would
+ * leave it where it is.
+ */
+export function moveTargetForSlot(from: number, slot: number): number | null {
+  if (slot === from || slot === from + 1) return null;
+  return slot > from ? slot - 1 : slot;
+}

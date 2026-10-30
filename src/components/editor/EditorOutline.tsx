@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { markdownPreview } from "@/lib/markdownPreview";
 import { questionTypeLabel } from "@shared/questionTypes";
+import { moveTargetForSlot } from "@shared/quizEdits";
 import type { QuizIssue } from "@shared/quizIssues";
 import { textFormatOf } from "@shared/quizContent";
 import type { Quiz } from "@shared/types";
@@ -28,10 +29,30 @@ const IssueDot = ({ label }: { label: string }) => (
   <span className="h-2 w-2 shrink-0 rounded-full bg-red-600" role="img" aria-label={label} />
 );
 
+/** Where a dragged question will land: a line in the gap between two rows. */
+const DropLine = ({ edge }: { edge: "top" | "bottom" }) => (
+  <span
+    aria-hidden="true"
+    className={`pointer-events-none absolute inset-x-1 z-10 flex items-center ${
+      edge === "top" ? "-top-px -translate-y-1/2" : "-bottom-px translate-y-1/2"
+    }`}
+  >
+    <span className="h-2 w-2 shrink-0 rounded-full bg-brand-500" />
+    <span className="h-0.5 flex-1 bg-brand-500" />
+  </span>
+);
+
 /** The quiz details and the questions, in order. Drag a question to move it. */
 export function EditorOutline({ quiz, issues, selected, onSelect, onMove, onAdd }: EditorOutlineProps) {
   const [dragFrom, setDragFrom] = useState<number | null>(null);
-  const [dragOver, setDragOver] = useState<number | null>(null);
+  // The gap the dragged question would drop into: 0 is above the first, n below the last.
+  const [dropSlot, setDropSlot] = useState<number | null>(null);
+  const endDrag = () => {
+    setDragFrom(null);
+    setDropSlot(null);
+  };
+  // A drop that wouldn't move the question shows no line.
+  const lineAt = dragFrom !== null && dropSlot !== null && moveTargetForSlot(dragFrom, dropSlot) !== null ? dropSlot : null;
   const markdown = textFormatOf(quiz) === "markdown";
   const detailsIssues = issues.filter((issue) => !issue.questionId).length;
   const questionsWithIssues = new Set(issues.map((issue) => issue.questionId).filter(Boolean));
@@ -61,7 +82,12 @@ export function EditorOutline({ quiz, issues, selected, onSelect, onMove, onAdd 
         <span className={labelClasses}>Questions</span>
         <span className="text-xs text-slate-500 dark:text-neutral-400">{quiz.questions.length}</span>
       </div>
-      <ol className="flex flex-col gap-0.5">
+      <ol
+        className="flex flex-col gap-0.5"
+        onDragLeave={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropSlot(null);
+        }}
+      >
         {quiz.questions.map((question, index) => {
           const preview = (markdown ? markdownPreview(question.prompt) : question.prompt).trim();
           const scenario = question.scenarioId ? scenarioTitle.get(question.scenarioId) : undefined;
@@ -77,20 +103,22 @@ export function EditorOutline({ quiz, issues, selected, onSelect, onMove, onAdd 
               onDragOver={(event) => {
                 if (dragFrom === null) return;
                 event.preventDefault();
-                setDragOver(index);
+                event.dataTransfer.dropEffect = "move";
+                const rect = event.currentTarget.getBoundingClientRect();
+                const slot = event.clientY < rect.top + rect.height / 2 ? index : index + 1;
+                if (slot !== dropSlot) setDropSlot(slot);
               }}
               onDrop={(event) => {
                 event.preventDefault();
-                if (dragFrom !== null && dragFrom !== index) onMove(dragFrom, index);
-                setDragFrom(null);
-                setDragOver(null);
+                const to = dragFrom !== null && dropSlot !== null ? moveTargetForSlot(dragFrom, dropSlot) : null;
+                if (dragFrom !== null && to !== null) onMove(dragFrom, to);
+                endDrag();
               }}
-              onDragEnd={() => {
-                setDragFrom(null);
-                setDragOver(null);
-              }}
-              className={`rounded-md ${dragOver === index && dragFrom !== index ? "ring-2 ring-brand-500" : ""} ${dragFrom === index ? "opacity-50" : ""}`}
+              onDragEnd={endDrag}
+              className={`relative rounded-md ${dragFrom === index ? "opacity-50" : ""}`}
             >
+              {lineAt === index && <DropLine edge="top" />}
+              {lineAt === index + 1 && index === quiz.questions.length - 1 && <DropLine edge="bottom" />}
               <button type="button" onClick={() => onSelect(question.id)} className={rowClasses(selected === question.id)}>
                 <span aria-hidden="true" className="cursor-grab text-slate-400 dark:text-neutral-500">
                   ⋮⋮

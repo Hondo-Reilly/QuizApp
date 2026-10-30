@@ -319,3 +319,16 @@ describe("desktop store", () => {
     expect((await store.getQuiz(id))?.title).toBe("Strict");
   });
 });
+
+describe("dragging questions into a gap", () => {
+  it("moves to the gap, and ignores the gaps on either side of the dragged row", async () => {
+    const { moveTargetForSlot } = await import("@shared/quizEdits");
+    // Rows 0..3, dragging row 1.
+    expect(moveTargetForSlot(1, 0)).toBe(0);
+    expect(moveTargetForSlot(1, 1)).toBeNull();
+    expect(moveTargetForSlot(1, 2)).toBeNull();
+    expect(moveTargetForSlot(1, 3)).toBe(2);
+    expect(moveTargetForSlot(1, 4)).toBe(3);
+    expect(moveTargetForSlot(3, 0)).toBe(0);
+  });
+});

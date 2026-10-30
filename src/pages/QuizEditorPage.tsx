@@ -259,19 +259,24 @@ export function QuizEditorPage() {
         {saveError && <ErrorNotice message={saveError} />}
 
         <div className="flex flex-wrap items-start gap-5">
-          <aside className="w-full rounded-xl border border-slate-200 bg-white p-2 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 lg:sticky lg:top-16 lg:max-h-[calc(100vh-5rem)] lg:w-72 lg:overflow-y-auto">
-            <EditorOutline
-              quiz={draft}
-              issues={issues}
-              selected={selected}
-              onSelect={select}
-              onMove={(from, to) => apply((quiz) => moveQuestion(quiz, from, to))}
-              onAdd={() => setAdding(true)}
-            />
-          </aside>
+          <div className="flex w-full flex-col gap-3 lg:sticky lg:top-16 lg:w-72">
+            <div className="flex min-h-6 items-center">
+              <span className={labelClasses}>Quiz</span>
+            </div>
+            <aside className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 lg:max-h-[calc(100vh-7.5rem)] lg:overflow-y-auto">
+              <EditorOutline
+                quiz={draft}
+                issues={issues}
+                selected={selected}
+                onSelect={select}
+                onMove={(from, to) => apply((quiz) => moveQuestion(quiz, from, to))}
+                onAdd={() => setAdding(true)}
+              />
+            </aside>
+          </div>
 
           <div className="flex min-w-0 flex-[999_1_32rem] flex-col gap-3">
-            {/* Matches the Preview header, so the form and preview cards line up. */}
+            {/* Matches the Quiz and Preview headers, so all three cards line up. */}
             <div className="flex min-h-6 items-center">
               <span className={labelClasses}>Edit</span>
             </div>
