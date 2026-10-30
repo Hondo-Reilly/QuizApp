@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useMobileSync } from "@/hooks/useMobileSync";
 import { useQuizFinish } from "@/hooks/useQuizFinish";
 import { useSessionStore } from "@/state/sessionStore";
+import { loadEditorAssetUrls } from "@/state/editorStore";
 import { useQuizKeyboard } from "@/hooks/useQuizKeyboard";
 import { QuestionCard } from "@/components/quiz/QuestionCard";
 import { AnswerFeedback } from "@/components/quiz/AnswerFeedback";
@@ -156,7 +157,10 @@ export function TakeQuizPage() {
   );
 
   return (
-    <QuizContentProvider quiz={session.quiz}>
+    <QuizContentProvider
+      quiz={session.quiz}
+      loadAssetUrls={session.practice ? loadEditorAssetUrls : undefined}
+    >
       <PhotoSourceProvider source={sessionPhotoSource}>
       <div className="mx-auto flex max-w-5xl gap-6 pb-20 sm:pb-0">
         <aside className="hidden w-56 shrink-0 sm:block">
@@ -180,7 +184,10 @@ export function TakeQuizPage() {
         </Modal>
 
         <div className="min-w-0 flex-1">
-          <PageHeader title={session.quiz.title} />
+          <PageHeader
+            title={session.quiz.title}
+            subtitle={session.practice ? "Practice run from the editor. Nothing is saved." : undefined}
+          />
 
           <QuizProgressHeader
             className="mb-4"

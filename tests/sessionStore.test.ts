@@ -79,3 +79,24 @@ describe("quiz session", () => {
     expect(useSessionStore.getState().endedAt).toBeNull();
   });
 });
+
+describe("practice runs", () => {
+  it("remember where to return, and forget it on reset or a normal start", () => {
+    const store = useSessionStore.getState();
+    const config: SessionConfig = {
+      shuffleQuestions: false,
+      shuffleChoices: false,
+      revealMode: "after_each",
+      questionCount: 0,
+      timeLimitMinutes: null,
+      selfMark: true,
+    };
+    store.start(makeQuiz(), config, { returnTo: "/new-quiz", returnState: { folderId: "f1" } });
+    expect(useSessionStore.getState().practice).toEqual({ returnTo: "/new-quiz", returnState: { folderId: "f1" } });
+    expect(useSessionStore.getState().order).toEqual(makeQuiz().questions.map((q) => q.id));
+    useSessionStore.getState().reset();
+    expect(useSessionStore.getState().practice).toBeNull();
+    useSessionStore.getState().start(makeQuiz(), config);
+    expect(useSessionStore.getState().practice).toBeNull();
+  });
+});

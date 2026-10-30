@@ -11,6 +11,12 @@ import { clearPendingPhotos } from "@/state/photoStore";
 import { shuffle } from "@shared/shuffle";
 import { scenarioBlocks } from "@shared/scenarios";
 
+/** Where a practice run from the editor returns to, with that page's router state. */
+export interface PracticeRun {
+  returnTo: string;
+  returnState?: unknown;
+}
+
 export interface SessionConfig {
   shuffleQuestions: boolean;
   shuffleChoices: boolean;
@@ -37,8 +43,13 @@ interface SessionState {
   selfMarks: Record<string, SelfMark>;
   /** Set once the finished attempt is saved, so the review page can update its flags. */
   savedAttemptId: string | null;
+  /**
+   * A practice run from the editor: the attempt is never saved, and the
+   * review page goes back to `returnTo`, the editor it came from.
+   */
+  practice: PracticeRun | null;
 
-  start: (quiz: Quiz, config: SessionConfig) => void;
+  start: (quiz: Quiz, config: SessionConfig, practice?: PracticeRun) => void;
   markEnded: () => string;
   applyRemote: (patch: {
     currentIndex: number;
@@ -84,6 +95,7 @@ const initialState = {
   flagged: {} as Record<string, boolean>,
   selfMarks: {} as Record<string, SelfMark>,
   savedAttemptId: null as string | null,
+  practice: null as PracticeRun | null,
 };
 
 // Questions that share a scenario stay together, in authored order.
@@ -124,7 +136,7 @@ function buildChoicesOrder(
 export const useSessionStore = create<SessionState>((set, get) => ({
   ...initialState,
 
-  start: (quiz, config) => {
+  start: (quiz, config, practice) => {
     clearPendingPhotos();
     const startedAt = new Date().toISOString();
     const minutes = config.timeLimitMinutes;
@@ -146,6 +158,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       flagged: {},
       selfMarks: {},
       savedAttemptId: null,
+      practice: practice ?? null,
     });
   },
 

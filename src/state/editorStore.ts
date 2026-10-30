@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { quizApi } from "@/api/quizApi";
 import type { Quiz, QuizAssetUpload } from "@shared/types";
 
 /** "details" selects the quiz's own fields; anything else is a question id. */
@@ -177,3 +178,24 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set(empty);
   },
 }));
+
+/**
+ * Image URLs for the quiz being edited: images added since the last save
+ * come from memory, the rest from storage. A practice run uses it too, so
+ * unsaved images show there.
+ */
+export async function loadEditorAssetUrls(quizId: string, paths: string[]): Promise<Record<string, string>> {
+  const { pending } = useEditorStore.getState();
+  const out: Record<string, string> = {};
+  const stored = paths.filter((path) => {
+    if (!pending[path]) return true;
+    out[path] = pending[path].url;
+    return false;
+  });
+  // A practice run of a quiz that was never saved has nothing in storage.
+  const saved = useEditorStore.getState().draft?.id;
+  if (stored.length > 0 && quizId && quizId === saved) {
+    Object.assign(out, await quizApi.getQuizAssetUrls(quizId, stored));
+  }
+  return out;
+}

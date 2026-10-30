@@ -48,9 +48,15 @@ export function useQuizFinish(quizId: string): {
               // Leaving the quiz still stops the server.
             }
           }
-          const { quiz, order, answers, flagged, selfMarks, config } =
+          const { quiz, order, answers, flagged, selfMarks, config, practice } =
             useSessionStore.getState();
           if (!quiz) throw new Error("This quiz is no longer open.");
+          // A practice run from the editor is graded on the review page but never saved.
+          if (practice) {
+            phase.current = "saved";
+            navigate(`/quiz/${quizId}/review`);
+            return;
+          }
           const ordered = order
             .map((questionId) => quiz.questions.find((q) => q.id === questionId))
             .filter((q): q is NonNullable<typeof q> => !!q);

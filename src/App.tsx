@@ -11,6 +11,7 @@ import { Breadcrumb } from "@/components/library/Breadcrumb";
 import { useLibrary, type UseLibrary } from "@/hooks/useLibrary";
 import { DevViewIndicator } from "@/components/dev/DevViewIndicator";
 import { isElectronApp } from "@/lib/runtime";
+import { useSessionStore } from "@/state/sessionStore";
 import { hideSplash } from "@/lib/splash";
 import type { DraggedQuiz } from "@/lib/quizDrag";
 
@@ -24,6 +25,8 @@ export function App() {
 
   const folderMatch = useMatch("/folder/:folderId");
   const takingQuiz = useMatch("/quiz/:id/take");
+  // A practice run from the editor saves nothing, so it has no mobile mode.
+  const practice = useSessionStore((state) => state.practice !== null);
   // The editor's three panes need more room than other pages.
   const editingQuiz = useMatch("/quiz/:id/edit");
   const editingNew = useMatch("/new-quiz");
@@ -61,7 +64,7 @@ export function App() {
             {breadcrumb(false)}
           </div>
           <div className="titlebar-no-drag ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
-            {desktop && takingQuiz ? (
+            {desktop && takingQuiz && !practice ? (
               <MobileModeButton />
             ) : (
               <div className="hidden items-center gap-3 sm:flex">

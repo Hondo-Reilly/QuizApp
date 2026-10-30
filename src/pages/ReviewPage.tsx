@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { QuizContentProvider } from "@/components/content/QuizContentContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSessionStore } from "@/state/sessionStore";
+import { loadEditorAssetUrls } from "@/state/editorStore";
 import { gradeQuiz } from "@shared/grading";
 import { scenarioFor, startsScenario } from "@shared/scenarios";
 import { formatTimeTaken } from "@/lib/formatDuration";
@@ -32,6 +33,16 @@ export function ReviewPage() {
   const selfMarks = useSessionStore((s) => s.selfMarks);
   const selfMarking = useSessionStore((s) => s.config.selfMark);
   const setSelfMarks = useSessionStore((s) => s.setSelfMarks);
+  const practice = useSessionStore((s) => s.practice);
+  const config = useSessionStore((s) => s.config);
+  const start = useSessionStore((s) => s.start);
+
+  // A practice run returns to the editor, which kept its unsaved changes.
+  const backToEditor = () => {
+    if (!practice) return;
+    reset();
+    navigate(practice.returnTo, { state: practice.returnState });
+  };
 
   useEffect(() => {
     if (!quiz || quiz.id !== id) {
@@ -96,43 +107,62 @@ export function ReviewPage() {
   if (!quiz) return null;
 
   return (
-    <QuizContentProvider quiz={quiz}>
+    <QuizContentProvider quiz={quiz} loadAssetUrls={practice ? loadEditorAssetUrls : undefined}>
       <PhotoSourceProvider source={sessionPhotoSource}>
       <DetailPageLayout
         width="2xl"
         onBack={() => {
+          if (practice) {
+            backToEditor();
+            return;
+          }
           reset();
           navigate(`/quiz/${id}`);
         }}
         title="Review"
-        subtitle={quiz.title}
+        subtitle={practice ? `${quiz.title}: practice run. Nothing was saved.` : quiz.title}
         actions={
-          <>
-            <Button
-              variant="secondary"
-              disabled={!savedAttemptId || exporting}
-              onClick={() => void exportAttempt()}
-            >
-              {exporting ? "Exporting…" : "Export attempt"}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                reset();
-                navigate(`/quiz/${id}/setup`);
-              }}
-            >
-              Retake
-            </Button>
-            <Button
-              onClick={() => {
-                reset();
-                navigate("/");
-              }}
-            >
-              Back to library
-            </Button>
-          </>
+          practice ? (
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  start(quiz, config, practice);
+                  navigate(`/quiz/${id}/take`);
+                }}
+              >
+                Try again
+              </Button>
+              <Button onClick={backToEditor}>Back to editor</Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="secondary"
+                disabled={!savedAttemptId || exporting}
+                onClick={() => void exportAttempt()}
+              >
+                {exporting ? "Exporting…" : "Export attempt"}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  reset();
+                  navigate(`/quiz/${id}/setup`);
+                }}
+              >
+                Retake
+              </Button>
+              <Button
+                onClick={() => {
+                  reset();
+                  navigate("/");
+                }}
+              >
+                Back to library
+              </Button>
+            </>
+          )
         }
       >
         <div className="mb-6">

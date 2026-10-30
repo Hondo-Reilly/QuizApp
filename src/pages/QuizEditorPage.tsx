@@ -16,7 +16,8 @@ import { forgetQuiz, rememberQuiz } from "@/lib/quizPageCache";
 import { isElectronApp } from "@/lib/runtime";
 import { pickImage } from "@/lib/editorImages";
 import { imageRefs } from "@shared/quizContent";
-import { DETAILS, useEditorStore } from "@/state/editorStore";
+import { DETAILS, loadEditorAssetUrls, useEditorStore } from "@/state/editorStore";
+import { useSessionStore, type SessionConfig } from "@/state/sessionStore";
 import {
   addQuestion,
   blankQuestion,
@@ -34,6 +35,16 @@ function isTextTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 }
+
+/** Practice runs show each answer right away, in quiz order, with every question. */
+const PRACTICE_CONFIG: SessionConfig = {
+  shuffleQuestions: false,
+  shuffleChoices: false,
+  revealMode: "after_each",
+  questionCount: 0,
+  timeLimitMinutes: null,
+  selfMark: true,
+};
 
 /** What the Library's New quiz passes to the editor. */
 export interface NewQuizState {
@@ -59,6 +70,7 @@ export function QuizEditorPage() {
     pending,
     saveAttempted,
     attemptSave,
+    setKeepOnLeave,
     load,
     apply,
     undo,
@@ -79,8 +91,10 @@ export function QuizEditorPage() {
     setLoadError(null);
     const kept = useEditorStore.getState();
     if (kept.keepOnLeave && kept.draft && kept.draft.id === id) {
-      // Back from a practice run: carry on with the same draft and history.
-      kept.setKeepOnLeave(false);
+      // Back from a practice run: carry on with the same draft and history. The
+      // flag clears after this settles, since React may run this effect twice
+      // and the cleanup between the runs must not reset the draft.
+      window.setTimeout(() => useEditorStore.getState().setKeepOnLeave(false), 0);
     } else if (isNew) {
       const start = newQuiz.start;
       // Starting from the example or pasted JSON counts as unsaved; a blank quiz doesn't.
@@ -105,18 +119,10 @@ export function QuizEditorPage() {
   // Issues show once Save has been tried, then update live until a save succeeds.
   const issues = useMemo(() => (draft && saveAttempted ? quizIssues(draft) : []), [draft, saveAttempted]);
 
-  // Images added since the last save show from memory; the rest from storage.
+  // A new loader whenever images are added, so the preview picks them up;
+  // it reads them from the store, so `pending` is only the signal to reload.
   const loadAssetUrls = useCallback(
-    async (quizId: string, paths: string[]) => {
-      const out: Record<string, string> = {};
-      const stored = paths.filter((path) => {
-        if (!pending[path]) return true;
-        out[path] = pending[path].url;
-        return false;
-      });
-      if (stored.length > 0 && quizId) Object.assign(out, await quizApi.getQuizAssetUrls(quizId, stored));
-      return out;
-    },
+    (quizId: string, paths: string[]) => loadEditorAssetUrls(quizId, paths),
     [pending],
   );
 
@@ -261,6 +267,27 @@ export function QuizEditorPage() {
       : isNew
         ? "New quiz"
         : "All changes saved";
+  // A practice run of the quiz as it is now, saved or not, starting at the open question.
+  const tryIt = () => {
+    const current = useEditorStore.getState().draft;
+    if (!current) return;
+    const blocking = quizIssues(current);
+    if (blocking.length > 0) {
+      attemptSave();
+      select(blocking[0].questionId ?? DETAILS);
+      return;
+    }
+    const routeId = current.id || "practice";
+    const session = useSessionStore.getState();
+    session.start({ ...current, id: routeId }, PRACTICE_CONFIG, {
+      returnTo: location.pathname,
+      returnState: location.state,
+    });
+    if (index >= 0) session.goTo(index);
+    setKeepOnLeave(true);
+    navigate(`/quiz/${routeId}/take`);
+  };
+
   const back = () => {
     if (!isNew) navigate(`/quiz/${id}`);
     else navigate(newQuiz.folderId ? `/folder/${newQuiz.folderId}` : "/");
@@ -325,9 +352,8 @@ export function QuizEditorPage() {
             <Button
               variant="secondary"
               size="sm"
-              disabled={dirty}
-              title={dirty ? "Save your changes to try the quiz" : undefined}
-              onClick={() => navigate(`/quiz/${id}/setup`, { state: { returnTo: `/quiz/${id}/edit` } })}
+              title="Take the quiz as it is now, from this question. Nothing is saved."
+              onClick={tryIt}
             >
               Try it
             </Button>
