@@ -14,7 +14,7 @@ import { QuestionAnswerList } from "@/components/quiz/QuestionAnswerList";
 import { PrintQuizDialog } from "@/components/quiz/PrintQuizDialog";
 import { AttemptList } from "@/components/library/AttemptList";
 import { MoveQuizDialog } from "@/components/library/MoveQuizDialog";
-import { SharingPanel } from "@/components/share/SharingPanel";
+import { useSharingControls } from "@/hooks/useSharingControls";
 import type { UseLibrary } from "@/hooks/useLibrary";
 import { useQuizBrowseData } from "@/hooks/useQuizBrowseData";
 import { useShareActions } from "@/hooks/useShareActions";
@@ -34,6 +34,9 @@ export function QuizBrowsePage() {
   const { quiz, attempts, loading, error, setError, removeAttempts } =
     useQuizBrowseData(id, metadata?.updatedAt);
   const shareActions = useShareActions(library);
+  const sharing = useSharingControls(metadata, shareActions, () =>
+    library.checkSharedQuizzes(true),
+  );
   const [printOpen, setPrintOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
 
@@ -92,16 +95,7 @@ export function QuizBrowsePage() {
           onClose={() => setPrintOpen(false)}
         />
 
-        {metadata && (
-          <section className="mb-8">
-            <SectionHeader title="Sharing" />
-            <SharingPanel
-              quiz={metadata}
-              actions={shareActions}
-              onCheck={() => library.checkSharedQuizzes(true)}
-            />
-          </section>
-        )}
+        {sharing.status}
         {shareActions.dialog}
 
         <section className="mb-8">
@@ -144,6 +138,7 @@ export function QuizBrowsePage() {
                 >
                   Delete
                 </Button>
+                {sharing.buttons}
                 <Button size="sm" onClick={() => navigate(`/quiz/${id}/setup`)}>
                   Start quiz
                 </Button>

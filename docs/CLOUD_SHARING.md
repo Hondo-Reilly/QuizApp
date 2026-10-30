@@ -95,12 +95,13 @@ The same helper serves the sharer's "Replace from file…" and, later, saves fro
 All in shared screens:
 
 - **Quiz card menu / quiz detail page:** "Share…" opens a dialog showing the code (`1234 5678`), a copy button, the expiry date with an "Extend" button, and "Stop sharing". On an already-shared quiz the same dialog shows "Publish update" when the local copy differs from the shared `sha256`.
-- **Replace from file…:** on the card menu and detail page, for any quiz. It replaces the quiz in place. On a shared quiz, it then points to "Publish update".
+- **Quiz page:** the share buttons sit in the Questions action row: "Replace…" (replace from file), "Share…", and "Check updates", which becomes a blue "Update quiz" once a check finds a newer version. A line under the page header shows the share code, version and expiry, or the code the quiz was imported from, only when there is one.
+- **Replace from file…:** on the card menu and quiz page, for any quiz. It replaces the quiz in place. On a shared quiz, it then points to "Publish update".
 - **Delete:** deleting a shared quiz (or a folder that contains one) warns that the shared copy will also be deleted from the server, and that people who imported it will stop getting updates. On confirm: `DELETE` on the server first, then local delete. If the server call fails (offline, or the share already expired), offer "Delete locally anyway". A 404 counts as already deleted.
 - **Library header:** "Import quiz" opens one dialog with a drop zone for `.json` / `.quiz` files, a "Browse files…" button, and a share code field. The code field formats input as `1234 5678`, calls `/info` to show the filename and size, then imports into the current folder. Dropped files go through `quizApi.importQuizFiles`, which takes their bytes on both platforms.
 - **Sharing an imported quiz:** while its code still works and it hasn't been replaced from a file, the share dialog shows that original code to pass on, with "Share my own copy instead" to upload a separate copy.
 - **Update badge:** cards with `cloudSource.available` show "Update available"; the detail page offers "Update quiz" with the new version number. `gone` shows "No longer shared" and stops checking that code.
-- **Checking:** `checkSharedQuizzes()` on Library mount, at most once every 6 hours (timestamp in `localStorage`, like other UI preferences), plus a manual "Check for updates" on the detail page. Codes that return `not_found` are dropped from future checks, as the server README asks.
+- **Checking:** `checkSharedQuizzes()` on Library mount, at most once every 6 hours (a timestamp kept in memory for the session), plus a manual "Check updates" on the quiz page. Codes that return `not_found` are dropped from future checks, as the server README asks.
 
 ## Expiry
 
