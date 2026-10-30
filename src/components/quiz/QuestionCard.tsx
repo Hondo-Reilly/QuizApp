@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Question, Scenario, UserAnswer } from "@shared/types";
 import { Card } from "@/components/ui/Card";
 import { TrueFalseInput } from "./TrueFalseInput";
@@ -26,6 +27,8 @@ export interface QuestionCardProps {
   onToggleFlag?: () => void;
   /** Enter in a short answer box; usually the page's primary action. */
   onEnter?: () => void;
+  /** A row at the top of the card, such as the editor's preview controls. */
+  header?: ReactNode;
 }
 
 export function QuestionCard({
@@ -39,9 +42,11 @@ export function QuestionCard({
   flagged = false,
   onToggleFlag,
   onEnter,
+  header,
 }: QuestionCardProps) {
   return (
     <Card className="flex flex-col gap-4">
+      {header}
       {scenario && <ScenarioPanel scenario={scenario} />}
 
       <div className="flex items-start justify-between gap-3">
