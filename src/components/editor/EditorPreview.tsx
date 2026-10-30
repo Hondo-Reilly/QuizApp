@@ -20,7 +20,7 @@ export function EditorPreview({ question, scenario }: { question: Question; scen
     <div className="flex flex-col gap-3">
       <QuestionCard
         header={
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-200 pb-3 dark:border-neutral-700">
             <span className={labelClasses}>Preview</span>
             <Toggle checked={reveal} onChange={setReveal} label="Check answer" labelClassName={labelClasses} labelSide="start" />
           </div>
