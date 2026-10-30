@@ -13,6 +13,8 @@ import { ErrorNotice, LoadingMessage, PageErrorState } from "@/components/ui/Pag
 import type { UseLibrary } from "@/hooks/useLibrary";
 import { forgetQuiz, rememberQuiz } from "@/lib/quizPageCache";
 import { isElectronApp } from "@/lib/runtime";
+import { pickImage } from "@/lib/editorImages";
+import { imageRefs } from "@shared/quizContent";
 import { DETAILS, useEditorStore } from "@/state/editorStore";
 import {
   addQuestion,
@@ -24,7 +26,7 @@ import {
   updateQuestion,
 } from "@shared/quizEdits";
 import { quizIssues, type QuizIssue } from "@shared/quizIssues";
-import type { Question, QuestionType, Quiz } from "@shared/types";
+import type { Question, QuestionType, Quiz, QuizImage } from "@shared/types";
 
 function isTextTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -35,8 +37,23 @@ export function QuizEditorPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const library = useOutletContext<UseLibrary>();
-  const { draft, dirty, past, future, selected, load, apply, undo, redo, select, markSaved, reset } =
-    useEditorStore();
+  const {
+    draft,
+    dirty,
+    past,
+    future,
+    selected,
+    pending,
+    load,
+    apply,
+    undo,
+    redo,
+    select,
+    markSaved,
+    addPending,
+    clearPending,
+    reset,
+  } = useEditorStore();
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -61,6 +78,33 @@ export function QuizEditorPage() {
   }, [id, load, reset]);
 
   const issues = useMemo(() => (draft ? quizIssues(draft) : []), [draft]);
+
+  // Images added since the last save show from memory; the rest from storage.
+  const loadAssetUrls = useCallback(
+    async (quizId: string, paths: string[]) => {
+      const out: Record<string, string> = {};
+      const stored = paths.filter((path) => {
+        if (!pending[path]) return true;
+        out[path] = pending[path].url;
+        return false;
+      });
+      if (stored.length > 0 && quizId) Object.assign(out, await quizApi.getQuizAssetUrls(quizId, stored));
+      return out;
+    },
+    [pending],
+  );
+
+  const addImage = useCallback(async (): Promise<QuizImage | null> => {
+    try {
+      const upload = await pickImage();
+      if (!upload) return null;
+      addPending(upload);
+      return { src: upload.path };
+    } catch (err) {
+      setSaveError(`Could not add that image. ${err instanceof Error ? err.message : ""}`.trim());
+      return null;
+    }
+  }, [addPending]);
   const index = draft ? draft.questions.findIndex((question) => question.id === selected) : -1;
   const question = index >= 0 ? draft!.questions[index] : null;
 
@@ -76,8 +120,14 @@ export function QuizEditorPage() {
     setSaving(true);
     setSaveError(null);
     try {
-      await quizApi.saveQuiz(current);
+      const { pending: added } = useEditorStore.getState();
+      const used = new Set(imageRefs(current));
+      const uploads = Object.entries(added)
+        .filter(([path]) => used.has(path))
+        .map(([path, { data }]) => ({ path, data }));
+      await quizApi.saveQuiz(current, uploads);
       markSaved(current);
+      clearPending(uploads.map((upload) => upload.path));
       // Cached attempts may have gained snapshots, so the quiz's cache starts over.
       forgetQuiz(current.id);
       rememberQuiz(current);
@@ -87,7 +137,7 @@ export function QuizEditorPage() {
     } finally {
       setSaving(false);
     }
-  }, [saving, select, markSaved, library]);
+  }, [saving, select, markSaved, clearPending, library]);
 
   // Cmd/Ctrl+S saves anywhere. Undo and redo are left to text fields while one has focus.
   useEffect(() => {
@@ -158,7 +208,7 @@ export function QuizEditorPage() {
     : undefined;
 
   return (
-    <QuizContentProvider quiz={draft}>
+    <QuizContentProvider quiz={draft} loadAssetUrls={loadAssetUrls}>
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <button
@@ -229,6 +279,8 @@ export function QuizEditorPage() {
                 total={draft.questions.length}
                 scenarios={draft.scenarios ?? []}
                 issues={issues.filter((issue) => issue.questionId === question.id)}
+                markdown={draft.textFormat === "markdown"}
+                onAddImage={addImage}
                 onChange={changeQuestion(question.id)}
                 onMove={(to) => apply((quiz) => moveQuestion(quiz, index, to))}
                 onDuplicate={() => {
@@ -248,6 +300,7 @@ export function QuizEditorPage() {
                 issues={issues}
                 onChange={(change: (quiz: Quiz) => Quiz, key?: string) => apply(change, key ? `details:${key}` : undefined)}
                 onShowIssue={showIssue}
+                onAddImage={addImage}
               />
             )}
           </section>

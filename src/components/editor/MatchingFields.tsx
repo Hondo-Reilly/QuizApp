@@ -11,11 +11,13 @@ import {
   updateMatchItem,
 } from "@shared/quizEdits";
 import type { QuizIssue } from "@shared/quizIssues";
-import type { MatchingQuestion, Question } from "@shared/types";
+import type { MatchingQuestion, Question, QuizImage } from "@shared/types";
+import { ImageField } from "./ImageField";
 import {
   AddButton,
   DownIcon,
   IconButton,
+  ImageIcon,
   inputClasses,
   issuesAt,
   IssueText,
@@ -29,10 +31,12 @@ export function MatchingFields({
   question,
   issues,
   onChange,
+  onAddImage,
 }: {
   question: MatchingQuestion;
   issues: readonly QuizIssue[];
   onChange: QuestionChange;
+  onAddImage?: () => Promise<QuizImage | null>;
 }) {
   const edit = (change: (q: MatchingQuestion) => Question, key?: string) =>
     onChange((q) => (q.type === "matching" ? change(q) : q), key);
@@ -129,6 +133,16 @@ export function MatchingFields({
                     Distractor
                   </span>
                 )}
+                {onAddImage && !choice.image && (
+                  <IconButton
+                    label={`Add an image to choice ${choice.letter}`}
+                    onClick={() =>
+                      void onAddImage().then((image) => image && edit((q) => updateChoice(q, choice.id, { image })))
+                    }
+                  >
+                    <ImageIcon />
+                  </IconButton>
+                )}
                 <IconButton
                   label={`Move choice ${choice.letter} up`}
                   disabled={index === 0}
@@ -147,6 +161,16 @@ export function MatchingFields({
                   <RemoveIcon />
                 </IconButton>
               </div>
+              {choice.image && onAddImage && (
+                <div className="pl-8">
+                  <ImageField
+                    compact
+                    image={choice.image}
+                    onAddImage={onAddImage}
+                    onChange={(image) => edit((q) => updateChoice(q, choice.id, { image }))}
+                  />
+                </div>
+              )}
               <div className="pl-8">
                 <IssueText issues={issuesAt(issues, `choices.${index}.text`)} />
               </div>

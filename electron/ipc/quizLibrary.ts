@@ -91,10 +91,17 @@ export function registerQuizLibraryHandlers(): void {
   ipcMain.handle(IpcChannels.getQuiz, (_e, id: string) => getQuiz(id));
   ipcMain.handle(
     IpcChannels.createQuiz,
-    (_e, payload: { quiz: unknown; folderId?: unknown }) =>
-      createQuiz(payload?.quiz, typeof payload?.folderId === "string" ? payload.folderId : null),
+    (_e, payload: { quiz: unknown; folderId?: unknown; assets?: unknown }) =>
+      createQuiz(
+        payload?.quiz,
+        typeof payload?.folderId === "string" ? payload.folderId : null,
+        payload?.assets,
+      ),
   );
-  ipcMain.handle(IpcChannels.saveQuiz, (_e, quiz: unknown) => saveQuiz(quiz));
+  ipcMain.handle(
+    IpcChannels.saveQuiz,
+    (_e, payload: { quiz: unknown; assets?: unknown }) => saveQuiz(payload?.quiz, payload?.assets),
+  );
   ipcMain.handle(IpcChannels.deleteQuiz, (_e, id: string) => deleteQuiz(id));
   ipcMain.handle(
     IpcChannels.moveQuiz,

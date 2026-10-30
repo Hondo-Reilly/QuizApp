@@ -1,9 +1,14 @@
 export function pickQuizFiles(): Promise<File[] | null> {
+  return pickFiles(".quiz,.json,application/json", true);
+}
+
+/** Opens the file picker. Resolves null if it is cancelled. */
+export function pickFiles(accept: string, multiple: boolean): Promise<File[] | null> {
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".quiz,.json,application/json";
-    input.multiple = true;
+    input.accept = accept;
+    input.multiple = multiple;
     let settled = false;
     const finish = (files: File[] | null) => {
       if (settled) return;

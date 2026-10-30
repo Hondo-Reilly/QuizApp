@@ -74,8 +74,8 @@ export const browserQuizApi: QuizApi = {
       return snap.quizzes;
     }),
   getQuiz: (id) => run(() => getBrowserQuiz(id)),
-  createQuiz: (quiz, folderId = null) => run(() => createBrowserQuiz(quiz, folderId)),
-  saveQuiz: (quiz) => run(() => saveBrowserQuiz(quiz)),
+  createQuiz: (quiz, folderId = null, assets) => run(() => createBrowserQuiz(quiz, folderId, assets)),
+  saveQuiz: (quiz, assets) => run(() => saveBrowserQuiz(quiz, assets)),
   exportQuiz: (id) =>
     run(async () => {
       const exported = await exportBrowserQuiz(id);

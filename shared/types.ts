@@ -204,6 +204,12 @@ export interface UpdateProgress {
   percent: number | null;
 }
 
+/** An image added in the editor, saved with the quiz under images/. */
+export interface QuizAssetUpload {
+  path: string;
+  data: Uint8Array;
+}
+
 /** A photo response: file names of the attempt's stored photos, e.g. "q10-1.jpg". */
 export interface PhotoAnswer {
   photos: string[];

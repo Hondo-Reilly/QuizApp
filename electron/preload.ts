@@ -12,6 +12,7 @@ import type {
   Folder,
   LibrarySnapshot,
   Quiz,
+  QuizAssetUpload,
   QuizAttempt,
   QuizMetadata,
   SaveAttemptInput,
@@ -26,10 +27,10 @@ const quizApi: QuizApi = {
     ipcRenderer.invoke(IpcChannels.listQuizzes),
   getQuiz: (id: string): Promise<Quiz | null> =>
     ipcRenderer.invoke(IpcChannels.getQuiz, id),
-  createQuiz: (quiz: Quiz, folderId: string | null = null): Promise<QuizMetadata> =>
-    ipcRenderer.invoke(IpcChannels.createQuiz, { quiz, folderId }),
-  saveQuiz: (quiz: Quiz): Promise<QuizMetadata> =>
-    ipcRenderer.invoke(IpcChannels.saveQuiz, quiz),
+  createQuiz: (quiz: Quiz, folderId: string | null = null, assets: QuizAssetUpload[] = []): Promise<QuizMetadata> =>
+    ipcRenderer.invoke(IpcChannels.createQuiz, { quiz, folderId, assets }),
+  saveQuiz: (quiz: Quiz, assets: QuizAssetUpload[] = []): Promise<QuizMetadata> =>
+    ipcRenderer.invoke(IpcChannels.saveQuiz, { quiz, assets }),
   exportQuiz: (id: string): Promise<boolean> =>
     ipcRenderer.invoke(IpcChannels.exportQuiz, id),
   revealQuiz: (id: string): Promise<void> =>

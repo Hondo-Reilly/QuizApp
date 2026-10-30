@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Quiz } from "@shared/types";
+import type { Quiz, QuizAssetUpload } from "@shared/types";
 
 /** "details" selects the quiz's own fields; anything else is a question id. */
 export const DETAILS = "details";
@@ -18,6 +18,11 @@ interface EditorState {
   lastKey: string | null;
   lastAt: number;
   selected: string;
+  /**
+   * Images added since the last save, by path, with a URL to show them. They
+   * are kept even when an edit stops using them, so undo can bring them back.
+   */
+  pending: Record<string, { data: Uint8Array; url: string }>;
   load: (quiz: Quiz) => void;
   /**
    * Applies an edit. Edits with the same key in quick succession, such as
@@ -28,6 +33,9 @@ interface EditorState {
   redo: () => void;
   select: (id: string) => void;
   markSaved: (quiz: Quiz) => void;
+  addPending: (upload: QuizAssetUpload) => void;
+  /** Drops images that are now stored with the quiz. */
+  clearPending: (paths: readonly string[]) => void;
   reset: () => void;
 }
 
@@ -40,7 +48,15 @@ const empty = {
   lastKey: null,
   lastAt: 0,
   selected: DETAILS,
+  pending: {} as Record<string, { data: Uint8Array; url: string }>,
 };
+
+function revoke(pending: EditorState["pending"], paths: readonly string[]): void {
+  for (const path of paths) {
+    const url = pending[path]?.url;
+    if (url) URL.revokeObjectURL(url);
+  }
+}
 
 /** Keeps the selection on something that still exists after undo or redo. */
 function validSelection(quiz: Quiz, selected: string): string {
@@ -51,13 +67,15 @@ function validSelection(quiz: Quiz, selected: string): string {
 export const useEditorStore = create<EditorState>((set, get) => ({
   ...empty,
 
-  load: (quiz) =>
+  load: (quiz) => {
+    revoke(get().pending, Object.keys(get().pending));
     set({
       ...empty,
       draft: quiz,
       savedJson: JSON.stringify(quiz),
       selected: quiz.questions[0]?.id ?? DETAILS,
-    }),
+    });
+  },
 
   apply: (change, key) => {
     const { draft, past, lastKey, lastAt, savedJson } = get();
@@ -112,5 +130,20 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ savedJson, dirty: draft ? JSON.stringify(draft) !== savedJson : false, lastKey: null });
   },
 
-  reset: () => set(empty),
+  addPending: ({ path, data }) => {
+    const url = URL.createObjectURL(new Blob([data as BlobPart]));
+    set({ pending: { ...get().pending, [path]: { data, url } } });
+  },
+
+  clearPending: (paths) => {
+    const pending = { ...get().pending };
+    revoke(pending, paths);
+    for (const path of paths) delete pending[path];
+    set({ pending });
+  },
+
+  reset: () => {
+    revoke(get().pending, Object.keys(get().pending));
+    set(empty);
+  },
 }));

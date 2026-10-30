@@ -1,7 +1,7 @@
 import { useId } from "react";
 import { changeQuestionType } from "@shared/quizEdits";
 import type { QuizIssue } from "@shared/quizIssues";
-import type { Question, QuestionType, Scenario } from "@shared/types";
+import type { Question, QuestionType, QuizImage, Scenario } from "@shared/types";
 import { ChoiceFields, TrueFalseFields } from "./ChoiceFields";
 import {
   CopyIcon,
@@ -15,8 +15,11 @@ import {
   UpIcon,
   type QuestionChange,
 } from "./EditorFields";
+import { ImageField } from "./ImageField";
 import { MatchingFields } from "./MatchingFields";
 import { NumericFields } from "./NumericFields";
+import { OpenFields } from "./OpenFields";
+import { RichTextField } from "./RichTextField";
 
 export const QUESTION_TYPES: { type: QuestionType; label: string; hint: string; graded: boolean }[] = [
   { type: "true_false", label: "True / False", hint: "One statement, true or false.", graded: true },
@@ -35,6 +38,10 @@ export interface QuestionFormProps {
   total: number;
   scenarios: readonly Scenario[];
   issues: readonly QuizIssue[];
+  /** Whether the quiz uses Markdown, which turns on the formatting tools. */
+  markdown: boolean;
+  /** Picks an image file, adds it to the quiz, and returns it. */
+  onAddImage?: () => Promise<QuizImage | null>;
   onChange: QuestionChange;
   onMove: (to: number) => void;
   onDuplicate: () => void;
@@ -47,6 +54,8 @@ export function QuestionForm({
   total,
   scenarios,
   issues,
+  markdown,
+  onAddImage,
   onChange,
   onMove,
   onDuplicate,
@@ -111,34 +120,35 @@ export function QuestionForm({
       </div>
 
       <EditorField label="Prompt" htmlFor={`${ids}-prompt`} issues={issuesAt(issues, "prompt")}>
-        <textarea
+        <RichTextField
           id={`${ids}-prompt`}
           rows={3}
+          markdown={markdown}
           value={question.prompt}
           placeholder="What do you want to ask?"
-          onChange={(event) => onChange((q) => ({ ...q, prompt: event.target.value }), "prompt")}
-          className={`${inputClasses} resize-y`}
+          onAddImage={onAddImage}
+          onChange={(prompt) => onChange((q) => ({ ...q, prompt }), "prompt")}
         />
       </EditorField>
 
-      {question.image && (
-        <p className="text-xs text-slate-500 dark:text-neutral-400">
-          Shows the image {question.image.src}. Image editing comes in a later update.
-        </p>
+      {onAddImage && (
+        <ImageField
+          label="Question image"
+          image={question.image}
+          onAddImage={onAddImage}
+          onChange={(image) => onChange((q) => ({ ...q, image }))}
+        />
       )}
 
       {question.type === "true_false" && <TrueFalseFields question={question} onChange={onChange} />}
       {(question.type === "multiple_choice" || question.type === "multi_answer") && (
-        <ChoiceFields question={question} issues={issues} onChange={onChange} />
+        <ChoiceFields question={question} issues={issues} onChange={onChange} onAddImage={onAddImage} />
       )}
       {question.type === "numeric" && <NumericFields question={question} issues={issues} onChange={onChange} />}
-      {question.type === "matching" && <MatchingFields question={question} issues={issues} onChange={onChange} />}
-      {open && (
-        <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
-          QuizApp doesn&apos;t grade this type. Editing its sample answer, rubric, and limits comes in a
-          later update; saving keeps them as they are.
-        </p>
+      {question.type === "matching" && (
+        <MatchingFields question={question} issues={issues} onChange={onChange} onAddImage={onAddImage} />
       )}
+      {open && <OpenFields question={question} issues={issues} markdown={markdown} onChange={onChange} />}
 
       <EditorField
         label="Explanation"
@@ -146,14 +156,13 @@ export function QuestionForm({
         hint="Shown after answering and on review pages."
         issues={issuesAt(issues, "explanation")}
       >
-        <textarea
+        <RichTextField
           id={`${ids}-explanation`}
           rows={3}
+          markdown={markdown}
           value={question.explanation ?? ""}
-          onChange={(event) =>
-            onChange((q) => ({ ...q, explanation: event.target.value || undefined }), "explanation")
-          }
-          className={`${inputClasses} resize-y`}
+          onAddImage={onAddImage}
+          onChange={(explanation) => onChange((q) => ({ ...q, explanation: explanation || undefined }), "explanation")}
         />
       </EditorField>
 

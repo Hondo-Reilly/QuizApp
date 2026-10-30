@@ -122,6 +122,14 @@ export const TrashIcon = () => (
   </svg>
 );
 
+export const ImageIcon = () => (
+  <svg {...iconProps}>
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <circle cx="9" cy="10" r="2" />
+    <path d="M21 17l-5-5-9 8" />
+  </svg>
+);
+
 export function AddButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
     <button

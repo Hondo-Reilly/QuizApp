@@ -5,7 +5,7 @@ import { imageContentType, imageRefs } from "@shared/quizContent";
 import { convertSvgImages, readQuizFile, writeQuizPackage } from "@shared/quizPackage";
 import { base64ToBytes, rasterizeSvgInPage } from "@shared/svgRaster";
 import { allocateStorageId, slugifyTitle } from "@shared/storageId";
-import type { Folder, LibrarySnapshot, Quiz, QuizMetadata } from "@shared/types";
+import type { Folder, LibrarySnapshot, Quiz, QuizAssetUpload, QuizMetadata } from "@shared/types";
 import type { CreateFolderPayload, UpdateFolderPayload } from "@shared/quizApi";
 import { attemptChangesForSavedQuiz, attemptChangesWithoutQuizzes } from "./browserAttempts";
 import {
@@ -19,6 +19,7 @@ import {
   type RecordChange,
 } from "./idbRecords";
 import {
+  checkedUploads,
   missingImage,
   missingImageMessage,
   prepareSavedQuiz,
@@ -114,17 +115,31 @@ async function quizRecordDeletes(id: string): Promise<RecordChange[]> {
   ];
 }
 
-/** Stores a quiz made in the editor. It starts without images. */
-export async function createBrowserQuiz(raw: unknown, folderId: string | null): Promise<QuizMetadata> {
+function uploadChanges(id: string, uploads: readonly QuizAssetUpload[]): RecordChange[] {
+  return uploads.map(({ path, data }) => ({
+    key: assetKey(id, path),
+    value: { type: imageContentType(path), data },
+  }));
+}
+
+/** Stores a quiz made in the editor, with the images it uses. */
+export async function createBrowserQuiz(
+  raw: unknown,
+  folderId: string | null,
+  rawAssets?: unknown,
+): Promise<QuizMetadata> {
   const library = await readLibrary();
   const title = raw && typeof raw === "object" ? String((raw as { title?: unknown }).title ?? "") : "";
   const id = allocateStorageId(undefined, title, new Set(library.quizzes.map((quiz) => quiz.id)), () => nanoid(6));
   const quiz = prepareSavedQuiz(raw, id);
-  const missing = missingImage(quiz, () => false);
+  const uploads = checkedUploads(rawAssets, quiz);
+  const uploaded = new Set(uploads.map((upload) => upload.path));
+  const missing = missingImage(quiz, (src) => uploaded.has(src));
   if (missing) throw new Error(missingImageMessage(missing));
   const folderExists = folderId === null || library.folders.some((folder) => folder.id === folderId);
   const meta = toMetadata(quiz, new Date().toISOString(), folderExists ? folderId : null);
   await changeRecords([
+    ...uploadChanges(id, uploads),
     { key: quizKey(id), value: quiz },
     { key: LIBRARY_KEY, value: { ...library, quizzes: [...library.quizzes, meta] } },
   ]);
@@ -132,21 +147,24 @@ export async function createBrowserQuiz(raw: unknown, folderId: string | null): 
 }
 
 /**
- * Saves an edited quiz over the stored one, in one transaction with the
- * attempts' copies of what they asked. Its images must already be stored.
+ * Saves an edited quiz over the stored one, in one transaction with images
+ * added in the editor and the attempts' copies of what they asked.
  */
-export async function saveBrowserQuiz(raw: unknown): Promise<QuizMetadata> {
+export async function saveBrowserQuiz(raw: unknown, rawAssets?: unknown): Promise<QuizMetadata> {
   const id = raw && typeof raw === "object" ? (raw as { id?: unknown }).id : undefined;
   const previous = typeof id === "string" ? await getBrowserQuiz(id) : null;
   const library = await readLibrary();
   const entry = library.quizzes.find((quiz) => quiz.id === id);
   if (!previous || !entry) throw new Error("Quiz not found");
   const quiz = prepareSavedQuiz(raw, previous.id);
+  const uploads = checkedUploads(rawAssets, quiz);
+  const uploaded = new Set(uploads.map((upload) => upload.path));
   const stored = new Set(await readKeysWithPrefix(assetKeyPrefix(quiz.id)));
-  const missing = missingImage(quiz, (src) => stored.has(assetKey(quiz.id, src)));
+  const missing = missingImage(quiz, (src) => uploaded.has(src) || stored.has(assetKey(quiz.id, src)));
   if (missing) throw new Error(missingImageMessage(missing));
   const meta = savedMetadata(entry, quiz, new Date().toISOString());
   await changeRecords([
+    ...uploadChanges(quiz.id, uploads),
     ...(await attemptChangesForSavedQuiz(previous, quiz)),
     { key: quizKey(quiz.id), value: quiz },
     {

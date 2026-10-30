@@ -276,3 +276,56 @@ export function blankQuiz(): Quiz {
     questions: [blankQuestion("multiple_choice", [])],
   };
 }
+
+/**
+ * Applies a change to every field that Markdown formats: prompts,
+ * explanations, choices, matching items, scenario text, and the sample
+ * answers and rubrics of written questions (not code).
+ */
+export function mapQuizText(quiz: Quiz, change: (text: string) => string): Quiz {
+  const optional = (text: string | undefined) => (text === undefined ? undefined : change(text));
+  return {
+    ...quiz,
+    scenarios: quiz.scenarios?.map((scenario) => ({ ...scenario, text: change(scenario.text) })),
+    questions: quiz.questions.map((question): Question => {
+      const base = { ...question, prompt: change(question.prompt), explanation: optional(question.explanation) };
+      switch (base.type) {
+        case "multiple_choice":
+        case "multi_answer":
+          return { ...base, choices: base.choices.map((choice) => ({ ...choice, text: change(choice.text) })) };
+        case "matching":
+          return {
+            ...base,
+            choices: base.choices.map((choice) => ({ ...choice, text: change(choice.text) })),
+            items: base.items.map((item) => ({ ...item, text: change(item.text) })),
+          };
+        case "short_answer":
+        case "image_response":
+          return { ...base, sampleAnswer: optional(base.sampleAnswer), rubric: base.rubric?.map(change) };
+        case "long_answer":
+          return base.code
+            ? { ...base, rubric: base.rubric?.map(change) }
+            : { ...base, sampleAnswer: optional(base.sampleAnswer), rubric: base.rubric?.map(change) };
+        default:
+          return base;
+      }
+    }),
+  };
+}
+
+const LONE_DOLLAR = /(?<!\\)\$/g;
+
+/** How many formatted fields have a $ that Markdown would read as math. */
+export function countDollarFields(quiz: Quiz): number {
+  let count = 0;
+  mapQuizText(quiz, (text) => {
+    if (new RegExp(LONE_DOLLAR).test(text)) count += 1;
+    return text;
+  });
+  return count;
+}
+
+/** Turns every $ into \$, so prices stay text once Markdown is on. */
+export function escapeDollars(quiz: Quiz): Quiz {
+  return mapQuizText(quiz, (text) => text.replace(LONE_DOLLAR, "\\$"));
+}

@@ -14,6 +14,7 @@ import { withSvgRasterizer } from "./svgRaster";
 import { collectDescendantFolderIds, toMetadata } from "../../shared/library";
 import { allocateStorageId, slugifyTitle } from "../../shared/storageId";
 import {
+  checkedUploads,
   missingImage,
   missingImageMessage,
   prepareSavedQuiz,
@@ -24,6 +25,7 @@ import type {
   Folder,
   LibrarySnapshot,
   Quiz,
+  QuizAssetUpload,
   QuizMetadata,
 } from "../../shared/types";
 import { deleteAttemptsForQuizzes, snapshotAttemptsForQuiz } from "./attemptStore";
@@ -210,17 +212,37 @@ async function importQuizFile(
   return meta;
 }
 
-/** Stores a quiz made in the editor. It starts without images. */
-export function createQuiz(raw: unknown, folderId: string | null = null): Promise<QuizMetadata> {
+async function writeUploads(id: string, uploads: readonly QuizAssetUpload[]): Promise<void> {
+  for (const { path: rel, data } of uploads) {
+    const file = quizAssetFile(id, rel);
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(file, data);
+  }
+}
+
+/** Stores a quiz made in the editor, with the images it uses. */
+export function createQuiz(
+  raw: unknown,
+  folderId: string | null = null,
+  rawAssets?: unknown,
+): Promise<QuizMetadata> {
   return libraryWrites.enqueue(async () => {
     const index = await readIndex();
     const title = raw && typeof raw === "object" ? String((raw as { title?: unknown }).title ?? "") : "";
     const id = allocateStorageId(undefined, title, new Set(index.quizzes.map((q) => q.id)), () => nanoid(6));
     const quiz = prepareSavedQuiz(raw, id);
-    const missing = missingImage(quiz, () => false);
+    const uploads = checkedUploads(rawAssets, quiz);
+    const uploaded = new Set(uploads.map((upload) => upload.path));
+    const missing = missingImage(quiz, (src) => uploaded.has(src));
     if (missing) throw new Error(missingImageMessage(missing));
     await ensureDir();
-    await writeJsonAtomic(quizFile(id), quiz);
+    try {
+      await writeUploads(id, uploads);
+      await writeJsonAtomic(quizFile(id), quiz);
+    } catch (err) {
+      await removeQuizAssets(id);
+      throw err;
+    }
     const folderExists = folderId === null || index.folders.some((f) => f.id === folderId);
     const meta = toMetadata(quiz, new Date().toISOString(), folderExists ? folderId : null);
     await writeIndex({ ...index, quizzes: [...index.quizzes, meta] });
@@ -229,10 +251,11 @@ export function createQuiz(raw: unknown, folderId: string | null = null): Promis
 }
 
 /**
- * Saves an edited quiz over the stored one. Its images must already be stored
- * with it. Attempts keep a copy of what they asked before the quiz changes.
+ * Saves an edited quiz over the stored one, with images added in the editor.
+ * Attempts keep a copy of what they asked before the quiz changes. Images the
+ * quiz stops using stay stored, since those copies may still show them.
  */
-export function saveQuiz(raw: unknown): Promise<QuizMetadata> {
+export function saveQuiz(raw: unknown, rawAssets?: unknown): Promise<QuizMetadata> {
   return libraryWrites.enqueue(async () => {
     const id = raw && typeof raw === "object" ? (raw as { id?: unknown }).id : undefined;
     const previous = typeof id === "string" ? await getQuiz(id) : null;
@@ -240,9 +263,12 @@ export function saveQuiz(raw: unknown): Promise<QuizMetadata> {
     const entry = index.quizzes.find((q) => q.id === id);
     if (!previous || !entry) throw new Error("Quiz not found");
     const quiz = prepareSavedQuiz(raw, previous.id);
-    const missing = missingImage(quiz, (src) => existsSync(quizAssetFile(quiz.id, src)));
+    const uploads = checkedUploads(rawAssets, quiz);
+    const uploaded = new Set(uploads.map((upload) => upload.path));
+    const missing = missingImage(quiz, (src) => uploaded.has(src) || existsSync(quizAssetFile(quiz.id, src)));
     if (missing) throw new Error(missingImageMessage(missing));
-    // Snapshots first: if the quiz write then fails, they only repeat the stored quiz.
+    // Images, then snapshots, then the quiz: until the quiz is written, nothing points at the new images.
+    await writeUploads(quiz.id, uploads);
     await snapshotAttemptsForQuiz(previous, quiz);
     await writeJsonAtomic(quizFile(quiz.id), quiz);
     const meta = savedMetadata(entry, quiz, new Date().toISOString());
