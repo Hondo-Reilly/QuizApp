@@ -195,6 +195,25 @@ export function QuizEditorPage() {
 
   const showIssue = (issue: QuizIssue) => select(issue.questionId ?? DETAILS);
 
+  const duplicateById = (questionId: string) => {
+    if (!draft) return;
+    const copyId = uniqueId("q", draft.questions.map((item) => item.id));
+    apply((quiz) => duplicateQuestion(quiz, questionId));
+    select(copyId);
+  };
+
+  // Deleting the open question opens its neighbor; deleting another keeps the selection.
+  const deleteById = (questionId: string) => {
+    if (!draft) return;
+    const at = draft.questions.findIndex((item) => item.id === questionId);
+    if (at === -1) return;
+    apply((quiz) => removeQuestion(quiz, questionId));
+    if (selected === questionId) {
+      const next = draft.questions[at + 1] ?? draft.questions[at - 1];
+      select(next?.id ?? DETAILS);
+    }
+  };
+
   if (loadError) {
     return <PageErrorState message={loadError} backLabel="Back to Library" onBack={() => navigate("/")} />;
   }
@@ -272,6 +291,8 @@ export function QuizEditorPage() {
                 onSelect={select}
                 onMove={(from, to) => apply((quiz) => moveQuestion(quiz, from, to))}
                 onAdd={() => setAdding(true)}
+                onDuplicate={duplicateById}
+                onDelete={deleteById}
               />
             </aside>
           </div>
@@ -289,16 +310,8 @@ export function QuizEditorPage() {
                 onAddImage={addImage}
                 onChange={changeQuestion(question.id)}
                 onMove={(to) => apply((quiz) => moveQuestion(quiz, index, to))}
-                onDuplicate={() => {
-                  const copyId = uniqueId("q", draft.questions.map((item) => item.id));
-                  apply((quiz) => duplicateQuestion(quiz, question.id));
-                  select(copyId);
-                }}
-                onDelete={() => {
-                  const next = draft.questions[index + 1] ?? draft.questions[index - 1];
-                  apply((quiz) => removeQuestion(quiz, question.id));
-                  select(next?.id ?? DETAILS);
-                }}
+                onDuplicate={() => duplicateById(question.id)}
+                onDelete={() => deleteById(question.id)}
               />
             ) : (
               <DetailsForm

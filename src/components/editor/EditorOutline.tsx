@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ContextMenu } from "@/components/ui/ContextMenu";
 import { markdownPreview } from "@/lib/markdownPreview";
 import { questionTypeLabel } from "@shared/questionTypes";
 import { moveTargetForSlot } from "@shared/quizEdits";
@@ -15,6 +16,8 @@ export interface EditorOutlineProps {
   onSelect: (id: string) => void;
   onMove: (from: number, to: number) => void;
   onAdd: () => void;
+  onDuplicate: (questionId: string) => void;
+  onDelete: (questionId: string) => void;
 }
 
 function rowClasses(selected: boolean): string {
@@ -43,7 +46,18 @@ const DropLine = ({ edge }: { edge: "top" | "bottom" }) => (
 );
 
 /** The quiz details and the questions, in order. Drag a question to move it. */
-export function EditorOutline({ quiz, issues, selected, onSelect, onMove, onAdd }: EditorOutlineProps) {
+export function EditorOutline({
+  quiz,
+  issues,
+  selected,
+  onSelect,
+  onMove,
+  onAdd,
+  onDuplicate,
+  onDelete,
+}: EditorOutlineProps) {
+  // The right-click menu of one question row.
+  const [menu, setMenu] = useState<{ x: number; y: number; questionId: string } | null>(null);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   // The gap the dragged question would drop into: 0 is above the first, n below the last.
   const [dropSlot, setDropSlot] = useState<number | null>(null);
@@ -112,7 +126,22 @@ export function EditorOutline({ quiz, issues, selected, onSelect, onMove, onAdd 
             >
               {lineAt === index && <DropLine edge="top" />}
               {lineAt === index + 1 && index === quiz.questions.length - 1 && <DropLine edge="bottom" />}
-              <button type="button" onClick={() => onSelect(question.id)} className={rowClasses(selected === question.id)}>
+              <button
+                type="button"
+                onClick={() => onSelect(question.id)}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  // The keyboard's menu key reports no pointer position, so use the row's corner.
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  const fromKeyboard = event.clientX === 0 && event.clientY === 0;
+                  setMenu({
+                    x: fromKeyboard ? rect.left + 16 : event.clientX,
+                    y: fromKeyboard ? rect.bottom : event.clientY,
+                    questionId: question.id,
+                  });
+                }}
+                className={rowClasses(selected === question.id)}
+              >
                 <span aria-hidden="true" className="cursor-grab text-slate-400 dark:text-neutral-500">
                   ⋮⋮
                 </span>
@@ -142,6 +171,19 @@ export function EditorOutline({ quiz, issues, selected, onSelect, onMove, onAdd 
         <PlusIcon />
         Add question
       </button>
+      <ContextMenu
+        position={menu}
+        label="Question actions"
+        onClose={() => setMenu(null)}
+        items={
+          menu
+            ? [
+                { label: "Duplicate", onSelect: () => onDuplicate(menu.questionId) },
+                { label: "Delete", onSelect: () => onDelete(menu.questionId) },
+              ]
+            : []
+        }
+      />
     </nav>
   );
 }
