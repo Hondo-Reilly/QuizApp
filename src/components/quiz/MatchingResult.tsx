@@ -41,6 +41,8 @@ export function MatchingResult({
       <ol className="flex flex-col gap-2">
         {question.items.map((item, index) => {
           const right = matches[item.id] === item.answer;
+          const showYours = showAnswer;
+          const showCorrect = !showAnswer || !right;
           const tone = !showAnswer
             ? "border-slate-200 dark:border-neutral-800"
             : right
@@ -52,8 +54,11 @@ export function MatchingResult({
                 <span className="shrink-0 tabular-nums">{index + 1}.</span>
                 <RichText text={item.text} inline className="min-w-0" />
               </div>
-              <dl className="grid grid-cols-1 gap-1 sm:grid-cols-2">
-                {showAnswer && (
+              {/* Two columns only when both matches show; one match gets the full width. */}
+              <dl
+                className={`grid grid-cols-1 gap-1 ${showYours && showCorrect ? "sm:grid-cols-2" : ""}`}
+              >
+                {showYours && (
                   <div>
                     <dt className="text-xs uppercase tracking-wide text-slate-500 dark:text-neutral-400">Your match</dt>
                     <dd className={right ? "text-slate-800 dark:text-neutral-200" : "text-red-700 dark:text-red-400"}>
@@ -61,9 +66,18 @@ export function MatchingResult({
                     </dd>
                   </div>
                 )}
-                {(!showAnswer || !right) && (
+                {showCorrect && (
                   <div>
-                    <dt className="text-xs uppercase tracking-wide text-slate-500 dark:text-neutral-400">Correct match</dt>
+                    {/* Alone on the line, the green answer needs no visible label. */}
+                    <dt
+                      className={
+                        showYours
+                          ? "text-xs uppercase tracking-wide text-slate-500 dark:text-neutral-400"
+                          : "sr-only"
+                      }
+                    >
+                      Correct match
+                    </dt>
                     <dd className="text-green-700 dark:text-green-400">{shown(item.answer)}</dd>
                   </div>
                 )}

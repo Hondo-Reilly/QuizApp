@@ -65,6 +65,7 @@ Include a short keyboard and screen-reader smoke pass on Library, Setup, Take qu
 | Automated fast suite | Shared tests + browser repository/component tests | Shared tests + temporary-file repository tests | Pure mobile rules + HTTP/SSE integration |
 | Automated journey | Import → folder → setup → take → review → reload → Previous attempts | Import → setup → take → saved attempt → reopen app | Pair → answer → desktop sync → finish |
 | Manual release check | Chrome and Safari print/Save as PDF, cancel, and IndexedDB persistence | Open packaged Mac app; real PDF save; migrate existing user data from a copy | Pair a real phone on Wi-Fi; disconnect/reconnect, stop, and expired session |
+| Cloud sharing | Share → import the code in another browser profile → replace from file → publish update → "Update available" → update → delete the shared quiz and confirm the code returns 404 | The same journey from the packaged app, sharing with the web build and back | — |
 
 Keep Electron and web checks on the same fixture and expected record shape. A change to a screen, quiz flow, or stored field is complete only when both builds pass their relevant checks, as required by `AGENTS.md`.
 

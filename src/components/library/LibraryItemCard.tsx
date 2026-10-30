@@ -7,7 +7,8 @@ export interface LibraryItemCardProps {
   description?: string;
   icon?: ReactNode;
   metadata: ReactNode;
-  actions: ReactNode;
+  /** Buttons under the card. Cards without any skip the row. */
+  actions?: ReactNode;
   onOpen: () => void;
   draggable?: boolean;
   dragging?: boolean;
@@ -54,13 +55,9 @@ export function LibraryItemCard({
           event.preventDefault();
           return;
         }
-        const card = event.currentTarget;
-        const rect = card.getBoundingClientRect();
-        event.dataTransfer.setDragImage(
-          card,
-          event.clientX - rect.left,
-          event.clientY - rect.top,
-        );
+        // The card is the drag source, so the browser already drags an image of it
+        // from where it was grabbed. A custom setDragImage made macOS slide a
+        // cancelled drag back to the wrong spot.
         onDragStart?.(event);
       }}
       onDragEnd={onDragEnd as DragEventHandler<HTMLDivElement>}
@@ -108,9 +105,11 @@ export function LibraryItemCard({
           {metadata}
         </div>
       </button>
-      <div data-no-drag className="flex items-center justify-end gap-2">
-        {actions}
-      </div>
+      {actions && (
+        <div data-no-drag className="flex items-center justify-end gap-2">
+          {actions}
+        </div>
+      )}
     </Card>
   );
 }

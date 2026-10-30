@@ -5,6 +5,7 @@ An Electron + React + Tailwind desktop app for importing and taking JSON-based q
 ## Features
 
 - Import quizzes from `.json` files into a local library of folders
+- Share a quiz with an 8-digit code; anyone with the code can import it and get your updates
 - Three question types: true/false, multiple choice, and select-all-that-apply (multi-answer)
 - Optional shuffled question order per attempt
 - Two reveal modes: see the answer after each question, or only at the end

@@ -7,8 +7,10 @@ import type {
   Quiz,
   QuizAttempt,
   QuizMetadata,
+  QuizShare,
   SaveAttemptInput,
   SelfMark,
+  SharedQuizInfo,
   UpdateCheck,
   UpdateProgress,
 } from "./types";
@@ -33,8 +35,16 @@ export interface ImportResult {
   failures?: ImportFailure[];
 }
 
+/** A quiz file the page already has, such as one dropped onto it. */
+export interface QuizFileInput {
+  name: string;
+  bytes: Uint8Array;
+}
+
 export interface QuizApi {
+  /** Picks quiz files with the platform's file dialog and imports them. */
   importQuiz(folderId?: string | null): Promise<ImportResult>;
+  importQuizFiles(files: QuizFileInput[], folderId: string | null): Promise<ImportResult>;
   listQuizzes(): Promise<QuizMetadata[]>;
   getQuiz(id: string): Promise<Quiz | null>;
   /** Saves a quiz and its images as a .quiz package. Resolves false if cancelled. */
@@ -45,6 +55,25 @@ export interface QuizApi {
   getQuizAssetUrls(quizId: string, paths: string[]): Promise<Record<string, string>>;
   deleteQuiz(id: string): Promise<void>;
   moveQuiz(id: string, folderId: string | null): Promise<void>;
+  /**
+   * Picks a .json or .quiz file and replaces the quiz's content with it, keeping
+   * its id, folder, share and attempts. Resolves null if cancelled.
+   */
+  replaceQuizFromFile(id: string): Promise<QuizMetadata | null>;
+  /** Uploads a quiz to the share server, or returns its live share. */
+  shareQuiz(id: string): Promise<QuizShare>;
+  /** Uploads the local quiz over its shared version, keeping the code. */
+  publishQuizUpdate(id: string): Promise<QuizShare>;
+  /** Moves a share's expiry to the longest the server allows. */
+  extendQuizShare(id: string): Promise<QuizShare>;
+  /** Deletes the shared copy from the server and forgets the share. */
+  unshareQuiz(id: string): Promise<void>;
+  previewSharedQuiz(code: string): Promise<SharedQuizInfo>;
+  importSharedQuiz(code: string, folderId: string | null): Promise<QuizMetadata>;
+  /** Checks every share code in the library for updates and expiry. */
+  checkSharedQuizzes(): Promise<void>;
+  /** Replaces an imported quiz with the newest version from its share code. */
+  updateSharedQuiz(id: string): Promise<QuizMetadata>;
   librarySnapshot(): Promise<LibrarySnapshot>;
   createFolder(payload: CreateFolderPayload): Promise<Folder>;
   updateFolder(payload: UpdateFolderPayload): Promise<Folder>;

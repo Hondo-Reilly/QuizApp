@@ -11,7 +11,11 @@ import { FolderCard } from "@/components/library/FolderCard";
 import { NewFolderDialog } from "@/components/library/NewFolderDialog";
 import { RenameFolderDialog } from "@/components/library/RenameFolderDialog";
 import { MoveQuizDialog } from "@/components/library/MoveQuizDialog";
+import { ImportQuizDialog } from "@/components/library/ImportQuizDialog";
 import type { UseLibrary } from "@/hooks/useLibrary";
+import { useShareActions } from "@/hooks/useShareActions";
+import { deleteFolderSharedNote } from "@/lib/shareText";
+import { collectDescendantFolderIds } from "@shared/library";
 import type { DraggedQuiz } from "@/lib/quizDrag";
 import type { Folder, QuizMetadata } from "@shared/types";
 
@@ -20,6 +24,7 @@ export function LibraryPage() {
   const navigate = useNavigate();
   const currentFolderId = params.folderId ?? null;
 
+  const library = useOutletContext<UseLibrary>();
   const {
     folders,
     quizzes,
@@ -30,12 +35,15 @@ export function LibraryPage() {
     pathTo,
     countsByFolder,
     importQuizzes,
+    importQuizFiles,
     deleteQuiz,
     moveQuiz,
     createFolder,
     updateFolder,
     deleteFolder,
-  } = useOutletContext<UseLibrary>();
+    importSharedQuiz,
+  } = library;
+  const shareActions = useShareActions(library);
 
   const currentPath = useMemo(
     () => pathTo(currentFolderId),
@@ -48,6 +56,7 @@ export function LibraryPage() {
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [renameTarget, setRenameTarget] = useState<Folder | null>(null);
   const [moveTarget, setMoveTarget] = useState<QuizMetadata | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const isInvalidFolder =
     currentFolderId !== null && currentFolder === null && !loading;
@@ -59,9 +68,11 @@ export function LibraryPage() {
 
   const handleDeleteFolder = async (folder: Folder) => {
     const count = countsByFolder.get(folder.id) ?? 0;
+    const folderIds = collectDescendantFolderIds(folders, folder.id);
+    const inside = quizzes.filter((quiz) => quiz.folderId && folderIds.has(quiz.folderId));
     const message =
       count > 0
-        ? `Delete "${folder.name}" and ${count} ${count === 1 ? "quiz" : "quizzes"} inside? This cannot be undone.`
+        ? `Delete "${folder.name}" and ${count} ${count === 1 ? "quiz" : "quizzes"} inside? This cannot be undone.${deleteFolderSharedNote(inside)}`
         : `Delete "${folder.name}"? This cannot be undone.`;
     if (!confirm(message)) return;
     await deleteFolder(folder.id, true);
@@ -89,7 +100,7 @@ export function LibraryPage() {
       <Button variant="secondary" onClick={() => setNewFolderOpen(true)}>
         New folder
       </Button>
-      <ImportButton onClick={() => importQuizzes(currentFolderId)} />
+      <ImportButton onClick={() => setImportOpen(true)} />
     </div>
   );
 
@@ -106,7 +117,7 @@ export function LibraryPage() {
       {loading ? (
         <LoadingMessage />
       ) : libraryIsEmpty && currentFolderId === null ? (
-        <EmptyState onImport={() => importQuizzes(null)} />
+        <EmptyState onImport={() => setImportOpen(true)} />
       ) : (
         <div className="flex flex-col gap-8">
           {childFolders.length > 0 && (
@@ -135,8 +146,11 @@ export function LibraryPage() {
                   <QuizCard
                     key={quiz.id}
                     quiz={quiz}
-                    onDelete={deleteQuiz}
+                    onDelete={(id) => void deleteQuiz(id)}
                     onMove={setMoveTarget}
+                    onShare={shareActions.openShare}
+                    onReplace={(target) => void shareActions.replaceFromFile(target)}
+                    onUpdate={(target) => void shareActions.updateFromCode(target)}
                   />
                 ))}
               </div>
@@ -150,6 +164,17 @@ export function LibraryPage() {
           )}
         </div>
       )}
+
+      {shareActions.dialog}
+
+      <ImportQuizDialog
+        open={importOpen}
+        folderName={currentFolder?.name}
+        onClose={() => setImportOpen(false)}
+        onBrowse={() => importQuizzes(currentFolderId)}
+        onDropFiles={(files) => importQuizFiles(files, currentFolderId)}
+        onImportCode={(code) => importSharedQuiz(code, currentFolderId)}
+      />
 
       <NewFolderDialog
         open={newFolderOpen}

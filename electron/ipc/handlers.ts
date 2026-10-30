@@ -1,5 +1,6 @@
 import { registerAppDataHandlers } from "./appData";
 import { registerAttemptHandlers } from "./attempts";
+import { registerCloudShareHandlers } from "./cloudShare";
 import { registerMobileHandlers } from "./mobile";
 import { registerPdfHandlers } from "./quizPdf";
 import { registerQuizLibraryHandlers } from "./quizLibrary";
@@ -8,6 +9,7 @@ import { registerUpdateHandlers } from "./updates";
 
 export function registerIpcHandlers(): void {
   registerQuizLibraryHandlers();
+  registerCloudShareHandlers();
   registerAppDataHandlers();
   registerAttemptHandlers();
   registerUpdateHandlers();

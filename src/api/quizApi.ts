@@ -8,6 +8,7 @@ function activeQuizApi(): QuizApi {
 
 export const quizApi: QuizApi = {
   importQuiz: (folderId) => activeQuizApi().importQuiz(folderId),
+  importQuizFiles: (files, folderId) => activeQuizApi().importQuizFiles(files, folderId),
   listQuizzes: () => activeQuizApi().listQuizzes(),
   getQuiz: (id) => activeQuizApi().getQuiz(id),
   exportQuiz: (id) => activeQuizApi().exportQuiz(id),
@@ -15,6 +16,15 @@ export const quizApi: QuizApi = {
   getQuizAssetUrls: (quizId, paths) => activeQuizApi().getQuizAssetUrls(quizId, paths),
   deleteQuiz: (id) => activeQuizApi().deleteQuiz(id),
   moveQuiz: (id, folderId) => activeQuizApi().moveQuiz(id, folderId),
+  replaceQuizFromFile: (id) => activeQuizApi().replaceQuizFromFile(id),
+  shareQuiz: (id) => activeQuizApi().shareQuiz(id),
+  publishQuizUpdate: (id) => activeQuizApi().publishQuizUpdate(id),
+  extendQuizShare: (id) => activeQuizApi().extendQuizShare(id),
+  unshareQuiz: (id) => activeQuizApi().unshareQuiz(id),
+  previewSharedQuiz: (code) => activeQuizApi().previewSharedQuiz(code),
+  importSharedQuiz: (code, folderId) => activeQuizApi().importSharedQuiz(code, folderId),
+  checkSharedQuizzes: () => activeQuizApi().checkSharedQuizzes(),
+  updateSharedQuiz: (id) => activeQuizApi().updateSharedQuiz(id),
   librarySnapshot: () => activeQuizApi().librarySnapshot(),
   createFolder: (payload) => activeQuizApi().createFolder(payload),
   updateFolder: (payload) => activeQuizApi().updateFolder(payload),

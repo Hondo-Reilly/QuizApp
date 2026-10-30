@@ -17,7 +17,7 @@ export function EmptyState({ onImport }: EmptyStateProps) {
         <code className="rounded bg-slate-100 px-1 py-0.5 text-xs dark:bg-neutral-800">
           docs/QUIZ_FORMAT.md
         </code>{" "}
-        file.
+        file. Or enter a share code from someone who shared a quiz.
       </p>
       <ImportButton onClick={onImport} />
     </Card>

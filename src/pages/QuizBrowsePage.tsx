@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { QuizContentProvider } from "@/components/content/QuizContentContext";
 import {
   useLocation,
@@ -7,6 +7,7 @@ import {
   useParams,
 } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
+import { ContextMenu } from "@/components/ui/ContextMenu";
 import { DetailPageLayout } from "@/components/ui/DetailPageLayout";
 import { LoadingMessage, PageErrorState } from "@/components/ui/PageState";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -14,8 +15,11 @@ import { QuestionAnswerList } from "@/components/quiz/QuestionAnswerList";
 import { PrintQuizDialog } from "@/components/quiz/PrintQuizDialog";
 import { AttemptList } from "@/components/library/AttemptList";
 import { MoveQuizDialog } from "@/components/library/MoveQuizDialog";
+import { useSharingControls } from "@/hooks/useSharingControls";
 import type { UseLibrary } from "@/hooks/useLibrary";
 import { useQuizBrowseData } from "@/hooks/useQuizBrowseData";
+import { useShareActions } from "@/hooks/useShareActions";
+import { deleteQuizPrompt } from "@/lib/shareText";
 import type { QuizMetadata } from "@shared/types";
 
 export function QuizBrowsePage() {
@@ -29,9 +33,21 @@ export function QuizBrowsePage() {
   const folderId = metadata?.folderId ?? storedFolderId;
 
   const { quiz, attempts, loading, error, setError, removeAttempts } =
-    useQuizBrowseData(id);
+    useQuizBrowseData(id, metadata?.updatedAt);
+  const shareActions = useShareActions(library);
+  const sharing = useSharingControls(metadata, shareActions, () =>
+    library.checkSharedQuizzes(true),
+  );
   const [printOpen, setPrintOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
+  const [moreAt, setMoreAt] = useState<{ x: number; y: number } | null>(null);
+  // The menu closes on any outside press, including one on its own button;
+  // remember when, so that press does not open it again.
+  const moreClosedAt = useRef(0);
+  const closeMore = useCallback(() => {
+    moreClosedAt.current = Date.now();
+    setMoreAt(null);
+  }, []);
 
   const back = () => navigate(folderId ? `/folder/${folderId}` : "/");
 
@@ -62,10 +78,9 @@ export function QuizBrowsePage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Delete "${quiz.title}"?`)) return;
+    if (!confirm(deleteQuizPrompt(moveTarget))) return;
     try {
-      await library.deleteQuiz(quiz.id);
-      back();
+      if (await library.deleteQuiz(quiz.id)) back();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -89,6 +104,9 @@ export function QuizBrowsePage() {
           onClose={() => setPrintOpen(false)}
         />
 
+        {sharing.status}
+        {shareActions.dialog}
+
         <section className="mb-8">
           <SectionHeader title="Previous attempts" />
           <AttemptList
@@ -111,24 +129,40 @@ export function QuizBrowsePage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => setPrintOpen(true)}
+                  aria-label="More actions"
+                  title="More actions"
+                  aria-haspopup="menu"
+                  aria-expanded={moreAt !== null}
+                  className="!px-0 w-[34px]"
+                  onClick={(event) => {
+                    if (Date.now() - moreClosedAt.current < 300) return;
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    setMoreAt({ x: rect.right, y: rect.bottom + 4 });
+                  }}
                 >
-                  Save to PDF
+                  {/* h-5 matches the text line height, so the button is as tall as its neighbours. */}
+                  <svg viewBox="0 0 16 20" aria-hidden="true" className="h-5 w-4" fill="currentColor">
+                    <circle cx="3" cy="10" r="1.5" />
+                    <circle cx="8" cy="10" r="1.5" />
+                    <circle cx="13" cy="10" r="1.5" />
+                  </svg>
                 </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setMoveOpen(true)}
-                >
-                  Move
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => void handleDelete()}
-                >
-                  Delete
-                </Button>
+                <ContextMenu
+                  position={moreAt}
+                  align="end"
+                  label="More actions"
+                  items={[
+                    { label: "Save to PDF", onSelect: () => setPrintOpen(true) },
+                    { label: "Move", onSelect: () => setMoveOpen(true) },
+                    {
+                      label: "Replace from file…",
+                      onSelect: () => void shareActions.replaceFromFile(moveTarget),
+                    },
+                    { label: "Delete", onSelect: () => void handleDelete() },
+                  ]}
+                  onClose={closeMore}
+                />
+                {sharing.buttons}
                 <Button size="sm" onClick={() => navigate(`/quiz/${id}/setup`)}>
                   Start quiz
                 </Button>

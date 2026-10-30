@@ -1,9 +1,9 @@
-export function pickQuizFiles(): Promise<File[] | null> {
+export function pickQuizFiles(multiple = true): Promise<File[] | null> {
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".quiz,.json,application/json";
-    input.multiple = true;
+    input.multiple = multiple;
     let settled = false;
     const finish = (files: File[] | null) => {
       if (settled) return;

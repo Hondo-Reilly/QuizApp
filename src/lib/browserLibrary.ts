@@ -1,11 +1,18 @@
 import { nanoid } from "nanoid";
+import { sourceAfterReplace, withCloudFields, type CloudFields } from "@shared/cloudShare";
 import { collectDescendantFolderIds, toMetadata } from "@shared/library";
 import { parseQuiz } from "@shared/schema";
 import { imageContentType, imageRefs } from "@shared/quizContent";
 import { convertSvgImages, readQuizFile, writeQuizPackage } from "@shared/quizPackage";
 import { base64ToBytes, rasterizeSvgInPage } from "@shared/svgRaster";
 import { allocateStorageId, slugifyTitle } from "@shared/storageId";
-import type { Folder, LibrarySnapshot, Quiz, QuizMetadata } from "@shared/types";
+import type {
+  Folder,
+  LibrarySnapshot,
+  Quiz,
+  QuizCloudSource,
+  QuizMetadata,
+} from "@shared/types";
 import type { CreateFolderPayload, UpdateFolderPayload } from "@shared/quizApi";
 import { attemptChangesWithoutQuizzes } from "./browserAttempts";
 import {
@@ -45,20 +52,32 @@ export async function librarySnapshot(): Promise<LibrarySnapshot> {
   };
 }
 
-export async function importQuizBytes(
+export async function getBrowserQuizMetadata(id: string): Promise<QuizMetadata | null> {
+  const library = await readLibrary();
+  return library.quizzes.find((quiz) => quiz.id === id) ?? null;
+}
+
+async function parseQuizBytes(
   bytes: Uint8Array,
-  folderId: string | null,
   sourceName: string,
-): Promise<QuizMetadata> {
-  let parsed: ReturnType<typeof readQuizFile>;
+): Promise<ReturnType<typeof readQuizFile>> {
   try {
-    parsed = await convertSvgImages(readQuizFile(bytes), async (svg) =>
+    return await convertSvgImages(readQuizFile(bytes), async (svg) =>
       base64ToBytes(await rasterizeSvgInPage(svg)),
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     throw new Error(`Failed to import ${sourceName}: ${message}`);
   }
+}
+
+export async function importQuizBytes(
+  bytes: Uint8Array,
+  folderId: string | null,
+  sourceName: string,
+  cloudSource?: QuizCloudSource,
+): Promise<QuizMetadata> {
+  const parsed = await parseQuizBytes(bytes, sourceName);
 
   const library = await readLibrary();
   const existingIds = new Set(library.quizzes.map((quiz) => quiz.id));
@@ -76,6 +95,7 @@ export async function importQuizBytes(
     new Date().toISOString(),
     folderExists ? folderId : null,
   );
+  if (cloudSource) meta.cloudSource = cloudSource;
   const assetChanges: RecordChange[] = [...parsed.assets].map(([path, data]) => ({
     key: assetKey(id, path),
     value: { type: imageContentType(path), data },
@@ -92,6 +112,70 @@ export async function importQuizBytes(
     },
   ]);
   return meta;
+}
+
+/**
+ * Replaces a quiz's content with new .json or .quiz bytes in one transaction,
+ * keeping its id, folder, share and attempts.
+ */
+export async function replaceBrowserQuizBytes(
+  id: string,
+  bytes: Uint8Array,
+  sourceName: string,
+  cloudSource?: QuizCloudSource,
+): Promise<QuizMetadata> {
+  const parsed = await parseQuizBytes(bytes, sourceName);
+  const library = await readLibrary();
+  const existing = library.quizzes.find((quiz) => quiz.id === id);
+  if (!existing) throw new Error("Quiz not found");
+  const quiz = { ...parsed.quiz, id } as Quiz;
+  const meta: QuizMetadata = {
+    ...toMetadata(quiz, existing.importedAt, existing.folderId),
+    updatedAt: new Date().toISOString(),
+  };
+  if (existing.share) meta.share = existing.share;
+  const source = sourceAfterReplace(existing.cloudSource, cloudSource);
+  if (source) meta.cloudSource = source;
+
+  const stale = (await quizRecordDeletes(id)).filter(
+    (change) => change.key !== quizKey(id),
+  );
+  const assetChanges: RecordChange[] = [...parsed.assets].map(([path, data]) => ({
+    key: assetKey(id, path),
+    value: { type: imageContentType(path), data },
+  }));
+  const kept = new Set(assetChanges.map((change) => change.key));
+  await changeRecords([
+    ...stale.filter((change) => !kept.has(change.key)),
+    ...assetChanges,
+    { key: quizKey(id), value: quiz },
+    {
+      key: LIBRARY_KEY,
+      value: {
+        ...library,
+        quizzes: library.quizzes.map((item) => (item.id === id ? meta : item)),
+      },
+    },
+  ]);
+  return meta;
+}
+
+/** Changes share fields of stored quizzes, reading each one's metadata at write time. */
+export async function updateBrowserCloudFields(
+  ids: readonly string[],
+  update: (meta: QuizMetadata) => CloudFields | null,
+): Promise<void> {
+  const wanted = new Set(ids);
+  const library = await readLibrary();
+  let changed = false;
+  const quizzes = library.quizzes.map((meta) => {
+    if (!wanted.has(meta.id)) return meta;
+    const fields = update(meta);
+    if (!fields) return meta;
+    changed = true;
+    return withCloudFields(meta, fields);
+  });
+  if (changed) await changeRecords([{ key: LIBRARY_KEY, value: { ...library, quizzes } }]);
 }
 
 /** Deletes for a quiz record and every image it references. */
