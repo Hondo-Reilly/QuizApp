@@ -31,7 +31,6 @@ export function EditorPreview({ question, scenario }: { question: Question; scen
         disabled={reveal}
       />
       {reveal && <AnswerFeedback question={question} value={value} />}
-      <p className="text-xs text-slate-500 dark:text-neutral-400">Answers here are for trying the question and aren&apos;t saved.</p>
     </div>
   );
 }

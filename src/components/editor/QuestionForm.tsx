@@ -21,15 +21,16 @@ import { NumericFields } from "./NumericFields";
 import { OpenFields } from "./OpenFields";
 import { RichTextField } from "./RichTextField";
 
-export const QUESTION_TYPES: { type: QuestionType; label: string; hint: string; graded: boolean }[] = [
-  { type: "true_false", label: "True / False", hint: "One statement, true or false.", graded: true },
-  { type: "multiple_choice", label: "Multiple choice", hint: "Exactly one correct choice.", graded: true },
-  { type: "multi_answer", label: "Select all", hint: "Every correct choice, and no others.", graded: true },
-  { type: "numeric", label: "Number or money", hint: "A typed number within a tolerance.", graded: true },
-  { type: "matching", label: "Matching", hint: "Items matched to a lettered bank. Partial credit.", graded: true },
-  { type: "short_answer", label: "Short answer", hint: "A word or phrase on one line.", graded: false },
-  { type: "long_answer", label: "Written or code", hint: "A longer answer, or code.", graded: false },
-  { type: "image_response", label: "Photo answer", hint: "A photo of work done on paper.", graded: false },
+// U+FE0E keeps ☑ as a text symbol instead of an emoji.
+export const QUESTION_TYPES: { type: QuestionType; label: string; hint: string; graded: boolean; glyph: string }[] = [
+  { type: "true_false", label: "True / False", hint: "One statement, true or false.", graded: true, glyph: "T/F" },
+  { type: "multiple_choice", label: "Multiple choice", hint: "Exactly one correct choice.", graded: true, glyph: "A" },
+  { type: "multi_answer", label: "Select all", hint: "Every correct choice, and no others.", graded: true, glyph: "☑\uFE0E" },
+  { type: "numeric", label: "Number or money", hint: "A typed number within a tolerance.", graded: true, glyph: "12" },
+  { type: "matching", label: "Matching", hint: "Items matched to a lettered bank. Partial credit.", graded: true, glyph: "⇄" },
+  { type: "short_answer", label: "Short answer", hint: "A word or phrase on one line.", graded: false, glyph: "Aa" },
+  { type: "long_answer", label: "Written or code", hint: "A longer answer, or code.", graded: false, glyph: "¶" },
+  { type: "image_response", label: "Photo answer", hint: "A photo of work done on paper.", graded: false, glyph: "◩" },
 ];
 
 export interface QuestionFormProps {
