@@ -107,15 +107,21 @@ export function useLibrary(): UseLibrary {
     async (force = false) => {
       if (!force && Date.now() - lastSharedCheck < CHECK_INTERVAL_MS) return;
       if (!force && !hasCodesToCheck(quizzesRef.current)) return;
+      const previous = lastSharedCheck;
       lastSharedCheck = Date.now();
-      await quizApi.checkSharedQuizzes();
+      try {
+        await quizApi.checkSharedQuizzes();
+      } catch (err) {
+        // Offline or the server is down: try again the next time the library loads.
+        lastSharedCheck = previous;
+        throw err;
+      }
       await reload();
     },
     [reload],
   );
 
   // Look for updates once the library has loaded, then every few hours.
-  // A failed background check (offline, server down) waits for the next one.
   useEffect(() => {
     if (loading) return;
     void checkSharedQuizzes().catch(() => undefined);

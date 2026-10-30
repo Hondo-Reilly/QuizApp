@@ -1,6 +1,6 @@
 # Cloud quiz sharing
 
-Status: implemented on branch `cloud-quizzes`. Update checks need hjr-data's `main` deployed (file versions and `POST /check`); the server running on 2026-10-29 predates them.
+Status: implemented. Update checks use file versions and `POST /check`, which hjr-data's `production` has served since 2026-10-29.
 
 Code: `shared/cloudShare.ts` (client), `electron/ipc/cloudShare.ts` (desktop), `src/lib/browserQuizApi.ts` (web), `src/components/share/` and `src/hooks/useShareActions.tsx` (UI). Tests: `tests/cloudShare.test.ts`, `tests/desktopReplaceQuiz.test.ts`.
 

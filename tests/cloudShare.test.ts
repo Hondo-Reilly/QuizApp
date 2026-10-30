@@ -392,3 +392,22 @@ describe("passing on an imported quiz", () => {
     expect(sourceAfterReplace({ ...source, replacedLocally: true }, updated)).toBe(updated);
   });
 });
+
+describe("server answers", () => {
+  it("refuses a code that is not 8 digits before using it in a URL", async () => {
+    const server = fakeServer();
+    const library = memoryStore();
+    const badCode: CloudFetch = async (url, init) => {
+      const response = await server.fetch(url, init);
+      const body = (await response.json()) as Record<string, unknown>;
+      return new Response(JSON.stringify({ ...body, code: "../admin", name: "../admin" }), {
+        status: response.status,
+        headers: response.headers,
+      });
+    };
+    const cloud = createCloudShare(library.store, badCode, { baseUrl: BASE, now: () => NOW });
+    library.add("cells", bytes(1));
+    await expect(cloud.shareQuiz("cells")).rejects.toThrow(/does not understand/);
+    expect(library.metas.get("cells")?.share).toBeUndefined();
+  });
+});

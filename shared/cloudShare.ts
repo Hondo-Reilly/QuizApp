@@ -162,8 +162,10 @@ async function serverMessage(response: Response): Promise<string> {
 
 function parseInfo(body: unknown): SharedQuizInfo {
   const info = (body ?? {}) as Record<string, unknown>;
-  const code = info.code ?? info.name;
-  if (typeof code !== "string" || typeof info.sha256 !== "string") {
+  const raw = info.code ?? info.name;
+  // The code goes into request paths later, so accept only a real share code.
+  const code = typeof raw === "string" ? normalizeShareCode(raw) : null;
+  if (!code || typeof info.sha256 !== "string") {
     throw new CloudShareError("The share server sent an answer QuizApp does not understand.");
   }
   return {
