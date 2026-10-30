@@ -1,8 +1,10 @@
 import { useCallback, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { quizApi } from "@/api/quizApi";
 import { Button } from "@/components/ui/Button";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
+import type { UseLibrary } from "@/hooks/useLibrary";
+import { duplicateQuiz } from "@/lib/duplicateQuiz";
 import { isElectronApp } from "@/lib/runtime";
 import { writeQuizDrag } from "@/lib/quizDrag";
 import { LibraryItemCard } from "./LibraryItemCard";
@@ -28,6 +30,7 @@ function formatDate(iso: string): string {
 
 export function QuizCard({ quiz, onDelete, onMove }: QuizCardProps) {
   const navigate = useNavigate();
+  const library = useOutletContext<UseLibrary>();
   const [dragging, setDragging] = useState(false);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
   const closeMenu = useCallback(() => setMenuAt(null), []);
@@ -37,6 +40,16 @@ export function QuizCard({ quiz, onDelete, onMove }: QuizCardProps) {
 
   const menuItems: ContextMenuItem[] = [
     { label: "Edit quiz", onSelect: () => navigate(`/quiz/${quiz.id}/edit`) },
+    {
+      label: "Duplicate and edit",
+      onSelect: () =>
+        void duplicateQuiz(quiz.id, quiz.folderId)
+          .then((copyId) => {
+            void library.refresh();
+            navigate(`/quiz/${copyId}/edit`);
+          })
+          .catch(report("duplicate the quiz")),
+    },
     ...(isElectronApp()
       ? [
           {
