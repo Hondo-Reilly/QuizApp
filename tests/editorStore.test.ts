@@ -74,6 +74,20 @@ describe("editor store", () => {
     expect(store().selected).toBe(DETAILS);
   });
 
+  it("hides issues until a save is tried, and again after a save succeeds", () => {
+    expect(store().saveAttempted).toBe(false);
+    store().apply(retitle(""));
+    store().attemptSave();
+    expect(store().saveAttempted).toBe(true);
+    store().apply(retitle("Fixed"));
+    expect(store().saveAttempted).toBe(true);
+    store().markSaved(store().draft!);
+    expect(store().saveAttempted).toBe(false);
+    store().attemptSave();
+    store().load(quiz());
+    expect(store().saveAttempted).toBe(false);
+  });
+
   it("is clean after saving, and dirty again on the next edit", () => {
     store().apply(retitle("Saved"));
     store().markSaved(store().draft!);

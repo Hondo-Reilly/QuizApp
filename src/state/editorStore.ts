@@ -19,6 +19,12 @@ interface EditorState {
   lastAt: number;
   selected: string;
   /**
+   * Whether Save has been tried since the quiz was loaded or last saved.
+   * Issues stay hidden until then, so a half-written question isn't flagged
+   * while it is still being written.
+   */
+  saveAttempted: boolean;
+  /**
    * Images added since the last save, by path, with a URL to show them. They
    * are kept even when an edit stops using them, so undo can bring them back.
    */
@@ -33,6 +39,7 @@ interface EditorState {
   redo: () => void;
   select: (id: string) => void;
   markSaved: (quiz: Quiz) => void;
+  attemptSave: () => void;
   addPending: (upload: QuizAssetUpload) => void;
   /** Drops images that are now stored with the quiz. */
   clearPending: (paths: readonly string[]) => void;
@@ -48,6 +55,7 @@ const empty = {
   lastKey: null,
   lastAt: 0,
   selected: DETAILS,
+  saveAttempted: false,
   pending: {} as Record<string, { data: Uint8Array; url: string }>,
 };
 
@@ -127,8 +135,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   markSaved: (quiz) => {
     const { draft } = get();
     const savedJson = JSON.stringify(quiz);
-    set({ savedJson, dirty: draft ? JSON.stringify(draft) !== savedJson : false, lastKey: null });
+    set({
+      savedJson,
+      dirty: draft ? JSON.stringify(draft) !== savedJson : false,
+      lastKey: null,
+      saveAttempted: false,
+    });
   },
+
+  attemptSave: () => set({ saveAttempted: true }),
 
   addPending: ({ path, data }) => {
     const url = URL.createObjectURL(new Blob([data as BlobPart]));

@@ -44,6 +44,8 @@ export function QuizEditorPage() {
     future,
     selected,
     pending,
+    saveAttempted,
+    attemptSave,
     load,
     apply,
     undo,
@@ -77,7 +79,8 @@ export function QuizEditorPage() {
     };
   }, [id, load, reset]);
 
-  const issues = useMemo(() => (draft ? quizIssues(draft) : []), [draft]);
+  // Issues show once Save has been tried, then update live until a save succeeds.
+  const issues = useMemo(() => (draft && saveAttempted ? quizIssues(draft) : []), [draft, saveAttempted]);
 
   // Images added since the last save show from memory; the rest from storage.
   const loadAssetUrls = useCallback(
@@ -111,10 +114,12 @@ export function QuizEditorPage() {
   const save = useCallback(async () => {
     const current = useEditorStore.getState().draft;
     if (!current || saving) return;
+    // The first try reveals any issues; the header counts them and the first one opens.
+    attemptSave();
     const blocking = quizIssues(current);
     if (blocking.length > 0) {
       select(blocking[0].questionId ?? DETAILS);
-      setSaveError(`Fix ${blocking.length === 1 ? "1 issue" : `${blocking.length} issues`} before saving.`);
+      setSaveError(null);
       return;
     }
     setSaving(true);
@@ -137,7 +142,7 @@ export function QuizEditorPage() {
     } finally {
       setSaving(false);
     }
-  }, [saving, select, markSaved, clearPending, library]);
+  }, [saving, select, attemptSave, markSaved, clearPending, library]);
 
   // Cmd/Ctrl+S saves anywhere. Undo and redo are left to text fields while one has focus.
   useEffect(() => {

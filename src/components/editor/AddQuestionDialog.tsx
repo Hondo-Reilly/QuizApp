@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import type { QuestionType } from "@shared/types";
 import { labelClasses } from "./EditorFields";
@@ -63,11 +62,6 @@ export function AddQuestionDialog({ open, onAdd, onClose }: AddQuestionDialogPro
       onClose={onClose}
       width="max-w-2xl"
       placement="sheet"
-      footer={
-        <Button variant="secondary" onClick={onClose}>
-          Cancel
-        </Button>
-      }
     >
       <div className="flex flex-col gap-5">
         <TypeGroup title="Graded by QuizApp" graded onAdd={onAdd} />
