@@ -4,6 +4,7 @@ import { quizApi } from "@/api/quizApi";
 import { QuizContentProvider } from "@/components/content/QuizContentContext";
 import { AddQuestionDialog } from "@/components/editor/AddQuestionDialog";
 import { DetailsForm } from "@/components/editor/DetailsForm";
+import { labelClasses } from "@/components/editor/EditorFields";
 import { EditorOutline } from "@/components/editor/EditorOutline";
 import { EditorPreview } from "@/components/editor/EditorPreview";
 import { QuestionForm } from "@/components/editor/QuestionForm";
@@ -270,40 +271,46 @@ export function QuizEditorPage() {
             />
           </aside>
 
-          <section className="min-w-0 flex-[999_1_32rem] rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-            {question ? (
-              <QuestionForm
-                key={question.id}
-                question={question}
-                index={index}
-                total={draft.questions.length}
-                scenarios={draft.scenarios ?? []}
-                issues={issues.filter((issue) => issue.questionId === question.id)}
-                markdown={draft.textFormat === "markdown"}
-                onAddImage={addImage}
-                onChange={changeQuestion(question.id)}
-                onMove={(to) => apply((quiz) => moveQuestion(quiz, index, to))}
-                onDuplicate={() => {
-                  const copyId = uniqueId("q", draft.questions.map((item) => item.id));
-                  apply((quiz) => duplicateQuestion(quiz, question.id));
-                  select(copyId);
-                }}
-                onDelete={() => {
-                  const next = draft.questions[index + 1] ?? draft.questions[index - 1];
-                  apply((quiz) => removeQuestion(quiz, question.id));
-                  select(next?.id ?? DETAILS);
-                }}
-              />
-            ) : (
-              <DetailsForm
-                quiz={draft}
-                issues={issues}
-                onChange={(change: (quiz: Quiz) => Quiz, key?: string) => apply(change, key ? `details:${key}` : undefined)}
-                onShowIssue={showIssue}
-                onAddImage={addImage}
-              />
-            )}
-          </section>
+          <div className="flex min-w-0 flex-[999_1_32rem] flex-col gap-3">
+            {/* Matches the Preview header, so the form and preview cards line up. */}
+            <div className="flex min-h-6 items-center">
+              <span className={labelClasses}>Edit</span>
+            </div>
+            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+              {question ? (
+                <QuestionForm
+                  key={question.id}
+                  question={question}
+                  index={index}
+                  total={draft.questions.length}
+                  scenarios={draft.scenarios ?? []}
+                  issues={issues.filter((issue) => issue.questionId === question.id)}
+                  markdown={draft.textFormat === "markdown"}
+                  onAddImage={addImage}
+                  onChange={changeQuestion(question.id)}
+                  onMove={(to) => apply((quiz) => moveQuestion(quiz, index, to))}
+                  onDuplicate={() => {
+                    const copyId = uniqueId("q", draft.questions.map((item) => item.id));
+                    apply((quiz) => duplicateQuestion(quiz, question.id));
+                    select(copyId);
+                  }}
+                  onDelete={() => {
+                    const next = draft.questions[index + 1] ?? draft.questions[index - 1];
+                    apply((quiz) => removeQuestion(quiz, question.id));
+                    select(next?.id ?? DETAILS);
+                  }}
+                />
+              ) : (
+                <DetailsForm
+                  quiz={draft}
+                  issues={issues}
+                  onChange={(change: (quiz: Quiz) => Quiz, key?: string) => apply(change, key ? `details:${key}` : undefined)}
+                  onShowIssue={showIssue}
+                  onAddImage={addImage}
+                />
+              )}
+            </section>
+          </div>
 
           {question && (
             <aside className="min-w-0 flex-[1_1_20rem] lg:sticky lg:top-16 lg:max-w-md">

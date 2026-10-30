@@ -15,7 +15,8 @@ export function Toggle({
 }: ToggleProps) {
   return (
     <label
-      className={`flex items-start gap-3 ${disabled ? "opacity-60" : "cursor-pointer"}`}
+      // A label alone sits centered on the switch; with a description, the label lines up with its top.
+      className={`flex ${description ? "items-start" : "items-center"} gap-3 ${disabled ? "opacity-60" : "cursor-pointer"}`}
     >
       <button
         type="button"
@@ -23,7 +24,7 @@ export function Toggle({
         aria-checked={checked}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950 ${checked ? "bg-brand-500" : "bg-slate-300 dark:bg-neutral-700"} ${disabled ? "cursor-not-allowed" : ""}`}
+        className={`relative ${description ? "mt-0.5" : ""} inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950 ${checked ? "bg-brand-500" : "bg-slate-300 dark:bg-neutral-700"} ${disabled ? "cursor-not-allowed" : ""}`}
       >
         <span
           className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${checked ? "translate-x-5" : "translate-x-0.5"}`}
