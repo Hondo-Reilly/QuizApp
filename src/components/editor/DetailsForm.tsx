@@ -160,13 +160,11 @@ export function DetailsForm({ quiz, issues, onChange, onShowIssue, onAddImage }:
         )}
       />
 
-      <section aria-labelledby={`${ids}-issues`} className="flex flex-col gap-2">
-        <h3 id={`${ids}-issues`} className={labelClasses}>
-          {issues.length === 0 ? "Ready to save" : `${issues.length} ${issues.length === 1 ? "issue blocks" : "issues block"} saving`}
-        </h3>
-        {issues.length === 0 ? (
-          <p className="text-sm text-green-700 dark:text-green-400">Every question is complete.</p>
-        ) : (
+      {issues.length > 0 && (
+        <section aria-labelledby={`${ids}-issues`} className="flex flex-col gap-2">
+          <h3 id={`${ids}-issues`} className={labelClasses}>
+            {`${issues.length} ${issues.length === 1 ? "issue blocks" : "issues block"} saving`}
+          </h3>
           <ul className="flex flex-col gap-1">
             {issues.map((issue) => (
               <li key={`${issue.questionId ?? ""}${issue.field}${issue.message}`}>
@@ -180,8 +178,8 @@ export function DetailsForm({ quiz, issues, onChange, onShowIssue, onAddImage }:
               </li>
             ))}
           </ul>
-        )}
-      </section>
+        </section>
+      )}
     </div>
   );
 }
