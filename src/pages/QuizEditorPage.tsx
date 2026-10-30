@@ -14,6 +14,7 @@ import { ErrorNotice, LoadingMessage, PageErrorState } from "@/components/ui/Pag
 import type { UseLibrary } from "@/hooks/useLibrary";
 import { forgetQuiz, rememberQuiz } from "@/lib/quizPageCache";
 import { isElectronApp } from "@/lib/runtime";
+import { markdownPreview } from "@/lib/markdownPreview";
 import { pickImage } from "@/lib/editorImages";
 import { imageRefs } from "@shared/quizContent";
 import { DETAILS, loadEditorAssetUrls, useEditorStore } from "@/state/editorStore";
@@ -85,6 +86,8 @@ export function QuizEditorPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [adding, setAdding] = useState(false);
+  // Phones show the form or the preview, one at a time.
+  const [phoneView, setPhoneView] = useState<"edit" | "preview">("edit");
 
   useEffect(() => {
     let active = true;
@@ -292,6 +295,7 @@ export function QuizEditorPage() {
     if (!isNew) navigate(`/quiz/${id}`);
     else navigate(newQuiz.folderId ? `/folder/${newQuiz.folderId}` : "/");
   };
+  const markdown = draft.textFormat === "markdown";
   const scenario = question?.scenarioId
     ? draft.scenarios?.find((item) => item.id === question.scenarioId)
     : undefined;
@@ -364,8 +368,51 @@ export function QuizEditorPage() {
         </div>
         {saveError && <ErrorNotice message={saveError} />}
 
-        <div className="flex flex-wrap items-start gap-5">
-          <div className="flex w-full flex-col lg:sticky lg:top-16 lg:w-72">
+        {/* Phones swap the question list for a menu, and the form and preview for tabs. */}
+        <div className="flex flex-col gap-2 sm:hidden">
+          <label htmlFor="editor-question-switcher" className="sr-only">
+            Question
+          </label>
+          <select
+            id="editor-question-switcher"
+            value={selected}
+            onChange={(event) => select(event.target.value)}
+            className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+          >
+            <option value={DETAILS}>Quiz details</option>
+            {draft.questions.map((item, position) => {
+              const text = (markdown ? markdownPreview(item.prompt) : item.prompt).trim() || "Untitled question";
+              return (
+                <option key={item.id} value={item.id}>
+                  {position + 1}. {text.length > 48 ? `${text.slice(0, 47)}…` : text}
+                </option>
+              );
+            })}
+          </select>
+          {question && (
+            <div role="tablist" aria-label="View" className="flex border-b border-slate-200 dark:border-neutral-800">
+              {(["edit", "preview"] as const).map((view) => (
+                <button
+                  key={view}
+                  type="button"
+                  role="tab"
+                  aria-selected={phoneView === view}
+                  onClick={() => setPhoneView(view)}
+                  className={`min-h-11 flex-1 text-sm font-medium capitalize ${
+                    phoneView === view
+                      ? "text-brand-700 shadow-[inset_0_-2px_0] shadow-brand-500 dark:text-brand-300"
+                      : "text-slate-600 dark:text-neutral-400"
+                  }`}
+                >
+                  {view}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-start gap-5 pb-24 sm:pb-0">
+          <div className="hidden w-full flex-col sm:flex lg:sticky lg:top-16 lg:w-72">
             <aside className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto">
               <EditorOutline
                 quiz={draft}
@@ -380,7 +427,9 @@ export function QuizEditorPage() {
             </aside>
           </div>
 
-          <section className="min-w-0 flex-[999_1_32rem] rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+          <section
+            className={`${question && phoneView === "preview" ? "hidden sm:block" : ""} min-w-0 flex-[999_1_32rem] rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900`}
+          >
             {question ? (
               <QuestionForm
                 key={question.id}
@@ -409,11 +458,36 @@ export function QuizEditorPage() {
           </section>
 
           {question && (
-            <aside className="min-w-0 flex-[1_1_20rem] lg:sticky lg:top-16 lg:max-w-md">
+            <aside
+              className={`${phoneView === "edit" ? "hidden sm:block" : ""} min-w-0 flex-[1_1_20rem] lg:sticky lg:top-16 lg:max-w-md`}
+            >
               <EditorPreview question={question} scenario={scenario} />
             </aside>
           )}
         </div>
+      </div>
+
+      {/* Phones move between questions from a bar pinned to the bottom edge. */}
+      <div className="page-gutter fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t border-slate-200 bg-white/95 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95 sm:hidden">
+        <Button
+          variant="secondary"
+          className="min-h-11 flex-1"
+          disabled={index <= 0 && !question}
+          onClick={() => select(index <= 0 ? DETAILS : draft.questions[index - 1].id)}
+        >
+          Previous
+        </Button>
+        <Button variant="secondary" className="min-h-11 flex-1" onClick={() => setAdding(true)}>
+          + Question
+        </Button>
+        <Button
+          variant="secondary"
+          className="min-h-11 flex-1"
+          disabled={index === draft.questions.length - 1}
+          onClick={() => select(draft.questions[index + 1].id)}
+        >
+          Next
+        </Button>
       </div>
 
       <AddQuestionDialog
