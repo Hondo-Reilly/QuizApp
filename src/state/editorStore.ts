@@ -29,7 +29,17 @@ interface EditorState {
    * are kept even when an edit stops using them, so undo can bring them back.
    */
   pending: Record<string, { data: Uint8Array; url: string }>;
-  load: (quiz: Quiz) => void;
+  /**
+   * Starts editing a quiz. `savedAs` is what counts as saved when it differs
+   * from the quiz, as for a new quiz started from the example or pasted JSON.
+   */
+  load: (quiz: Quiz, savedAs?: Quiz) => void;
+  /**
+   * Set before leaving for a practice run, so the editor keeps its draft,
+   * history, and images and picks them up again on return.
+   */
+  keepOnLeave: boolean;
+  setKeepOnLeave: (keep: boolean) => void;
   /**
    * Applies an edit. Edits with the same key in quick succession, such as
    * typing into one field, undo together.
@@ -56,6 +66,7 @@ const empty = {
   lastAt: 0,
   selected: DETAILS,
   saveAttempted: false,
+  keepOnLeave: false,
   pending: {} as Record<string, { data: Uint8Array; url: string }>,
 };
 
@@ -75,12 +86,14 @@ function validSelection(quiz: Quiz, selected: string): string {
 export const useEditorStore = create<EditorState>((set, get) => ({
   ...empty,
 
-  load: (quiz) => {
+  load: (quiz, savedAs) => {
     revoke(get().pending, Object.keys(get().pending));
+    const savedJson = JSON.stringify(savedAs ?? quiz);
     set({
       ...empty,
       draft: quiz,
-      savedJson: JSON.stringify(quiz),
+      savedJson,
+      dirty: JSON.stringify(quiz) !== savedJson,
       selected: quiz.questions[0]?.id ?? DETAILS,
     });
   },
@@ -144,6 +157,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
 
   attemptSave: () => set({ saveAttempted: true }),
+
+  setKeepOnLeave: (keep) => set({ keepOnLeave: keep }),
 
   addPending: ({ path, data }) => {
     const url = URL.createObjectURL(new Blob([data as BlobPart]));

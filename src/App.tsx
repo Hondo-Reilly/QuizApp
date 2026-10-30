@@ -25,7 +25,9 @@ export function App() {
   const folderMatch = useMatch("/folder/:folderId");
   const takingQuiz = useMatch("/quiz/:id/take");
   // The editor's three panes need more room than other pages.
-  const editing = useMatch("/quiz/:id/edit");
+  const editingQuiz = useMatch("/quiz/:id/edit");
+  const editingNew = useMatch("/new-quiz");
+  const editing = editingQuiz || editingNew;
   const folderId = folderMatch?.params.folderId ?? null;
   const breadcrumbPath = folderId ? library.pathTo(folderId) : [];
   const desktop = isElectronApp();

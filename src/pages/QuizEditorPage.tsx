@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useBlocker, useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { useBlocker, useLocation, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { quizApi } from "@/api/quizApi";
 import { QuizContentProvider } from "@/components/content/QuizContentContext";
 import { AddQuestionDialog } from "@/components/editor/AddQuestionDialog";
@@ -20,6 +20,7 @@ import { DETAILS, useEditorStore } from "@/state/editorStore";
 import {
   addQuestion,
   blankQuestion,
+  blankQuiz,
   duplicateQuestion,
   moveQuestion,
   removeQuestion,
@@ -34,9 +35,20 @@ function isTextTarget(target: EventTarget | null): boolean {
   return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 }
 
+/** What the Library's New quiz passes to the editor. */
+export interface NewQuizState {
+  /** The quiz to start from: the example or pasted JSON. Blank when missing. */
+  start?: Quiz;
+  folderId?: string | null;
+}
+
 export function QuizEditorPage() {
+  // A new quiz has no id until its first save stores it.
   const { id = "" } = useParams();
+  const isNew = id === "";
   const navigate = useNavigate();
+  const location = useLocation();
+  const newQuiz = (location.state as NewQuizState | null) ?? {};
   const library = useOutletContext<UseLibrary>();
   const {
     draft,
@@ -65,18 +77,28 @@ export function QuizEditorPage() {
   useEffect(() => {
     let active = true;
     setLoadError(null);
-    quizApi
-      .getQuiz(id)
-      .then((quiz) => {
-        if (!active) return;
-        if (!quiz) setLoadError("Quiz not found.");
-        // The editor always saves version 2, so it loads as version 2 to start unchanged.
-        else load({ ...quiz, schemaVersion: 2 });
-      })
-      .catch((err: unknown) => active && setLoadError(err instanceof Error ? err.message : String(err)));
+    const kept = useEditorStore.getState();
+    if (kept.keepOnLeave && kept.draft && kept.draft.id === id) {
+      // Back from a practice run: carry on with the same draft and history.
+      kept.setKeepOnLeave(false);
+    } else if (isNew) {
+      const start = newQuiz.start;
+      // Starting from the example or pasted JSON counts as unsaved; a blank quiz doesn't.
+      load({ ...(start ?? blankQuiz()), id: "", schemaVersion: 2 }, start ? blankQuiz() : undefined);
+    } else {
+      quizApi
+        .getQuiz(id)
+        .then((quiz) => {
+          if (!active) return;
+          if (!quiz) setLoadError("Quiz not found.");
+          // The editor always saves version 2, so it loads as version 2 to start unchanged.
+          else load({ ...quiz, schemaVersion: 2 });
+        })
+        .catch((err: unknown) => active && setLoadError(err instanceof Error ? err.message : String(err)));
+    }
     return () => {
       active = false;
-      reset();
+      if (!useEditorStore.getState().keepOnLeave) reset();
     };
   }, [id, load, reset]);
 
@@ -131,6 +153,14 @@ export function QuizEditorPage() {
       const uploads = Object.entries(added)
         .filter(([path]) => used.has(path))
         .map(([path, { data }]) => ({ path, data }));
+      if (!current.id) {
+        // A new quiz is stored for the first time, then edited at its own address.
+        const meta = await quizApi.createQuiz(current, newQuiz.folderId ?? null, uploads);
+        load({ ...current, id: meta.id });
+        void library.refresh();
+        navigate(`/quiz/${meta.id}/edit`, { replace: true });
+        return;
+      }
       await quizApi.saveQuiz(current, uploads);
       markSaved(current);
       clearPending(uploads.map((upload) => upload.path));
@@ -143,7 +173,7 @@ export function QuizEditorPage() {
     } finally {
       setSaving(false);
     }
-  }, [saving, select, attemptSave, markSaved, clearPending, library]);
+  }, [saving, select, attemptSave, load, markSaved, clearPending, library, navigate, newQuiz.folderId]);
 
   // Cmd/Ctrl+S saves anywhere. Undo and redo are left to text fields while one has focus.
   useEffect(() => {
@@ -176,9 +206,11 @@ export function QuizEditorPage() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty]);
 
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) => dirty && currentLocation.pathname !== nextLocation.pathname,
-  );
+  // Read the store, not this render: a first save moves to the new quiz's address straight away.
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => {
+    const state = useEditorStore.getState();
+    return state.dirty && !state.keepOnLeave && currentLocation.pathname !== nextLocation.pathname;
+  });
 
   const changeQuestion = useCallback(
     (questionId: string) => (change: (question: Question) => Question, key?: string) =>
@@ -226,7 +258,13 @@ export function QuizEditorPage() {
       ? issues.length > 0
         ? `${issues.length} ${issues.length === 1 ? "issue" : "issues"} to fix before saving`
         : "Unsaved changes"
-      : "All changes saved";
+      : isNew
+        ? "New quiz"
+        : "All changes saved";
+  const back = () => {
+    if (!isNew) navigate(`/quiz/${id}`);
+    else navigate(newQuiz.folderId ? `/folder/${newQuiz.folderId}` : "/");
+  };
   const scenario = question?.scenarioId
     ? draft.scenarios?.find((item) => item.id === question.scenarioId)
     : undefined;
@@ -237,10 +275,10 @@ export function QuizEditorPage() {
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
-            onClick={() => navigate(`/quiz/${id}`)}
+            onClick={back}
             className="text-sm text-brand-600 hover:underline dark:text-brand-300"
           >
-            ← Back to quiz
+            {isNew ? "← Back to library" : "← Back to quiz"}
           </button>
           <div className="flex min-w-0 flex-1 basis-60 items-baseline gap-3">
             <h1 className="truncate text-xl font-semibold text-slate-900 dark:text-neutral-100">
@@ -252,6 +290,8 @@ export function QuizEditorPage() {
                 dirty && issues.length > 0
                   ? "text-red-700 dark:text-red-400"
                   : dirty
+                    ? "text-slate-600 dark:text-neutral-400"
+                    : isNew
                     ? "text-slate-600 dark:text-neutral-400"
                     : "text-green-700 dark:text-green-400"
               }`}

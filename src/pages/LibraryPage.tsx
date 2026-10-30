@@ -9,6 +9,7 @@ import { QuizCard } from "@/components/library/QuizCard";
 import { EmptyState } from "@/components/library/EmptyState";
 import { FolderCard } from "@/components/library/FolderCard";
 import { NewFolderDialog } from "@/components/library/NewFolderDialog";
+import { NewQuizDialog } from "@/components/library/NewQuizDialog";
 import { RenameFolderDialog } from "@/components/library/RenameFolderDialog";
 import { MoveQuizDialog } from "@/components/library/MoveQuizDialog";
 import type { UseLibrary } from "@/hooks/useLibrary";
@@ -46,6 +47,7 @@ export function LibraryPage() {
   const childQuizzes = quizzesIn(currentFolderId);
 
   const [newFolderOpen, setNewFolderOpen] = useState(false);
+  const [newQuizOpen, setNewQuizOpen] = useState(false);
   const [renameTarget, setRenameTarget] = useState<Folder | null>(null);
   const [moveTarget, setMoveTarget] = useState<QuizMetadata | null>(null);
 
@@ -82,12 +84,15 @@ export function LibraryPage() {
   const title = currentFolder ? currentFolder.name : "Quiz Library";
   const subtitle = currentFolder
     ? currentFolder.description ?? "Folder contents"
-    : "Import quizzes and start an attempt.";
+    : "Import or build a quiz, then start an attempt.";
 
   const headerActions = (
     <div className="flex items-center gap-2">
       <Button variant="secondary" onClick={() => setNewFolderOpen(true)}>
         New folder
+      </Button>
+      <Button variant="secondary" onClick={() => setNewQuizOpen(true)}>
+        New quiz
       </Button>
       <ImportButton onClick={() => importQuizzes(currentFolderId)} />
     </div>
@@ -150,6 +155,8 @@ export function LibraryPage() {
           )}
         </div>
       )}
+
+      <NewQuizDialog open={newQuizOpen} folderId={currentFolderId} onClose={() => setNewQuizOpen(false)} />
 
       <NewFolderDialog
         open={newFolderOpen}
