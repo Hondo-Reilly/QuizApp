@@ -116,7 +116,7 @@ export function EditorOutline({ quiz, issues, selected, onSelect, onMove, onAdd 
                 <span aria-hidden="true" className="cursor-grab text-slate-400 dark:text-neutral-500">
                   ⋮⋮
                 </span>
-                <span className="w-5 shrink-0 text-right text-xs tabular-nums text-slate-500 dark:text-neutral-400">
+                <span className="w-5 shrink-0 text-center text-xs tabular-nums text-slate-500 dark:text-neutral-400">
                   {index + 1}
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
