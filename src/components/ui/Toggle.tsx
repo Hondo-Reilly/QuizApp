@@ -6,6 +6,8 @@ export interface ToggleProps {
   disabled?: boolean;
   /** Replaces the label's text style, e.g. to match a section label beside it. */
   labelClassName?: string;
+  /** "start" puts the label before the switch, so the switch sits at the right edge. */
+  labelSide?: "start" | "end";
 }
 
 export function Toggle({
@@ -15,11 +17,12 @@ export function Toggle({
   description,
   disabled,
   labelClassName = "text-sm font-medium text-slate-800 dark:text-neutral-200",
+  labelSide = "end",
 }: ToggleProps) {
   return (
     <label
       // A label alone sits centered on the switch; with a description, the label lines up with its top.
-      className={`flex ${description ? "items-start" : "items-center"} gap-3 ${disabled ? "opacity-60" : "cursor-pointer"}`}
+      className={`flex ${labelSide === "start" ? "flex-row-reverse" : ""} ${description ? "items-start" : "items-center"} gap-3 ${disabled ? "opacity-60" : "cursor-pointer"}`}
     >
       <button
         type="button"
