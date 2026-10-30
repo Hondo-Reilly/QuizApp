@@ -140,10 +140,11 @@ export function QuizBrowsePage() {
                     setMoreAt({ x: rect.right, y: rect.bottom + 4 });
                   }}
                 >
-                  <svg viewBox="0 0 16 16" aria-hidden="true" className="h-4 w-4" fill="currentColor">
-                    <circle cx="3" cy="8" r="1.5" />
-                    <circle cx="8" cy="8" r="1.5" />
-                    <circle cx="13" cy="8" r="1.5" />
+                  {/* h-5 matches the text line height, so the button is as tall as its neighbours. */}
+                  <svg viewBox="0 0 16 20" aria-hidden="true" className="h-5 w-4" fill="currentColor">
+                    <circle cx="3" cy="10" r="1.5" />
+                    <circle cx="8" cy="10" r="1.5" />
+                    <circle cx="13" cy="10" r="1.5" />
                   </svg>
                 </Button>
                 <ContextMenu
