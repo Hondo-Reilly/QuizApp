@@ -5,7 +5,7 @@ import type { QuizIssue } from "@shared/quizIssues";
 import { textFormatOf } from "@shared/quizContent";
 import type { Quiz } from "@shared/types";
 import { DETAILS } from "@/state/editorStore";
-import { labelClasses, PlusIcon } from "./EditorFields";
+import { labelClasses, PencilIcon, PlusIcon } from "./EditorFields";
 
 export interface EditorOutlineProps {
   quiz: Quiz;
@@ -39,13 +39,23 @@ export function EditorOutline({ quiz, issues, selected, onSelect, onMove, onAdd 
 
   return (
     <nav aria-label="Questions" className="flex flex-col gap-1">
-      <button type="button" onClick={() => onSelect(DETAILS)} className={rowClasses(selected === DETAILS)}>
+      {/* An outline marks Quiz details as a button among the question rows. */}
+      <button
+        type="button"
+        onClick={() => onSelect(DETAILS)}
+        className={`${rowClasses(selected === DETAILS)} ${
+          selected === DETAILS ? "border border-transparent" : "border border-slate-300 dark:border-neutral-700"
+        }`}
+      >
         <span className="flex-1 text-sm font-medium">Quiz details</span>
         {detailsIssues > 0 && (
           <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800 dark:bg-red-950/60 dark:text-red-300">
             {detailsIssues} {detailsIssues === 1 ? "issue" : "issues"}
           </span>
         )}
+        <span className="shrink-0 text-slate-500 dark:text-neutral-400">
+          <PencilIcon />
+        </span>
       </button>
       <div className="flex items-baseline justify-between px-2 pb-1 pt-3">
         <span className={labelClasses}>Questions</span>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { quizApi } from "@/api/quizApi";
 import { startMobileSession } from "@/lib/mobileSync";
 import {
@@ -17,6 +17,7 @@ import type { Quiz, RevealMode } from "@shared/types";
 
 export function useQuizSetup(quizId: string, folderId: string | null) {
   const navigate = useNavigate();
+  const location = useLocation();
   const start = useSessionStore((state) => state.start);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,7 +75,16 @@ export function useQuizSetup(quizId: string, folderId: string | null) {
     writeQuizTimeSettings(quizId, { timeLimitEnabled, timeLimitMinutes });
   }, [quizId, timeSettingsQuizId, timeLimitEnabled, timeLimitMinutes]);
 
-  const back = () => navigate(folderId ? `/folder/${folderId}` : "/");
+  // A page that opened setup, such as the editor's Try it, can ask Cancel to return to it.
+  const returnTo = (location.state as { returnTo?: unknown } | null)?.returnTo;
+  const back = () =>
+    navigate(
+      typeof returnTo === "string" && returnTo.startsWith(`/quiz/${quizId}/`)
+        ? returnTo
+        : folderId
+          ? `/folder/${folderId}`
+          : "/",
+    );
 
   const handleStart = () => {
     if (!quiz) return;

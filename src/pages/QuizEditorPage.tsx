@@ -248,7 +248,7 @@ export function QuizEditorPage() {
               size="sm"
               disabled={dirty}
               title={dirty ? "Save your changes to try the quiz" : undefined}
-              onClick={() => navigate(`/quiz/${id}/setup`)}
+              onClick={() => navigate(`/quiz/${id}/setup`, { state: { returnTo: `/quiz/${id}/edit` } })}
             >
               Try it
             </Button>
