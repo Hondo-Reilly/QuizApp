@@ -263,7 +263,7 @@ export function QuizEditorPage() {
             <Button
               variant="secondary"
               size="sm"
-              className="px-2"
+              className="w-[34px] !px-0"
               onClick={undo}
               disabled={past.length === 0}
               aria-label="Undo"
@@ -274,7 +274,7 @@ export function QuizEditorPage() {
             <Button
               variant="secondary"
               size="sm"
-              className="px-2"
+              className="w-[34px] !px-0"
               onClick={redo}
               disabled={future.length === 0}
               aria-label="Redo"
