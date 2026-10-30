@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { countDollarFields, escapeDollars } from "@shared/quizEdits";
 import { describeIssue, type QuizIssue } from "@shared/quizIssues";
+import { quizSuggestions } from "@shared/quizSuggestions";
 import type { Quiz, QuizImage } from "@shared/types";
 import { EditorField, inputClasses, issuesAt, labelClasses } from "./EditorFields";
 import { ImageField } from "./ImageField";
@@ -16,6 +17,8 @@ export interface DetailsFormProps {
   onShowIssue: (issue: QuizIssue) => void;
   /** Picks an image file, adds it to the quiz, and returns it. */
   onAddImage: () => Promise<QuizImage | null>;
+  /** Opens a question, from a suggestion about it. */
+  onOpenQuestion: (questionId: string) => void;
 }
 
 function TextFormatField({ quiz, onChange }: Pick<DetailsFormProps, "quiz" | "onChange">) {
@@ -104,7 +107,8 @@ function parseTags(text: string): string[] | undefined {
 }
 
 /** The quiz's title, description, author, and tags, with every issue that blocks saving. */
-export function DetailsForm({ quiz, issues, onChange, onShowIssue, onAddImage }: DetailsFormProps) {
+export function DetailsForm({ quiz, issues, onChange, onShowIssue, onAddImage, onOpenQuestion }: DetailsFormProps) {
+  const suggestions = quizSuggestions(quiz);
   const ids = useId();
   // Tags are typed as one comma-separated line; it is parsed as you type but shown as typed.
   const [tagText, setTagText] = useState(() => (quiz.tags ?? []).join(", "));
@@ -174,6 +178,29 @@ export function DetailsForm({ quiz, issues, onChange, onShowIssue, onAddImage }:
                   className="w-full rounded-md bg-red-50 px-3 py-2 text-left text-sm text-red-900 hover:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:bg-red-950/40 dark:text-red-200 dark:hover:bg-red-950/70"
                 >
                   {describeIssue(quiz, issue)}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Advice only: suggestions never block saving. */}
+      {suggestions.length > 0 && (
+        <section aria-labelledby={`${ids}-suggestions`} className="flex flex-col gap-2">
+          <h3 id={`${ids}-suggestions`} className={labelClasses}>
+            Suggestions
+          </h3>
+          <ul className="flex flex-col gap-1">
+            {suggestions.map((suggestion) => (
+              <li key={suggestion.message}>
+                <button
+                  type="button"
+                  disabled={!suggestion.questionId}
+                  onClick={() => suggestion.questionId && onOpenQuestion(suggestion.questionId)}
+                  className="w-full rounded-md bg-slate-50 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                >
+                  {suggestion.message}
                 </button>
               </li>
             ))}

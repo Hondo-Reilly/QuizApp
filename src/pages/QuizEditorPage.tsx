@@ -403,6 +403,7 @@ export function QuizEditorPage() {
                 onChange={(change: (quiz: Quiz) => Quiz, key?: string) => apply(change, key ? `details:${key}` : undefined)}
                 onShowIssue={showIssue}
                 onAddImage={addImage}
+                onOpenQuestion={select}
               />
             )}
           </section>
