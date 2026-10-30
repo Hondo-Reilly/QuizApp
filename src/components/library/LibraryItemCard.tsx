@@ -7,7 +7,8 @@ export interface LibraryItemCardProps {
   description?: string;
   icon?: ReactNode;
   metadata: ReactNode;
-  actions: ReactNode;
+  /** Buttons under the card. Cards without any skip the row. */
+  actions?: ReactNode;
   onOpen: () => void;
   draggable?: boolean;
   dragging?: boolean;
@@ -104,9 +105,11 @@ export function LibraryItemCard({
           {metadata}
         </div>
       </button>
-      <div data-no-drag className="flex items-center justify-end gap-2">
-        {actions}
-      </div>
+      {actions && (
+        <div data-no-drag className="flex items-center justify-end gap-2">
+          {actions}
+        </div>
+      )}
     </Card>
   );
 }

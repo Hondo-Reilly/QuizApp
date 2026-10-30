@@ -1,6 +1,6 @@
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/Button";
-import { DeleteIconButton } from "@/components/ui/DeleteIconButton";
+import { ContextMenu } from "@/components/ui/ContextMenu";
 import { useQuizDrop, type DraggedQuiz } from "@/lib/quizDrag";
 import { LibraryItemCard } from "./LibraryItemCard";
 import type { Folder } from "@shared/types";
@@ -40,35 +40,46 @@ export function FolderCard({
 }: FolderCardProps) {
   const navigate = useNavigate();
   const { over, dropProps } = useQuizDrop(onDropQuiz);
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
+  const closeMenu = useCallback(() => setMenuAt(null), []);
 
   return (
-    <LibraryItemCard
-      variant="folder"
-      title={folder.name}
-      description={folder.description}
-      icon={<FolderIcon />}
-      dropActive={over}
-      onDragOver={dropProps.onDragOver}
-      onDragLeave={dropProps.onDragLeave}
-      onDrop={dropProps.onDrop}
-      onOpen={() => navigate(`/folder/${folder.id}`)}
-      metadata={
-        <>
-          {quizCount} {quizCount === 1 ? "quiz" : "quizzes"}
-        </>
-      }
-      actions={
-        <>
-          <DeleteIconButton
-            label={`Delete "${folder.name}"`}
-            className="mr-auto"
-            onClick={() => onDelete(folder)}
-          />
-          <Button variant="ghost" size="sm" onClick={() => onRename(folder)}>
-            Rename
-          </Button>
-        </>
-      }
-    />
+    <>
+      <LibraryItemCard
+        variant="folder"
+        title={folder.name}
+        description={folder.description}
+        icon={<FolderIcon />}
+        dropActive={over}
+        onDragOver={dropProps.onDragOver}
+        onDragLeave={dropProps.onDragLeave}
+        onDrop={dropProps.onDrop}
+        onOpen={() => navigate(`/folder/${folder.id}`)}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          // The keyboard's menu key reports no pointer position; open at the card instead.
+          if (event.clientX === 0 && event.clientY === 0) {
+            const rect = event.currentTarget.getBoundingClientRect();
+            setMenuAt({ x: rect.left + 16, y: rect.top + 16 });
+          } else {
+            setMenuAt({ x: event.clientX, y: event.clientY });
+          }
+        }}
+        metadata={
+          <>
+            {quizCount} {quizCount === 1 ? "quiz" : "quizzes"}
+          </>
+        }
+      />
+      <ContextMenu
+        position={menuAt}
+        label={`${folder.name} actions`}
+        items={[
+          { label: "Rename…", onSelect: () => onRename(folder) },
+          { label: "Delete", onSelect: () => onDelete(folder) },
+        ]}
+        onClose={closeMenu}
+      />
+    </>
   );
 }

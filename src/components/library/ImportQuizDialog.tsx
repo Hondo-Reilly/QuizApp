@@ -116,11 +116,6 @@ export function ImportQuizDialog({
       title={folderName ? `Import quiz into "${folderName}"` : "Import quiz"}
       onClose={onClose}
       width="max-w-lg"
-      footer={
-        <Button variant="secondary" onClick={onClose} disabled={busy !== null}>
-          Cancel
-        </Button>
-      }
     >
       <div className="flex flex-col gap-5">
         <div
