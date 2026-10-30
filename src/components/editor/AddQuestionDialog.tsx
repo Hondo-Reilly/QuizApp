@@ -6,8 +6,6 @@ import { QUESTION_TYPES } from "./QuestionForm";
 
 export interface AddQuestionDialogProps {
   open: boolean;
-  /** Where the new question goes, e.g. "After question 8". */
-  placement: string;
   onAdd: (type: QuestionType) => void;
   onClose: () => void;
 }
@@ -56,7 +54,8 @@ function TypeGroup({
   );
 }
 
-export function AddQuestionDialog({ open, placement, onAdd, onClose }: AddQuestionDialogProps) {
+/** New questions go at the end of the quiz. */
+export function AddQuestionDialog({ open, onAdd, onClose }: AddQuestionDialogProps) {
   return (
     <Modal
       open={open}
@@ -65,12 +64,9 @@ export function AddQuestionDialog({ open, placement, onAdd, onClose }: AddQuesti
       width="max-w-2xl"
       placement="sheet"
       footer={
-        <>
-          <span className="mr-auto self-center text-sm text-slate-500 dark:text-neutral-400">{placement}</span>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-        </>
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
       }
     >
       <div className="flex flex-col gap-5">

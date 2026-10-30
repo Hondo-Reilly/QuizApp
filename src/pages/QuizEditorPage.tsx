@@ -184,8 +184,7 @@ export function QuizEditorPage() {
   const addOfType = (type: QuestionType) => {
     if (!draft) return;
     const created = blankQuestion(type, draft.questions.map((item) => item.id));
-    const at = index >= 0 ? index + 1 : draft.questions.length;
-    apply((quiz) => addQuestion(quiz, created, at));
+    apply((quiz) => addQuestion(quiz, created));
     select(created.id);
     setAdding(false);
   };
@@ -322,7 +321,6 @@ export function QuizEditorPage() {
 
       <AddQuestionDialog
         open={adding}
-        placement={index >= 0 ? `Goes after question ${index + 1}` : "Goes at the end"}
         onAdd={addOfType}
         onClose={() => setAdding(false)}
       />
