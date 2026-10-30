@@ -4,6 +4,7 @@ import { quizApi } from "@/api/quizApi";
 import { QuizContentProvider } from "@/components/content/QuizContentContext";
 import { AddQuestionDialog } from "@/components/editor/AddQuestionDialog";
 import { DetailsForm } from "@/components/editor/DetailsForm";
+import { RedoIcon, UndoIcon } from "@/components/editor/EditorFields";
 import { EditorOutline } from "@/components/editor/EditorOutline";
 import { EditorPreview } from "@/components/editor/EditorPreview";
 import { QuestionForm } from "@/components/editor/QuestionForm";
@@ -259,11 +260,27 @@ export function QuizEditorPage() {
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="ghost" size="sm" onClick={undo} disabled={past.length === 0} title="Undo (⌘Z)">
-              Undo
+            <Button
+              variant="secondary"
+              size="sm"
+              className="px-2"
+              onClick={undo}
+              disabled={past.length === 0}
+              aria-label="Undo"
+              title="Undo (⌘Z)"
+            >
+              <UndoIcon />
             </Button>
-            <Button variant="ghost" size="sm" onClick={redo} disabled={future.length === 0} title="Redo (⇧⌘Z)">
-              Redo
+            <Button
+              variant="secondary"
+              size="sm"
+              className="px-2"
+              onClick={redo}
+              disabled={future.length === 0}
+              aria-label="Redo"
+              title="Redo (⇧⌘Z)"
+            >
+              <RedoIcon />
             </Button>
             <Button
               variant="secondary"
