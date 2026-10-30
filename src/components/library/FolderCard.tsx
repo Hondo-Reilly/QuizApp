@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
+import { DeleteIconButton } from "@/components/ui/DeleteIconButton";
 import { useQuizDrop, type DraggedQuiz } from "@/lib/quizDrag";
 import { LibraryItemCard } from "./LibraryItemCard";
 import type { Folder } from "@shared/types";
@@ -58,11 +59,13 @@ export function FolderCard({
       }
       actions={
         <>
+          <DeleteIconButton
+            label={`Delete "${folder.name}"`}
+            className="mr-auto"
+            onClick={() => onDelete(folder)}
+          />
           <Button variant="ghost" size="sm" onClick={() => onRename(folder)}>
             Rename
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => onDelete(folder)}>
-            Delete
           </Button>
         </>
       }

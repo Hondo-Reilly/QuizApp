@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { quizApi } from "@/api/quizApi";
 import { Button } from "@/components/ui/Button";
+import { DeleteIconButton } from "@/components/ui/DeleteIconButton";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { isElectronApp } from "@/lib/runtime";
 import { writeQuizDrag } from "@/lib/quizDrag";
@@ -109,17 +110,15 @@ export function QuizCard({
         }
         actions={
           <>
-            <Button variant="ghost" size="sm" onClick={() => onMove(quiz)}>
-              Move
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
+            <DeleteIconButton
+              label={`Delete "${quiz.title}"`}
+              className="mr-auto"
               onClick={() => {
                 if (confirm(deleteQuizPrompt(quiz))) onDelete(quiz.id);
               }}
-            >
-              Delete
+            />
+            <Button variant="ghost" size="sm" onClick={() => onMove(quiz)}>
+              Move
             </Button>
             <Button variant="ghost" size="sm" onClick={() => onShare(quiz)}>
               Share
