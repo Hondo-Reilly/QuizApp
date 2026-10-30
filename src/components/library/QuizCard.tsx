@@ -3,7 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { quizApi } from "@/api/quizApi";
 import { Button } from "@/components/ui/Button";
 import { DeleteIconButton } from "@/components/ui/DeleteIconButton";
-import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
+import {
+  ContextMenu,
+  contextMenuPosition,
+  type ContextMenuItem,
+} from "@/components/ui/ContextMenu";
 import { isElectronApp } from "@/lib/runtime";
 import { writeQuizDrag } from "@/lib/quizDrag";
 import { ShareStatus } from "@/components/share/ShareStatus";
@@ -49,6 +53,7 @@ export function QuizCard({
     alert(`Could not ${action}. ${err instanceof Error ? err.message : ""}`.trim());
 
   const menuItems: ContextMenuItem[] = [
+    { label: "Move…", onSelect: () => onMove(quiz) },
     { label: "Share…", onSelect: () => onShare(quiz) },
     ...(quiz.cloudSource?.available && !quiz.cloudSource.gone
       ? [{ label: "Update to newest version", onSelect: () => onUpdate(quiz) }]
@@ -86,7 +91,7 @@ export function QuizCard({
         onDragEnd={() => setDragging(false)}
         onContextMenu={(event) => {
           event.preventDefault();
-          setMenuAt({ x: event.clientX, y: event.clientY });
+          setMenuAt(contextMenuPosition(event));
         }}
         onOpen={() =>
           navigate(`/quiz/${quiz.id}`, { state: { folderId: quiz.folderId } })
@@ -117,9 +122,6 @@ export function QuizCard({
                 if (confirm(deleteQuizPrompt(quiz))) onDelete(quiz.id);
               }}
             />
-            <Button variant="ghost" size="sm" onClick={() => onMove(quiz)}>
-              Move
-            </Button>
             <Button variant="ghost" size="sm" onClick={() => onShare(quiz)}>
               Share
             </Button>

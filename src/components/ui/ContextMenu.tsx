@@ -18,6 +18,21 @@ export interface ContextMenuProps {
 
 const EDGE = 8;
 
+/**
+ * Where to open a menu for a contextmenu event. The keyboard's menu key
+ * reports no pointer position, so the menu opens at the element instead.
+ */
+export function contextMenuPosition(event: React.MouseEvent<HTMLElement>): {
+  x: number;
+  y: number;
+} {
+  if (event.clientX === 0 && event.clientY === 0) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return { x: rect.left + 16, y: rect.top + 16 };
+  }
+  return { x: event.clientX, y: event.clientY };
+}
+
 /** A right-click menu at the pointer, kept inside the window. */
 export function ContextMenu({
   position,

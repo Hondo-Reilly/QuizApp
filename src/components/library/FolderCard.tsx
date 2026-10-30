@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ContextMenu } from "@/components/ui/ContextMenu";
+import { ContextMenu, contextMenuPosition } from "@/components/ui/ContextMenu";
 import { useQuizDrop, type DraggedQuiz } from "@/lib/quizDrag";
 import { LibraryItemCard } from "./LibraryItemCard";
 import type { Folder } from "@shared/types";
@@ -57,13 +57,7 @@ export function FolderCard({
         onOpen={() => navigate(`/folder/${folder.id}`)}
         onContextMenu={(event) => {
           event.preventDefault();
-          // The keyboard's menu key reports no pointer position; open at the card instead.
-          if (event.clientX === 0 && event.clientY === 0) {
-            const rect = event.currentTarget.getBoundingClientRect();
-            setMenuAt({ x: rect.left + 16, y: rect.top + 16 });
-          } else {
-            setMenuAt({ x: event.clientX, y: event.clientY });
-          }
+          setMenuAt(contextMenuPosition(event));
         }}
         metadata={
           <>
