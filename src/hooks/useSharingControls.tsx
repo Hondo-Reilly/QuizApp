@@ -101,17 +101,8 @@ export function useSharingControls(
 
   const buttons = (
     <>
-      {/* Short labels keep the page's action row on one line; titles give the full name. */}
-      <Button
-        variant="secondary"
-        size="sm"
-        title="Replace from file"
-        onClick={() => void actions.replaceFromFile(quiz)}
-      >
-        Replace…
-      </Button>
       <Button variant="secondary" size="sm" onClick={() => actions.openShare(quiz)}>
-        {share ? "Share settings" : "Share…"}
+        Share
       </Button>
       {source &&
         !source.gone &&
@@ -121,6 +112,7 @@ export function useSharingControls(
             {updating ? "Updating…" : "Update quiz"}
           </Button>
         ) : (
+          // A short label keeps the page's action row on one line.
           <Button
             variant="secondary"
             size="sm"

@@ -9,6 +9,8 @@ export interface ContextMenuItem {
 export interface ContextMenuProps {
   /** Where the pointer was, in viewport pixels. Null keeps the menu closed. */
   position: { x: number; y: number } | null;
+  /** "end" lines the menu's right edge up with the position, for a menu under a button. */
+  align?: "start" | "end";
   label: string;
   items: ContextMenuItem[];
   onClose: () => void;
@@ -17,7 +19,13 @@ export interface ContextMenuProps {
 const EDGE = 8;
 
 /** A right-click menu at the pointer, kept inside the window. */
-export function ContextMenu({ position, label, items, onClose }: ContextMenuProps) {
+export function ContextMenu({
+  position,
+  align = "start",
+  label,
+  items,
+  onClose,
+}: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [placed, setPlaced] = useState<{ left: number; top: number } | null>(null);
@@ -32,10 +40,11 @@ export function ContextMenu({ position, label, items, onClose }: ContextMenuProp
     const { width, height } = menu.getBoundingClientRect();
     const maxLeft = window.innerWidth - width - EDGE;
     const maxTop = window.innerHeight - height - EDGE;
-    const left = position.x > maxLeft ? Math.max(EDGE, position.x - width) : position.x;
+    const x = align === "end" ? position.x - width : position.x;
+    const left = x > maxLeft ? Math.max(EDGE, position.x - width) : Math.max(EDGE, x);
     const top = position.y > maxTop ? Math.max(EDGE, position.y - height) : position.y;
     setPlaced({ left, top });
-  }, [position]);
+  }, [position, align]);
 
   // Focus once the menu is placed; a hidden menu can't take focus.
   useEffect(() => {

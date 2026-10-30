@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { QuizContentProvider } from "@/components/content/QuizContentContext";
 import {
   useLocation,
@@ -7,6 +7,7 @@ import {
   useParams,
 } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
+import { ContextMenu } from "@/components/ui/ContextMenu";
 import { DetailPageLayout } from "@/components/ui/DetailPageLayout";
 import { LoadingMessage, PageErrorState } from "@/components/ui/PageState";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -39,6 +40,14 @@ export function QuizBrowsePage() {
   );
   const [printOpen, setPrintOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
+  const [moreAt, setMoreAt] = useState<{ x: number; y: number } | null>(null);
+  // The menu closes on any outside press, including one on its own button;
+  // remember when, so that press does not open it again.
+  const moreClosedAt = useRef(0);
+  const closeMore = useCallback(() => {
+    moreClosedAt.current = Date.now();
+    setMoreAt(null);
+  }, []);
 
   const back = () => navigate(folderId ? `/folder/${folderId}` : "/");
 
@@ -120,24 +129,38 @@ export function QuizBrowsePage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => setPrintOpen(true)}
+                  aria-label="More actions"
+                  title="More actions"
+                  aria-haspopup="menu"
+                  aria-expanded={moreAt !== null}
+                  className="!px-0 w-[34px]"
+                  onClick={(event) => {
+                    if (Date.now() - moreClosedAt.current < 300) return;
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    setMoreAt({ x: rect.right, y: rect.bottom + 4 });
+                  }}
                 >
-                  Save to PDF
+                  <svg viewBox="0 0 16 16" aria-hidden="true" className="h-4 w-4" fill="currentColor">
+                    <circle cx="3" cy="8" r="1.5" />
+                    <circle cx="8" cy="8" r="1.5" />
+                    <circle cx="13" cy="8" r="1.5" />
+                  </svg>
                 </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setMoveOpen(true)}
-                >
-                  Move
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => void handleDelete()}
-                >
-                  Delete
-                </Button>
+                <ContextMenu
+                  position={moreAt}
+                  align="end"
+                  label="More actions"
+                  items={[
+                    { label: "Save to PDF", onSelect: () => setPrintOpen(true) },
+                    { label: "Move", onSelect: () => setMoveOpen(true) },
+                    {
+                      label: "Replace from file…",
+                      onSelect: () => void shareActions.replaceFromFile(moveTarget),
+                    },
+                    { label: "Delete", onSelect: () => void handleDelete() },
+                  ]}
+                  onClose={closeMore}
+                />
                 {sharing.buttons}
                 <Button size="sm" onClick={() => navigate(`/quiz/${id}/setup`)}>
                   Start quiz
